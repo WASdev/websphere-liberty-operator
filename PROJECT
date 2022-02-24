@@ -1,0 +1,19 @@
+domain: ibm.com
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: websphere-liberty
+repo: github.com/WASdev/websphere-liberty-operator
+resources:
+- group: liberty.websphere.ibm.com
+  kind: WebSphereLibertyApplication
+  version: v1
+- group: liberty.websphere.ibm.com
+  kind: WebSphereLibertyDump
+  version: v1
+- group: liberty.websphere.ibm.com
+  kind: WebSphereLibertyTrace
+  version: v1
+version: "3"
