@@ -54,4 +54,4 @@ static-scan:
     EOF
     chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
     #echo "$SONAR_PASS" >> /tmp/sonarqube-token
-    "${ONE_PIPELINE_PATH}"/internal/sonarqube/sonarqube_run  
+    "${COMMONS_PATH}"/static-scan/run.sh
