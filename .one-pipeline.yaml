@@ -19,5 +19,5 @@ test:
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential 
-    
+    go mod vendor
     make unit-test
