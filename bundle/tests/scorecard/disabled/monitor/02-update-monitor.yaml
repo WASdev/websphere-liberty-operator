@@ -1,0 +1,24 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: service-monitor-wsliberty
+spec:
+  monitoring:
+    endpoints:
+    - path: "/path"
+      scheme: "myScheme"
+      params:
+        params:
+        - "param1"
+        - "param2"
+      interval: "30s"
+      scrapeTimeout: "10s"
+      tlsConfig:
+        insecureSkipVerify: true
+      bearerTokenFile: "myBTF"
+      basicAuth:
+        username:
+          key: "username"
+        password:
+          key: "password"
+      

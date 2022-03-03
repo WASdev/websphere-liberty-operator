@@ -1,0 +1,11 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: service-binding-ws
+spec:
+  # Add fields here
+  applicationImage: k8s.gcr.io/pause:2.0
+  replicas: 1
+  service:
+    bindable: true
+    port: 8080

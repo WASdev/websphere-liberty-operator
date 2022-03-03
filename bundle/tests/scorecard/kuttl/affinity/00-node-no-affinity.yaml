@@ -1,0 +1,14 @@
+# Test to see that if affinity is setup but there is no matching label, no pod is readied
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: node-affinity-label-lib
+  labels:
+    test: affinity
+spec:
+  # Add fields here
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  replicas: 1
+  affinity:
+    nodeAffinityLabels:
+      kuttlTest: error

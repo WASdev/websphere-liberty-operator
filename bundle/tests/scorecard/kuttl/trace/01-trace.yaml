@@ -1,0 +1,9 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyTrace
+metadata:
+  name: example-trace
+spec:
+  podName: trace-ws-0
+  traceSpecification: "*=info:com.ibm.ws.webcontainer*=all"
+  maxFileSize: 20
+  maxFiles: 5
