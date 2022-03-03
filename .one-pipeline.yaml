@@ -105,9 +105,9 @@ containerize:
     
     # Build manifest
     make build-pipeline-manifest
-    # # Build bundle image
-    # make setup-operator-sdk
-    # make bundle-pipeline
+    # Build bundle image
+    make setup
+    make bundle-pipeline
     # # Build catalog image
     # ## At this time, the script below will call into Enterprise Travis to perform this task
     # echo "**** Calling launch-catalog-build.sh script ****"
