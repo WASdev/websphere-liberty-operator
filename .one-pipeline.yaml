@@ -99,12 +99,12 @@ containerize:
     # Build amd64 image
     make build-pipeline-releases
     
-    # # Build ppc64le and s390x images
-    # # Disabled for Liberty Operator builds for now
-    # #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+    # Build ppc64le and s390x images
+    # Disabled for Liberty Operator builds for now
+    #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
     
-    # # Build manifest
-    # make build-pipeline-manifest  
+    # Build manifest
+    make build-pipeline-manifest
     # # Build bundle image
     # make setup-operator-sdk
     # make bundle-pipeline
