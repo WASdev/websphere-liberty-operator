@@ -189,5 +189,5 @@ acceptance-test:
     export CLUSTER_TOKEN=$(get_env test-cluster-token)
     export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
     export RELEASE_TARGET=$(get_env release-target)
-    make setup-operator-sdk
+    make setup
     make test-pipeline-e2e
