@@ -112,8 +112,13 @@ function launch_travis() {
                             \"name\": \"Build catalog on amd64\",
                             \"os\": \"linux\",
                             \"arch\": \"amd64\",
+                            \"before_install\": [
+                                \"sudo apt-get install -qq -y software-properties-common uidmap\",
+                                \"make install-podman\",
+                                \"make install-opm\"
+                            ],
                             \"script\": [
-                                \"sudo ./scripts/build.sh\"
+                                \"make bundle-pipeline\"
                             ]
                         }
                     ]
