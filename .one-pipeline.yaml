@@ -113,29 +113,30 @@ containerize:
     # echo "**** Calling launch-catalog-build.sh script ****"
     # ./scripts/pipeline/launch-catalog-build.sh -t $(get_env travis-token) -r "https://github.ibm.com/websphere/liberty-operator" -b $(get_env catalog-branch) -n "${BUILD_NUMBER}" -l
     # echo "**** Return from launch-catlog-build.sh script ****"
-    # # Save artifacts
-    # ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # # declare -a tags=("daily-amd64" "daily-ppc64le" "daily-s390x")
-    # echo "**** Saving Artifacts ****"
-    # declare -a tags=("daily-amd64")
-    # for i in "${tags[@]}"
-    # do
-    #   IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
-    #   DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-    #   ARCH=$(echo $i | cut -d'-' -f 2)
-    #   echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
-    #   save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
-    # done
-    #declare -a catalogs=("catalog-daily")
-    #for i in "${catalogs[@]}"
-    #do
-    #  IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
-    #  DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-    #  #ARCH=$(echo $i | cut -d'-' -f 2)
-    #  ARCH=amd64
-    #  echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
-    #  save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
-    #done
+    make catalog-build
+    # Save artifacts
+    ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
+    # declare -a tags=("daily-amd64" "daily-ppc64le" "daily-s390x")
+    echo "**** Saving Artifacts ****"
+    declare -a tags=("daily-amd64")
+    for i in "${tags[@]}"
+    do
+      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
+      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+      ARCH=$(echo $i | cut -d'-' -f 2)
+      echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+      save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+    done
+    declare -a catalogs=("catalog-daily")
+    for i in "${catalogs[@]}"
+    do
+     IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
+     DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+     #ARCH=$(echo $i | cut -d'-' -f 2)
+     ARCH=amd64
+     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+     save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+    done
 
 sign-artifact:
   abort_on_failure: false
