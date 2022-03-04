@@ -111,7 +111,7 @@ containerize:
     # Build catalog image
     ## At this time, the script below will call into Enterprise Travis to perform this task
     echo "**** Calling launch-catalog-build.sh script ****"
-    ./scripts/pipeline/launch-catalog-build.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env catalog-branch) -n "${BUILD_NUMBER}" -l
+    ./scripts/pipeline/launch-catalog-build.sh -t $(get_env travis-token) -r "https://github.ibm.com/websphere/liberty-operator" -b $(get_env catalog-branch) -n "${BUILD_NUMBER}" -l
     echo "**** Return from launch-catlog-build.sh script ****"
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
