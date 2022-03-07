@@ -48,7 +48,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
-  name: websphere-liberty.v0.0.1
+  name: websphere-liberty.v0.8.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
