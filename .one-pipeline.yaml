@@ -5,7 +5,10 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz" 
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz"
+    export PATH=$PATH:/usr/local/go/bin
+    apt-get update
+    apt-get -y install build-essential
     rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
     # Added `go mod vendor` here because without it, the following error was generated:
     # go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
