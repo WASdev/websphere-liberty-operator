@@ -356,52 +356,52 @@ spec:
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       version: v1
-  description: |
-    This advanced Operator can be used to deploy and manage WebSphere Liberty applications with consistent, production-grade QoS. This operator is based on the [Runtime Component Operator](https://github.com/application-stacks/runtime-component-operator) and provides all of its capabilities in addition to WebSphere Liberty specific features such as gathering traces and dumps (Day-2 operations) and easily configuring and managing the single sign-on information for your WebSphere Liberty applications.
-
-    WebSphere Liberty Operator enables enterprise architects to govern the way their applications get deployed & managed in the cluster, while dramatically reducing the learning curve for developers to deploy into Kubernetes - allowing them to focus on writing the code! Here are some key features:
-
-    #### Application Lifecyle
-    You can deploy your WebSphere Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the Operator will watch for any updates and will re-deploy the modified image.
-
-    #### Custom RBAC
-    This Operator is capable of using a custom ServiceAccount from the caller, allowing it to follow RBAC restrictions. By default it creates a ServiceAccount if one is not specified, which can also be bound with specific roles.
-
-    #### Environment Configuration
-    You can configured a variety of artifacts with your deployment, such as: labels, annotations, and environment variables from a ConfigMap, a Secret or a value.
-
-    #### Routing
-    Expose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Expiring Route certificates are re-issued.
-
-    #### High Availability via Horizontal Pod Autoscaling
-    Run multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto scaling to create (and delete) instances based on resource consumption.
-
-    #### Persistence and advanced storage
-    Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and We will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where the user specifies a built-in PersistentVolumeClaim, allowing them to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use a single storage for serviceability related Day-2 operations, such as gatherig server traces and dumps.
-
-    #### Service Binding
-    Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating kubernetes Secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to its required services without any intervention or interruption.
-
-    #### Single Sign-On (SSO)
-    WebSphere Liberty provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows to easily configure and manage the single sign-on information for your applications.
-
-    #### Exposing metrics to Prometheus
-    The WebSphere Liberty Operator exposes the runtime container's metrics via the [Prometheus Operator](https://operatorhub.io/operator/prometheus). Users can pick between a basic mode, where they simply specify the label that Prometheus is watching to scrape the metrics from the container, or they can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `spec.monitoring` key controlling things like the poll internal and security credentials.
-
-    #### Easily mount logs and transaction directories
-    If you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster), simply add the following (customizing the folder location and size) to your WebSphereLibertyApplication CR: ``` storage: size: 2Gi mountPath: \"/logs\" ```
-
-    #### Integration with OpenShift's Certificate Manager
-    The WebSphere Liberty Operator takes advantage of the [cert-manager tool](https://cert-manager.io/), if it is installed on the cluster. This allows the operator to automatically provision TLS certificates for pods as well as routes. When creating certificates via the WebSphereLibertyApplication CR the user can specify a particular issuer name and toggle the scopes between ClusterIssuer (cluster scoped) and Issuer (namespace scoped). If not specified, these values are retrieved from a ConfigMap, with a default value of `self-signed` and `ClusterIssuer`. The certificate is mounted into the container via a Secret so that it is automatically refreshed once the certificate is updated.
-
-    #### Integration with OpenShift Serverless
-    Deploy your serverless runtime component using a single toggle.  The Operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing your pod to automatically scale to 0 when it is idle.
-
-    #### Integration with OpenShift's Topology UI
-    We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
-
-    See our [**documentation**](https://github.com/WASdev/websphere-liberty-operator/tree/master/doc/) for more information.
   displayName: WebSphere Liberty Operator
+  description: |
+        This advanced Operator can be used to deploy and manage WebSphere Liberty applications with consistent, production-grade QoS. This operator is based on the [Runtime Component Operator](https://github.com/application-stacks/runtime-component-operator) and provides all of its capabilities in addition to WebSphere Liberty specific features such as gathering traces and dumps (Day-2 operations) and easily configuring and managing the single sign-on information for your WebSphere Liberty applications.
+    
+        WebSphere Liberty Operator enables enterprise architects to govern the way their applications get deployed & managed in the cluster, while dramatically reducing the learning curve for developers to deploy into Kubernetes - allowing them to focus on writing the code! Here are some key features:
+    
+        #### Application Lifecyle
+        You can deploy your WebSphere Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the Operator will watch for any updates and will re-deploy the modified image.
+    
+        #### Custom RBAC
+        This Operator is capable of using a custom ServiceAccount from the caller, allowing it to follow RBAC restrictions. By default it creates a ServiceAccount if one is not specified, which can also be bound with specific roles.
+    
+        #### Environment Configuration
+        You can configured a variety of artifacts with your deployment, such as: labels, annotations, and environment variables from a ConfigMap, a Secret or a value.
+    
+        #### Routing
+        Expose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Expiring Route certificates are re-issued.
+    
+        #### High Availability via Horizontal Pod Autoscaling
+        Run multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto scaling to create (and delete) instances based on resource consumption.
+    
+        #### Persistence and advanced storage
+        Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and We will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where the user specifies a built-in PersistentVolumeClaim, allowing them to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use a single storage for serviceability related Day-2 operations, such as gatherig server traces and dumps.
+    
+        #### Service Binding
+        Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating kubernetes Secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to its required services without any intervention or interruption.
+    
+        #### Single Sign-On (SSO)
+        WebSphere Liberty provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows to easily configure and manage the single sign-on information for your applications.
+    
+        #### Exposing metrics to Prometheus
+        The WebSphere Liberty Operator exposes the runtime container's metrics via the [Prometheus Operator](https://operatorhub.io/operator/prometheus). Users can pick between a basic mode, where they simply specify the label that Prometheus is watching to scrape the metrics from the container, or they can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `spec.monitoring` key controlling things like the poll internal and security credentials.
+    
+        #### Easily mount logs and transaction directories
+        If you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster), simply add the following (customizing the folder location and size) to your WebSphereLibertyApplication CR: ``` storage: size: 2Gi mountPath: \"/logs\" ```
+    
+        #### Integration with OpenShift's Certificate Manager
+        The WebSphere Liberty Operator takes advantage of the [cert-manager tool](https://cert-manager.io/), if it is installed on the cluster. This allows the operator to automatically provision TLS certificates for pods as well as routes. When creating certificates via the WebSphereLibertyApplication CR the user can specify a particular issuer name and toggle the scopes between ClusterIssuer (cluster scoped) and Issuer (namespace scoped). If not specified, these values are retrieved from a ConfigMap, with a default value of `self-signed` and `ClusterIssuer`. The certificate is mounted into the container via a Secret so that it is automatically refreshed once the certificate is updated.
+    
+        #### Integration with OpenShift Serverless
+        Deploy your serverless runtime component using a single toggle.  The Operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing your pod to automatically scale to 0 when it is idle.
+    
+        #### Integration with OpenShift's Topology UI
+        We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
+    
+        See our [**documentation**](https://github.com/WASdev/websphere-liberty-operator/tree/master/doc/) for more information.
   icon:
   - base64data: PHN2ZyBpZD0iV2Vic3BoZXJlTGliZXJ0eSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMzIgMzIiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0ia2MxZXdoeGhoYSIgeDE9IjE2IiB5MT0iMjkiIHgyPSIxNiIgeTI9IjMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPjxzdG9wIG9mZnNldD0iLjI2IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9InNsMGYxYWJudGIiIHgxPSIyIiB5MT0iMjIuNSIgeDI9IjMwIiB5Mj0iMjIuNSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjZmZmIi8+PHN0b3Agb2Zmc2V0PSIuNyIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJhd3JyY2JjcXJjIiB4MT0iMi40NSIgeTE9IjEyLjgzOSIgeDI9IjE2IiB5Mj0iMTIuODM5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9IjAiLz48c3RvcCBvZmZzZXQ9Ii44IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9IndvcGp4c3V4NGUiIHkxPSIzMiIgeDI9IjMyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIuMSIgc3RvcC1jb2xvcj0iI2E1NmVmZiIvPjxzdG9wIG9mZnNldD0iLjkiIHN0b3AtY29sb3I9IiMwZjYyZmUiLz48L2xpbmVhckdyYWRpZW50PjxtYXNrIGlkPSI2a3kxMnd4eDlkIiB4PSIwIiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIHN0eWxlPSJmaWxsOnVybCgja2MxZXdoeGhoYSkiIGQ9Ik0xNSAzaDJ2MjZoLTJ6Ii8+PHBhdGggZD0iTTE2IDMwQTE0LjAxNSAxNC4wMTUgMCAwIDEgMiAxNmwxLTEgMSAxYTEyIDEyIDAgMCAwIDI0IDBoMmExNC4wMTUgMTQuMDE1IDAgMCAxLTE0IDE0eiIgc3R5bGU9ImZpbGw6dXJsKCNzbDBmMWFibnRiKSIvPjxwYXRoIGQ9Ik0xNiAyMmEyMi43NCAyMi43NCAwIDAgMS0xMy41NS00LjA4OGwxLjIxMi0xLjU5MUEyMC43MTYgMjAuNzE2IDAgMCAwIDE2IDIweiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjxwYXRoIGQ9Ik0zLjY2MiAxNS42NzkgMi40NSAxNC4wODhBMjIuNzM2IDIyLjczNiAwIDAgMSAxNiAxMHYyYTIwLjcxNiAyMC43MTYgMCAwIDAtMTIuMzM4IDMuNjc5eiIgc3R5bGU9ImZpbGw6dXJsKCNhd3JyY2JjcXJjKSIvPjxwYXRoIGQ9Ik00IDE2SDJBMTQuMDA2IDE0LjAwNiAwIDAgMSAyMS44NTUgMy4yOEwyMS4wMiA1LjFBMTIuMDA4IDEyLjAwOCAwIDAgMCA0IDE2eiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjwvbWFzaz48L2RlZnM+PGcgc3R5bGU9Im1hc2s6dXJsKCM2a3kxMnd4eDlkKSI+PHBhdGggc3R5bGU9ImZpbGw6dXJsKCN3b3BqeHN1eDRlKSIgZD0iTTAgMGgzMnYzMkgweiIvPjwvZz48cGF0aCBkPSJNMjcgMTRhMy42MTUgMy42MTUgMCAwIDEgLjgzMi0xLjk0NUE1LjMzNCA1LjMzNCAwIDAgMCAyOSA5aC0yYTMuNjE1IDMuNjE1IDAgMCAxLS44MzIgMS45NDVBNS4zMzQgNS4zMzQgMCAwIDAgMjUgMTR6IiBzdHlsZT0iZmlsbDojMDAxZDZjIi8+PHBhdGggZD0iTTI1IDE5YTUuMDA2IDUuMDA2IDAgMCAwIDUtNWgtMmEzIDMgMCAwIDEtNiAwYzAtMS40ODguOC0yLjUyIDEuNzM2LTMuNzE2QTguMjMxIDguMjMxIDAgMCAwIDI2IDVWNGgtMnYxYzAgMS42OTEtLjg1NCAyLjc4Ny0xLjg0MiA0LjA1NUE3LjgxMSA3LjgxMSAwIDAgMCAyMCAxNGE1LjAwNiA1LjAwNiAwIDAgMCA1IDV6TTI4LjUgMjAuMDY0YTcuMTI2IDcuMTI2IDAgMCAxLTcgMGwtMSAxLjczMWE4Ljk0MyA4Ljk0MyAwIDAgMCAzLjUgMS4xMzlWMjhoMnYtNS4wNjZhOC45NDMgOC45NDMgMCAwIDAgMy41LTEuMTM0eiIgc3R5bGU9ImZpbGw6IzAwMWQ2YyIvPjwvc3ZnPg==
     mediatype: image/svg+xml
@@ -440,7 +440,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: default-route-openshift-image-registry.apps.psx50.cp.fyre.ibm.com/websphere-liberty-operator-system/operator:v0.0.1
+                image: cp.stg.icr.io/websphere-liberty-operator:daily
                 name: manager
                 resources:
                   limits:
@@ -611,4 +611,4 @@ spec:
   maturity: alpha
   provider:
     name: IBM
-  version: 0.0.1
+  version: 0.8.0
