@@ -5,6 +5,8 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz" 
+    rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
     # Added `go mod vendor` here because without it, the following error was generated:
     # go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
     # go: inconsistent vendoring in /workspace/app/one-pipeline-config-repo:
