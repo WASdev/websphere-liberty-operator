@@ -44,6 +44,10 @@ metadata:
       ]
     capabilities: Auto Pilot
     categories: Application Runtime
+    certified: "true"
+    containerImage: cp.stg.icr.io/websphere-liberty-operator:daily
+    createdAt: 22-03-07T09:55:20Z
+    description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
@@ -81,115 +85,168 @@ spec:
         name: ""
         version: v1
       specDescriptors:
-      - description: The name of the application this resource is part of. If not specified, it defaults to the name of the CR.
-        displayName: Application Name
-        path: applicationName
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Application image to be installed.
+      - description: Application image to deploy.
         displayName: Application Image
         path: applicationImage
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Version of the application.
-        displayName: Application Version
-        path: applicationVersion
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Policy for pulling container images. Defaults to IfNotPresent.
-        displayName: Pull Policy
-        path: pullPolicy
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:imagePullPolicy
-      - description: Number of pods to create.
-        displayName: Replicas
-        path: replicas
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:podCount
-      - description: A boolean that toggles the external exposure of this deployment via a Route or a Knative Route resource.
-        displayName: Expose
-        path: expose
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Limits the amount of required resources.
-        displayName: Resource Requirements
-        path: resourceConstraints
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
-      - displayName: Service
-        path: service
-      - description: The port exposed by the container.
-        displayName: Service Port
-        path: service.port
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:number
-      - displayName: Service Type
-        path: service.type
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Node proxies this port into your service.
-        displayName: Node Port
-        path: service.nodePort
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:number
-      - description: The name for the port exposed by the container.
-        displayName: Port Name
-        path: service.portName
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Annotations to be added to the service.
-        displayName: Service Annotations
-        path: service.annotations
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The port that the operator assigns to containers inside pods. Defaults to the value of spec.service.port.
-        displayName: Target Port
-        path: service.targetPort
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:number
-      - description: A name of a secret that already contains TLS key, certificate and CA to be mounted in the pod.
-        displayName: Certificate Secret Reference
-        path: service.certificateSecretRef
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Auto Scaling
-        path: autoscaling
-      - description: Required field for autoscaling. Upper limit for the number of pods that can be set by the autoscaler. Parameter spec.resourceConstraints.requests.cpu must also be specified.
+      - description: Required field for autoscaling. Upper limit for the number of pods that can be set by the autoscaler. Parameter .spec.resources.requests.cpu must also be specified.
         displayName: Max Replicas
         path: autoscaling.maxReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Name of the application. Defaults to the name of this custom resource.
+        displayName: Application Name
+        path: applicationName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Lower limit for the number of pods that can be set by the autoscaler.
         displayName: Min Replicas
         path: autoscaling.minReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: Target average CPU utilization (represented as a percentage of requested CPU) over all the pods.
+      - description: Version of the application.
+        displayName: Application Version
+        path: applicationVersion
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Target average CPU utilization, represented as a percentage of requested CPU, over all the pods.
         displayName: Target CPU Utilization Percentage
         path: autoscaling.targetCPUUtilizationPercentage
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Policy for pulling container images. Defaults to IfNotPresent.
+        displayName: Pull Policy
+        path: pullPolicy
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:imagePullPolicy
+      - description: Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.
+        displayName: Pull Secret
+        path: pullSecret
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:Secret
+      - description: Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.
+        displayName: Service Account Name
+        path: serviceAccountName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Create Knative resources and use Knative serving.
+        displayName: Create Knative Service
+        path: createKnativeService
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Expose the application externally via a Route, a Knative Route or an Ingress resource.
+        displayName: Expose
+        path: expose
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+        displayName: Replicas
+        path: replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podCount
+      - description: The port exposed by the container.
+        displayName: Service Port
+        path: service.port
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: Auto Scaling
+        path: autoscaling
+      - displayName: Service Type
+        path: service.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Resource requests and limits for the application container.
+        displayName: Resource Requirements
+        path: resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Node proxies this port into your service.
+        displayName: Node Port
+        path: service.nodePort
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: Probes
+        path: probes
+      - description: The name for the port exposed by the container.
+        displayName: Port Name
+        path: service.portName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Deployment
         path: deployment
+      - description: Annotations to be added to the service.
+        displayName: Service Annotations
+        path: service.annotations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The port that the operator assigns to containers inside pods. Defaults to the value of .spec.service.port.
+        displayName: Target Port
+        path: service.targetPort
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: StatefulSet
+        path: statefulSet
+      - displayName: Service
+        path: service
+      - description: 'A name of a secret that already contains TLS key, certificate and CA to be mounted in the pod. The following keys are valid in the secret: ca.crt, tls.crt, and tls.key.'
+        displayName: Certificate Secret Reference
+        path: service.certificateSecretRef
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Route
+        path: route
+      - description: An array consisting of service ports.
+        displayName: Ports
+        path: service.ports
+      - description: Expose the application as a bindable service. Defaults to false.
+        displayName: Bindable
+        path: service.bindable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Serviceability
+        path: serviceability
+      - displayName: Single sign-on
+        path: sso
+      - displayName: Monitoring
+        path: monitoring
+      - description: An array of environment variables for the application container.
+        displayName: Environment Variables
+        path: env
       - description: Specifies the strategy to replace old deployment pods with new pods.
         displayName: Deployment Update Strategy
         path: deployment.updateStrategy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
-      - displayName: StatefulSet
-        path: statefulSet
+      - description: List of sources to populate environment variables in the application container.
+        displayName: Environment Variables from Sources
+        path: envFrom
+      - description: Represents a volume with data that is accessible to the application container.
+        displayName: Volumes
+        path: volumes
       - description: Specifies the strategy to replace old StatefulSet pods with new pods.
         displayName: StatefulSet Update Strategy
         path: statefulSet.updateStrategy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Represents where to mount the volumes into the application container.
+        displayName: Volume Mounts
+        path: volumeMounts
+      - description: List of containers to run before other containers in a pod.
+        displayName: Init Containers
+        path: initContainers
       - displayName: Storage
         path: statefulSet.storage
+      - description: List of sidecar containers. These are additional containers to be added to the pods.
+        displayName: Sidecar Containers
+        path: sidecarContainers
       - description: A convenient field to set the size of the persisted storage.
         displayName: Storage Size
         path: statefulSet.storage.size
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Affinity
+        path: affinity
       - description: The directory inside the container where this persisted storage will be bound to.
         displayName: Storage Mount Path
         path: statefulSet.storage.mountPath
@@ -200,17 +257,6 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
-      - description: The name of the OpenShift service account to be used during deployment.
-        displayName: Service Account Name
-        path: serviceAccountName
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Serviceability
-        path: serviceability
-      - displayName: Single sign-on
-        path: sso
-      - displayName: Monitoring
-        path: monitoring
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -221,8 +267,6 @@ spec:
         path: monitoring.endpoints
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:endpointList
-      - displayName: Affinity
-        path: affinity
       - description: Controls which nodes the pod are scheduled to run on, based on labels on the node.
         displayName: Node Affinity
         path: affinity.nodeAffinity
@@ -243,8 +287,6 @@ spec:
         path: affinity.nodeAffinityLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Route
-        path: route
       - description: Annotations to be added to the Route.
         displayName: Route Annotations
         path: route.annotations
@@ -260,7 +302,7 @@ spec:
         path: route.path
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: A name of a secret that already contains TLS key, certificate and CA to be used in the route. Also can contain destination CA certificate.
+      - description: 'A name of a secret that already contains TLS key, certificate and CA to be used in the route. It can also contain destination CA certificate. The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt, and tls.key.'
         displayName: Certificate Secret Reference
         path: route.certificateSecretRef
         x-descriptors:
@@ -275,48 +317,18 @@ spec:
         path: route.insecureEdgeTerminationPolicy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: A boolean to toggle the creation of Knative resources and usage of Knative serving.
-        displayName: Create Knative Service
-        path: createKnativeService
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Detects if the services need to be restarted.
+      - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
         displayName: Liveness Probe
-        path: livenessProbe
-      - description: Detects if the services are ready to serve.
+        path: probes.liveness
+      - description: Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails.
         displayName: Readiness Probe
-        path: readinessProbe
-      - description: Protects slow starting containers from livenessProbe.
+        path: probes.readiness
+      - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
-        path: startupProbe
-      - description: Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.
-        displayName: Pull Secret
-        path: pullSecret
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes:Secret
-      - description: Represents a pod volume with data that is accessible to the containers.
-        displayName: Volume
-        path: volumes
-      - description: Represents where to mount the volumes into containers.
-        displayName: Volume Mounts
-        path: volumeMounts
-      - description: An array of environment variables following the format of {name, value}, where value is a simple string.
-        displayName: Env Var
-        path: env
-      - description: An array of references to ConfigMap or Secret resources containing environment variables.
-        displayName: Env From
-        path: envFrom
-      - description: List of containers that run before other containers in a pod.
-        displayName: Init Containers
-        path: initContainers
-      - description: The list of sidecar containers. These are additional containers to be added to the pods.
-        displayName: Sidecar Containers
-        path: sidecarContainers
+        path: probes.startup
       statusDescriptors:
-      - displayName: Service Binding Secret
+      - displayName: Service Binding
         path: binding
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes:Secret
       - displayName: Status Conditions
         path: conditions
         x-descriptors:
@@ -326,12 +338,65 @@ spec:
       displayName: WebSphereLibertyDump
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
+      statusDescriptors:
+      - description: Location of the generated dump file
+        displayName: Dump File Path
+        path: dumpFile
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
     - description: Day-2 operation for gathering server traces
       displayName: WebSphereLibertyTrace
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       version: v1
+  description: |
+    This advanced Operator can be used to deploy and manage Open Liberty applications with consistent, production-grade QoS. This operator is based on the [Runtime Component Operator](https://github.com/application-stacks/runtime-component-operator) and provides all of its capabilities in addition to Open Liberty specific features such as gathering traces and dumps (Day-2 operations) and easily configuring and managing the single sign-on information for your Open Liberty applications.
+
+    Open Liberty Operator enables enterprise architects to govern the way their applications get deployed & managed in the cluster, while dramatically reducing the learning curve for developers to deploy into Kubernetes - allowing them to focus on writing the code! Here are some key features:
+
+    #### Application Lifecyle
+    You can deploy your Open Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the Operator will watch for any updates and will re-deploy the modified image.
+
+    #### Custom RBAC
+    This Operator is capable of using a custom ServiceAccount from the caller, allowing it to follow RBAC restrictions. By default it creates a ServiceAccount if one is not specified, which can also be bound with specific roles.
+
+    #### Environment Configuration
+    You can configure a variety of artifacts with your deployment, such as: labels, annotations, and environment variables from a ConfigMap, a Secret or a value.
+
+    #### Routing
+    Expose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Expiring Route certificates are re-issued.
+
+    #### High Availability via Horizontal Pod Autoscaling
+    Run multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto scaling to create (and delete) instances based on resource consumption.
+
+    #### Persistence and advanced storage
+    Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and we will create and manage that storage for you.
+    This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart.
+    We offer an advanced mode where the user specifies a built-in PersistentVolumeClaim, allowing them to configure many details of the persistent volume, such as its storage class and access mode.
+    You can also easily configure and use a single storage for serviceability related Day-2 operations, such as gathering server traces and dumps.
+
+    #### Service Binding
+    Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating kubernetes Secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to its required services without any intervention or interruption.
+
+    #### Single Sign-On (SSO)
+    Open Liberty provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. Open Liberty Operator allows to easily configure and manage the single sign-on information for your applications.
+
+    #### Exposing metrics to Prometheus
+    The Open Liberty Operator exposes the runtime container's metrics via the [Prometheus Operator](https://operatorhub.io/operator/prometheus).
+    Users can pick between a basic mode, where they simply specify the label that Prometheus is watching to scrape the metrics from the container, or they can specify the full `ServiceMonitor` spec embedded into the WebSogereLibertyApplication's `spec.monitoring` key controlling things like the poll internal and security credentials.
+
+    #### Easily mount logs and transaction directories
+    If you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster), simply add the following (customizing the folder location and size) to your WebSphereLibertyApplication CR:
+    ``` storage: size: 2Gi mountPath: "/logs" ```
+
+    #### Integration with OpenShift Serverless
+    Deploy your serverless runtime component using a single toggle.  The Operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing your pod to automatically scale to 0 when it is idle.
+
+    #### Integration with OpenShift's Topology UI
+    We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
+
+    See our [**documentation**](https://github.com/WASdev/websphere-liberty-operator/tree/main/doc/) for more information.
   displayName: WebSphere Liberty Operator
   description: |
         This advanced Operator can be used to deploy and manage WebSphere Liberty applications with consistent, production-grade QoS. This operator is based on the [Runtime Component Operator](https://github.com/application-stacks/runtime-component-operator) and provides all of its capabilities in addition to WebSphere Liberty specific features such as gathering traces and dumps (Day-2 operations) and easily configuring and managing the single sign-on information for your WebSphere Liberty applications.
@@ -420,7 +485,7 @@ spec:
                 name: manager
                 resources:
                   limits:
-                    cpu: 100m
+                    cpu: 200m
                     memory: 256Mi
                   requests:
                     cpu: 100m
@@ -460,7 +525,13 @@ spec:
           - deployments
           - statefulsets
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - apps
           resources:
@@ -473,7 +544,13 @@ spec:
           resources:
           - horizontalpodautoscalers
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - ""
           resources:
@@ -483,14 +560,26 @@ spec:
           - serviceaccounts
           - services
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - ""
           resources:
           - pods
           - pods/exec
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - image.openshift.io
           resources:
@@ -507,7 +596,13 @@ spec:
           - webspherelibertyapplications/finalizers
           - webspherelibertyapplications/status
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - liberty.websphere.ibm.com
           resources:
@@ -515,7 +610,13 @@ spec:
           - webspherelibertydumps/finalizers
           - webspherelibertydumps/status
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - liberty.websphere.ibm.com
           resources:
@@ -523,32 +624,62 @@ spec:
           - webspherelibertytraces/finalizers
           - webspherelibertytraces/status
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - monitoring.coreos.com
           resources:
           - servicemonitors
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - networking.k8s.io
           resources:
           - ingresses
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - route.openshift.io
           resources:
           - routes
           - routes/custom-host
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - serving.knative.dev
           resources:
           - services
           verbs:
-          - '*'
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         serviceAccountName: wlo-controller-manager
     strategy: deployment
   installModes:
@@ -571,7 +702,8 @@ spec:
   - Spring
   - Application
   - Open Source
-  - WebSphere Liberty
+  - WebSphereLiberty
+  - WLO
   links:
   - name: Documentation
     url: https://github.com/WASdev/websphere-liberty-operator/tree/master/doc
@@ -584,7 +716,7 @@ spec:
     name: Artur Dzmitryieu
   - email: leojc@ca.ibm.com
     name: Leo Christy Jesuraj
-  maturity: alpha
+  maturity: beta
   provider:
     name: IBM
   version: 0.8.0

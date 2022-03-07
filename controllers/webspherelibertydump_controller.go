@@ -35,8 +35,8 @@ type ReconcileWebSphereLibertyDump struct {
 	Log        logr.Logger
 }
 
-// +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertydumps;webspherelibertydumps/status;webspherelibertydumps/finalizers,verbs=*,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=core,resources=pods;pods/exec,verbs=*,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertydumps;webspherelibertydumps/status;webspherelibertydumps/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=pods;pods/exec,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 
 // Reconcile reads that state of the cluster for a WebSphereLibertyDump object and makes changes based on the state read
 // and what is in the WebsphereLibertyDump.Spec

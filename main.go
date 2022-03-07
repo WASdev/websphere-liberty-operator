@@ -20,16 +20,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
+	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+	"github.com/WASdev/websphere-liberty-operator/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
-	"github.com/WASdev/websphere-liberty-operator/controllers"
 
 	"github.com/application-stacks/runtime-component-operator/utils"
 	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -70,6 +70,10 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	// see https://github.com/operator-framework/operator-sdk/issues/1813
+	leaseDuration := 30 * time.Second
+	renewDeadline := 20 * time.Second
+
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
@@ -82,6 +86,8 @@ func main() {
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "7111f50b.websphere.ibm.com",
+		LeaseDuration:      &leaseDuration,
+		RenewDeadline:      &renewDeadline,
 		Namespace:          watchNamespace,
 	})
 	if err != nil {
