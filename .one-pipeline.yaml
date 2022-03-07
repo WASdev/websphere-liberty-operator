@@ -5,6 +5,15 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
+    # Added `go mod vendor` here because without it, the following error was generated:
+    # go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
+    # go: inconsistent vendoring in /workspace/app/one-pipeline-config-repo:
+    #   ... (list of pkgs) ...
+    #   To ignore the vendor directory, use -mod=readonly or -mod=mod.
+    #   To sync the vendor directory, run:
+    #     go mod vendor
+    # TODO: determine if this is necessary/best solution.
+    go mod vendor
   
 test:
   dind: true
@@ -19,16 +28,6 @@ test:
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential
-
-    # Added `go mod vendor` here because without it, the following error was generated:
-    # go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
-    # go: inconsistent vendoring in /workspace/app/one-pipeline-config-repo:
-    #   ... (list of pkgs) ...
-    #   To ignore the vendor directory, use -mod=readonly or -mod=mod.
-    #   To sync the vendor directory, run:
-    #     go mod vendor
-    # TODO: determine if this is necessary/best solution.
-    go mod vendor
     
     make unit-test
 
