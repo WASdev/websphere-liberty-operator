@@ -56,7 +56,7 @@ main() {
   fi
 
   readonly full_image="${IMAGE}:${release_tag}-${arch}"
-  readonly bundle_image="${IMAGE}:bundle-${release_tag}"
+  readonly bundle_image="${IMAGE}-bundle:${release_tag}"
 
   ## login to docker
   if [[ -z "${REGISTRY}" ]]; then 
