@@ -46,7 +46,7 @@ type ReconcileWebSphereLiberty struct {
 	watchNamespaces []string
 }
 
-const applicationFinalizer = "finalizer.liberty.websphere.ibm.com"
+const applicationFinalizer = "finalizer.webspherelibertyapplications.liberty.websphere.ibm.com"
 
 // +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertyapplications;webspherelibertyapplications/status;webspherelibertyapplications/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator

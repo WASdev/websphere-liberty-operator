@@ -7,7 +7,7 @@ OPERATOR_SDK_RELEASE_VERSION ?= v1.6.4
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 0.8.0
 
-OPERATOR_IMAGE ?= cp.stg.icr.io/websphere-liberty-operator
+OPERATOR_IMAGE ?= icr.io/cpopen/websphere-liberty-operator
 
 # Type of release. Can be "daily", "releases", or a release tag.
 RELEASE_TARGET := $(or ${RELEASE_TARGET}, ${TRAVIS_TAG}, daily)
@@ -46,14 +46,14 @@ endif
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # openliberty.io/op-test-bundle:$VERSION and openliberty.io/op-test-catalog:$VERSION.
-IMAGE_TAG_BASE ?= cp.stg.icr.io/websphere-liberty-operator
+IMAGE_TAG_BASE ?= icr.io/cpopen/websphere-liberty-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE):bundle-daily
 
 # Image URL to use all building/pushing image targets
-IMG ?= cp.stg.icr.io/websphere-liberty-operator:daily
+IMG ?= icr.io/cpopen/websphere-liberty-operator:daily
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=true,preserveUnknownFields=false,generateEmbeddedObjectMeta=true"
 

@@ -9,7 +9,7 @@ setup_env() {
     echo "****** Installing and starting Minikube"
     scripts/installers/install-minikube.sh
 
-    readonly TEST_NAMESPACE="olo-test-${TEST_TAG}"
+    readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE}"
     kubectl create namespace "${TEST_NAMESPACE}"
@@ -22,9 +22,9 @@ setup_env() {
     kubectl label node "minikube" kuttlTest=test1
 }
 
-# install_olo: Kustomize and install WebSphere-Liberty-Operator
-install_olo() {
-    echo "****** Installing OLO in namespace: ${TEST_NAMESPACE}"
+# install_wlo: Kustomize and install WebSphere-Liberty-Operator
+install_wlo() {
+    echo "****** Installing WLO in namespace: ${TEST_NAMESPACE}"
     kubectl apply -f bundle/manifests/liberty.websphere.ibm.com_webspherelibertyapplications.yaml
     kubectl apply -f bundle/manifests/liberty.websphere.ibm.com_webspherelibertydumps.yaml
     kubectl apply -f bundle/manifests/liberty.websphere.ibm.com_webspherelibertytraces.yaml
@@ -92,15 +92,15 @@ main() {
 
     echo "****** Setting up test environment..."
     setup_env
-    install_olo
+    install_wlo
     install_tools
 
     # Wait for operator deployment to be ready
-    while [[ $(kubectl get deploy olo-controller-manager -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
-        echo "****** Waiting for olo-controller-manager to be ready..."
+    while [[ $(kubectl get deploy wlo-controller-manager -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+        echo "****** Waiting for wlo-controller-manager to be ready..."
         sleep 10
     done
-    echo "****** olo-controller-manager deployment is ready..."
+    echo "****** wlo-controller-manager deployment is ready..."
     
     setup_test
     
