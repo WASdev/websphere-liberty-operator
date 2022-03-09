@@ -109,17 +109,15 @@ containerize:
     
     # Build manifest
     make build-pipeline-manifest
+
     # Build bundle image
     make setup
     make bundle-pipeline
-    # # Build catalog image
-    # ## At this time, the script below will call into Enterprise Travis to perform this task
-    # echo "**** Calling launch-catalog-build.sh script ****"
-    # ./scripts/pipeline/launch-catalog-build.sh -t $(get_env travis-token) -r "https://github.ibm.com/websphere/liberty-operator" -b $(get_env catalog-branch) -n "${BUILD_NUMBER}" -l
-    # echo "**** Return from launch-catlog-build.sh script ****"
-    make docker-login
+
+    # Build catalog image
+    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
     make catalog-build
-    make catalog-push
+
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
     # declare -a tags=("daily-amd64" "daily-ppc64le" "daily-s390x")
@@ -133,6 +131,7 @@ containerize:
       echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
       save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
+
     declare -a catalogs=("catalog-daily")
     for i in "${catalogs[@]}"
     do
