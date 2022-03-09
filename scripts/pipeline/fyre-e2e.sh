@@ -3,7 +3,7 @@
 readonly usage="Usage: fyre-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id>"
 #readonly SERVICE_ACCOUNT="travis-tests"
 readonly OC_CLIENT_VERSION="4.6.0"
-readonly CONTROLLER_MANAGER_NAME="websphere-liberty-operator-controller-manager"
+readonly CONTROLLER_MANAGER_NAME="wlo-controller-manager"
 
 # setup_env: Download oc cli, log into our persistent cluster, and create a test project
 setup_env() {
