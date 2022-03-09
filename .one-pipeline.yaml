@@ -119,6 +119,7 @@ containerize:
     # echo "**** Return from launch-catlog-build.sh script ****"
     make docker-login
     make catalog-build
+    make catalog-push
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
     # declare -a tags=("daily-amd64" "daily-ppc64le" "daily-s390x")
