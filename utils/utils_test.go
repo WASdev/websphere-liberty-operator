@@ -30,7 +30,7 @@ import (
 
 var (
 	name                = "app"
-	namespace           = "websphereliberty"
+	namespace           = "webspherelibertyv1"
 	appImage            = "my-image"
 	consoleFormat       = "json"
 	replicas      int32 = 3
@@ -60,8 +60,16 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	}
 	// Always call CustomizePodSpec to populate Containers & simulate real behaviour
 	wl := createWebSphereLibertyApp(name, namespace, spec)
+	objs, s := []runtime.Object{wl}, scheme.Scheme
+	s.AddKnownTypes(webspherelibertyv1.GroupVersion, wl)
+
+	cl := fakeclient.NewFakeClient(objs...)
+	rcl := fakeclient.NewFakeClient(objs...)
+
+	rb := oputils.NewReconcilerBase(rcl, cl, s, &rest.Config{}, record.NewFakeRecorder(10))
+
 	oputils.CustomizePodSpec(pts, wl)
-	CustomizeLibertyEnv(pts, wl)
+	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
 	testEnv := []Test{
 		{"Test environment defaults", pts.Spec.Containers[0].Env, targetEnv},
@@ -86,7 +94,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 
 	wl = createWebSphereLibertyApp(name, namespace, spec)
 	oputils.CustomizePodSpec(pts, wl)
-	CustomizeLibertyEnv(pts, wl)
+	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
 	testEnv = []Test{
 		{"Test environment config", pts.Spec.Containers[0].Env, targetEnv},

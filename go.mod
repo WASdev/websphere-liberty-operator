@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.16
 
 require (
-	github.com/application-stacks/runtime-component-operator v0.7.2-0.20211103162814-e640340f7d4c
+	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220124145716-73885bed49ff
 	github.com/coreos/prometheus-operator v0.41.1
 	github.com/go-logr/logr v0.3.0
 	github.com/openshift/api v0.0.0-20201019163320-c6a5ec25f267
