@@ -19,7 +19,7 @@ setup_env() {
     # Set variables for rest of script to use
     readonly TEST_NAMESPACE="websphere-liberty-operator-test-${TEST_TAG}"
     readonly BUILD_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}:${RELEASE}"
-    readonly BUNDLE_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}:bundle-${RELEASE}"
+    readonly BUNDLE_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}-bundle:${RELEASE}"
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
