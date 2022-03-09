@@ -104,3 +104,11 @@ rules:
     - get
     - list
     - delete
+- apiGroups:
+    - extensions
+  resources:
+    - ingresses
+  verbs:
+    - get
+    - list
+    - delete

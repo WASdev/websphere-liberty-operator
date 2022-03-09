@@ -42,8 +42,8 @@ const traceFinalizer = "finalizer.webspherelibertytraces.liberty.websphere.ibm.c
 const traceConfigFile = "/config/configDropins/overrides/add_trace.xml"
 const serviceabilityDir = "/serviceability"
 
-// +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertytraces;webspherelibertytraces/status;webspherelibertytraces/finalizers,verbs=*,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=core,resources=pods;pods/exec,verbs=*,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertytraces;webspherelibertytraces/status;webspherelibertytraces/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=pods;pods/exec,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 
 // Reconcile reads that state of the cluster for a WebSphereLibertyTrace object and makes changes based on the state read
 // and what is in the WebSphereLibertyTrace.Spec
