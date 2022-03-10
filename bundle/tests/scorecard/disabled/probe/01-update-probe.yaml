@@ -1,0 +1,13 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: probes-wsliberty
+spec:
+  probes:
+    liveness:
+      initialDelaySeconds: 6
+    readiness:
+      initialDelaySeconds: 3
+    startup:
+      failureThreshold: 20
+      periodSeconds: 10

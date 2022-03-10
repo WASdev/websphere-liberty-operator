@@ -1,0 +1,14 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: lib-deployment-annotations
+  annotations:
+    foo1: bar1
+spec:
+  # Add fields here
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  replicas: 1
+  statefulSet:
+    annotations:
+      bar2: foo2
+      conflict: statefulSet

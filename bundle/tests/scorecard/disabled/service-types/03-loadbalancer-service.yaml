@@ -1,0 +1,21 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: service-types-lib
+spec:
+  # Add fields here
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  replicas: 1
+  service:
+    bindable: true
+    port: 8082
+    portName: test-port
+    targetPort: 8083
+    ports:
+      - name: test-port1
+        port: 8081
+        protocol: TCP
+        targetPort: 8083
+    type: LoadBalancer
+    annotations:
+      name: LoadBalancerService

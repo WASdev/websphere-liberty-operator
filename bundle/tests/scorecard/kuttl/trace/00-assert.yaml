@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trace-ws
+status:
+  replicas: 2
+  readyReplicas: 2
+  updatedReplicas: 2

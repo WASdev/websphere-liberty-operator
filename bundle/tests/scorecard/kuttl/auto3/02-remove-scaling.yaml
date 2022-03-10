@@ -1,0 +1,8 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: autoscaling3-wsliberty
+spec:
+  resources:
+  autoscaling:
+
