@@ -221,10 +221,8 @@ endif
 # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
-# $(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
-  echo "**** Calling catalog-build.sh script ****"
-  ./scripts/catalog-build.sh -t $(get_env travis-token) -r "https://github.ibm.com/websphere/traditional-operator" -b $(get_env catalog-branch) -n "${BUILD_NUMBER}" -l
-  echo "**** Return catlog-build.sh script ****"
+  # $(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
+  ./scripts/catalog-build.sh 
 
 # Push the catalog image.
 .PHONY: catalog-push

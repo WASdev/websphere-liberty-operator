@@ -75,20 +75,23 @@ function parse_arguments() {
 }
 
 function build_catalog() {
+    echo "*********** Start of catalog-build ************"
 
     # configure podman with redirects
     sudo cp ./scripts/registries.conf /etc/containers/registries.conf
 
-    # TAG_PATTERN will select all GA releases (proper git tags) + the current version being built
-    #   if DOCKER_TAG is GA, then pattern is redundant
-    #   if DOCKER_TAG is RC release or internal build then pattern will pick up the specific RC/internal tag being built
-    #   if DOCKER_TAG is a dev build (from branch, not tag), no additional tags will be found, but the versionsAndBundles script will recognize that it doesn't match a release and add it anyways (see https://github.ibm.com/Justin-Fleming/operator-build-scripts/blob/a3ff35de61dfd28a6507d24b9dbfec388763a2a6/versionsAndBundlesFromReleases.sh#L229-L238)
-    #export TAG_PATTERN="[1-9]+\.[1-9]+\.[0-9]+$|${DOCKER_TAG}$"
-    #echo "TAG_PATTERN is \'${TAG_PATTERN}\'"
+    #################################################
+    ## The following section will be needed once 
+    ## this operator has more than one release.  The
+    ## script referenced can be found here:
+    ## https://github.ibm.com/Justin-Fleming/operator-build-scripts/blob/1b00db2bdc1b34506824dba80ced6a3c40e6f993/versionsAndBundlesFromReleases.sh
+    ## For the sake of completing this build scripting
+    ## in time for a release, bypassing this port for
+    ## now.  This should be ported eventually.
+    #################################################
     #echo "Creating versions.txt file..."
     #mkdir -p ~/tmpdir
     #export TMPDIR=~/tmpdir
-    #git fetch origin --tags
     #./submodules/operator-build-scripts/versionsAndBundlesFromReleases.sh -y bundle/manifests/ibm-websphere-automation.clusterserviceversion.yaml -a bundle/metadata/annotations.yaml --no-bundle-images -t "${TAG_PATTERN}"
 
     # Change 'version' value in versions.txt to match DOCKER_TAG. If this is a GA release build (ie. CSV_VERSION == DOCKER_TAG) no change will occur.
@@ -96,7 +99,7 @@ function build_catalog() {
     #NEW_LINE=$(echo $OLD_LINE | sed "s/\"$CSV_VERSION\"/\"$DOCKER_TAG\"/")
     #sed -i.bak "s/\"$CSV_VERSION\".*/$NEW_LINE/" versions.txt
 
-    echo "versions.txt:"
+    #echo "versions.txt:"
     #cat versions.txt
 
     # Populate .env file with CP_CREDS value (Note, if we support multiple architectures in the future, we would need to update .env with Z_NODE and/or P_NODE here as well)
