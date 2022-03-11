@@ -3,7 +3,7 @@
 #########################################################################################
 #
 #
-#           Script to build the multi arch images for operator
+#           Script to bundle the multi arch images for operator
 #           To skip pushing the image to the container registry, provide the `--skip-push` flag.
 #           Note: Assumed to run under <operator root>/scripts
 #
@@ -12,7 +12,7 @@
 
 set -Eeo pipefail
 
-readonly usage="Usage: build-release.sh -u <docker-username> -p <docker-password> --image repository/image --release <release> [--skip-push]"
+readonly usage="Usage: bundle-release.sh -u <docker-username> -p <docker-password> --image repository/image --release <release> [--skip-push]"
 
 main() {
   parse_args "$@"
@@ -56,6 +56,7 @@ main() {
   fi
 
   readonly full_image="${IMAGE}:${release_tag}-${arch}"
+  readonly bundle_image="${IMAGE}-bundle:${release_tag}"
 
   ## login to docker
   if [[ -z "${REGISTRY}" ]]; then 
@@ -64,32 +65,28 @@ main() {
     echo "${DOCKER_PASSWORD}" | docker login "${REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
   fi       
 
-  ## build or push latest main branch
-  echo "****** Building release: ${RELEASE}"
-  build_release "${RELEASE}"
+  echo "****** Bundling release: ${RELEASE}"
+  bundle_release "${RELEASE}"
 
   if [[ "${SKIP_PUSH}" != true ]]; then
-    echo "****** Pushing release: ${RELEASE}"
-    push_release
+    echo "****** Pushing bundle: ${RELEASE}"
+    push_bundle
   else
-    echo "****** Skipping push for release ${RELEASE}"
+    echo "****** Skipping push for bundle ${RELEASE}"
   fi
 }
 
-build_release() {
-  echo "*** Building ${full_image} for ${arch}"
+bundle_release() {
+  echo "*** Bundling ${full_image} for ${arch}.  Bundle location will be ${bundle_image}."
 
-  if [[ "${RELEASE}" != "daily" ]]; then
-    git checkout -q "${RELEASE}"
-  fi
+  make bundle bundle-build IMG="${full_image}" BUNDLE_IMG="${bundle_image}"
 
-  docker build -t "${full_image}" .
   return $?
 }
 
-push_release() {
-  echo "****** Pushing image: ${full_image}"
-  docker push "${full_image}"
+push_bundle() {
+  echo "****** Pushing bundle: ${bundle_image}"
+  make bundle-push IMG="${full_image}" BUNDLE_IMG="${bundle_image}"
 }
 
 parse_args() {
