@@ -1,0 +1,11 @@
+# Adding a label should be sufficient to cause the operator
+# to create the monitor
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: service-monitor-wsliberty
+spec:
+  monitoring:
+    labels:
+      apps-prometheus: ''
+

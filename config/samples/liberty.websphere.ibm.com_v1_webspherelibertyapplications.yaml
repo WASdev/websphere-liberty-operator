@@ -4,7 +4,7 @@ metadata:
   name: websphereliberty-app-sample
 spec:
   # Add fields here
-  applicationImage: registry.connect.redhat.com/ibm/websphere-liberty-samples:springPetClinic
+  applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
 # MicroProfile Health Probes
 #  readinessProbe:
 #    httpGet:

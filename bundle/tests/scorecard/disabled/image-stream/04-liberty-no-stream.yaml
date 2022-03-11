@@ -1,0 +1,6 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: imagestream-wsliberty-app
+spec:
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi

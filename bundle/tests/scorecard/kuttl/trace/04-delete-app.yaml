@@ -1,0 +1,7 @@
+#the application can be left behind so manually delete to ensure a clean environment
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+  - apiVersion: liberty.websphere.ibm.com/v1
+    kind: WebSphereLibertyApplication
+    name: trace-ws

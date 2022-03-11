@@ -1,0 +1,10 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: knative2-lib-app
+spec:
+  # Add fields here
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  replicas: 1
+  createKnativeService: true
+

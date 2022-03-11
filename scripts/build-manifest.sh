@@ -86,11 +86,6 @@ build_manifests() {
       continue
     fi
 
-    if [[ "${tag}" = "v0.0.1" ]]; then
-      echo "****** Skipping Helm based operator"
-      continue
-    fi
-
     ## Remove potential leading 'v' from tags
     local release_tag="${tag#*v}"
     echo "****** Building manifest list for: ${release_tag}"

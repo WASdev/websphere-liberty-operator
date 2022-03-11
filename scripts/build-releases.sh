@@ -67,11 +67,6 @@ build_releases() {
       continue
     fi
 
-    if [[ "${tag}" = "v0.0.1" ]]; then
-      echo "****** Skipping Helm based operator..."
-      continue
-    fi
-
     "${script_dir}/build-release.sh" -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --release "${tag}" --image "${IMAGE}"
   done <<< "${tags}"
 }
