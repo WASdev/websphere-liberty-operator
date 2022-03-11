@@ -1,10 +1,7 @@
 #!/bin/bash
 
-TRAVIS_TOKEN=
-LAUNCH_TRAVIS=
-MONITOR_TRAVIS=yes
-GH_REPO=
-GH_COMMIT_ID=
+OPM_TOOL="opm"
+CONTAINER_TOOL="docker"
 
 function main() {
     parse_arguments "$@"
@@ -74,9 +71,26 @@ function parse_arguments() {
     done
 }
 
+function create_empty_db() {
+    mkdir -p "${TMP_DIR}/manifests"
+    echo "creating a empty bundles.db ..."
+    ${CONTAINER_TOOL} run --rm -v "${TMP_DIR}":/tmp --entrypoint "/bin/initializer" "${BASE_INDEX_IMG}:${OPM_VERSION}" -m /tmp/manifests -o /tmp/bundles.db
+}
+
+function add_to_db(){
+    local img=$1
+    echo "------------ adding bundle image ${img} to db ------------"
+    "${OPM_TOOL}" registry add -b "${img}" -d "${TMP_DIR}/bundles.db" "${OPM_DEBUG_FLAG}" -c "${CONTAINER_TOOL}"
+}
+
+
 function build_catalog() {
     echo "*********** Start of catalog-build ************"
 
+
+    #mkdir -p "${TMP_DIR}"
+    #chmod 777 "${TMP_DIR}"
+    
     # configure podman with redirects
     sudo cp ./scripts/registries.conf /etc/containers/registries.conf
 
@@ -107,7 +121,6 @@ function build_catalog() {
     #sed -i "s/CP_CREDS=.*/CP_CREDS=\"${CP_CREDS}\"/" ./submodules/operator-build-scripts/.env
 
     echo "Building Catalog Index Database..."
-    #docker login registry.redhat.io -u "${REDHAT_USERNAME}" -p "${REDHAT_PASSWORD}"
     #sudo ./submodules/operator-build-scripts/buildIndexDatabase.sh icr.io/cpopen -n v4.9 -b registry.redhat.io/openshift4/ose-operator-registry --versions-csv ./versions.txt --image-name websphere-automation-operator-bundle -t $TMPDIR/operator-build --image-tag-prefix "" --container-tool podman --debug
     #cp $TMPDIR/operator-build/bundles.db .
 
