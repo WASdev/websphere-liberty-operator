@@ -58,15 +58,11 @@ main() {
   readonly full_image="${IMAGE}:${release_tag}-${arch}"
 
   ## login to docker
-<<<<<<< HEAD
   if [[ -z "${REGISTRY}" ]]; then 
     echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
   else
     echo "${DOCKER_PASSWORD}" | docker login "${REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
   fi       
-=======
-  echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
->>>>>>> 75f155621972a200a5ecddf759a3c586ada190a0
 
   ## build or push latest main branch
   echo "****** Building release: ${RELEASE}"
@@ -107,13 +103,10 @@ parse_args() {
       shift
       readonly DOCKER_PASSWORD="${1}"
       ;;
-<<<<<<< HEAD
     --registry)
       shift
       readonly REGISTRY="${1}"
       ;;        
-=======
->>>>>>> 75f155621972a200a5ecddf759a3c586ada190a0
     --image)
       shift
       readonly IMAGE="${1}"
@@ -135,8 +128,4 @@ parse_args() {
   done
 }
 
-<<<<<<< HEAD
 main "$@"
-=======
-main "$@"
->>>>>>> 75f155621972a200a5ecddf759a3c586ada190a0
