@@ -222,7 +222,7 @@ endif
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
 	echo "Entering catalog-build.sh"
-# ./scripts/catalog-build.sh 
+	./scripts/catalog-build.sh 
 
 # Push the catalog image.
 .PHONY: catalog-push
