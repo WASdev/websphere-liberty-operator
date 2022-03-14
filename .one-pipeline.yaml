@@ -91,7 +91,7 @@ containerize:
 
     # Build catalog image
     echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-    make catalog-build
+    ./scripts/catalog-build.sh
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
