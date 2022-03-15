@@ -117,6 +117,7 @@ containerize:
     # Build catalog image
     echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
     make catalog-build
+    make catalog-push
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
@@ -204,7 +205,22 @@ scan-artifact:
   script: |
     #!/usr/bin/env bash
     echo "twistlock-scan"
+    ./scripts/pipeline/twistlock-scan.sh
     echo "VA scan"
+    . scripts/pipeline/va_scan
+    if which list_artifacts >/dev/null; then
+      list_artifacts | while IFS= read -r artifact; do
+        image="$(load_artifact "$artifact" "name")"
+        type="$(load_artifact "$artifact" "type")"
+        digest="$(load_artifact "$artifact" "digest")"
+        name="$(echo "$artifact" | awk '{print $1}')"
+        if [[ "$type" == "image" ]]; then
+          if [[ "$image" == *"icr.io"* ]]; then
+            start_va_scan "$name" "$image" "$digest"
+          fi
+        fi
+      done
+    fi
 
 release:
   abort_on_failure: false

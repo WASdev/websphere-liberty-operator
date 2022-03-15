@@ -50,7 +50,7 @@ IMAGE_TAG_BASE ?= icr.io/cpopen/websphere-liberty-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(IMAGE_TAG_BASE):bundle-daily
+BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:daily
 
 # Image URL to use all building/pushing image targets
 IMG ?= icr.io/cpopen/websphere-liberty-operator:daily
@@ -221,7 +221,7 @@ endif
 # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles icr.io/cpopen/websphere-liberty-operator-bundle:$(RELEASE_TARGET) $(FROM_INDEX_OPT) --permissive
+	$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
 
 # Push the catalog image.
 .PHONY: catalog-push
