@@ -256,10 +256,10 @@ bundle-pipeline:
 	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
 catalog-pipeline-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool docker --mode semver --tag cp.stg.icr.io/cp/websphere-liberty-operator-catalog:v$(VERSION) --bundles cp.stg.icr.io/cp/websphere-liberty-operator-bundle:$(RELEASE_TARGET) $(FROM_INDEX_OPT) --permissive
+	$(OPM) index add --container-tool docker --mode semver --tag cp.stg.icr.io/cp/websphere-liberty-operator-catalog:$(RELEASE_TARGET) --bundles cp.stg.icr.io/cp/websphere-liberty-operator-bundle:$(RELEASE_TARGET) $(FROM_INDEX_OPT) --permissive
 
 catalog-pipeline-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG=cp.stg.icr.io/cp/websphere-liberty-operator-catalog:v$(VERSION)
+	$(MAKE) docker-push IMG=cp.stg.icr.io/cp/websphere-liberty-operator-catalog:$(RELEASE_TARGET)
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
