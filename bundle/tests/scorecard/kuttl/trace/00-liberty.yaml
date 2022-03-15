@@ -3,7 +3,7 @@ kind: WebSphereLibertyApplication
 metadata:
   name: trace-ws
 spec:
-  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 2
   expose: false
   probes:
