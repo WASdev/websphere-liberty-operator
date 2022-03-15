@@ -3,7 +3,7 @@ kind: WebSphereLibertyApplication
 metadata:
   name: persistent-wsliberty
 spec:
-  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
   expose: false
   volumeMounts:
