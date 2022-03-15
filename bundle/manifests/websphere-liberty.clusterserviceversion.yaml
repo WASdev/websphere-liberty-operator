@@ -52,6 +52,9 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/os.linux: supported
   name: websphere-liberty.v0.8.0
   namespace: placeholder
 spec:
@@ -425,6 +428,15 @@ spec:
                 app.kubernetes.io/name: websphere-liberty-operator
                 control-plane: controller-manager
             spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
               containers:
               - args:
                 - --enable-leader-election
