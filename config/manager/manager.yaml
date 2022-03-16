@@ -28,9 +28,23 @@ spec:
       - command:
         - /manager
         args:
+        - "--health-probe-bind-address=:8081"
+        - "--metrics-bind-address=127.0.0.1:8080"
         - --enable-leader-election
         image: controller:latest
         name: manager
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
         env:
           - name: OPERATOR_NAMESPACE
             valueFrom:
