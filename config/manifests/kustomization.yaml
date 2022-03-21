@@ -1,7 +1,7 @@
 # These resources constitute the fully configured set of manifests
 # used to generate the 'manifests/' directory in a bundle.
 resources:
-- bases/websphere-liberty.clusterserviceversion.yaml
+- bases/ibm-websphere-liberty.clusterserviceversion.yaml
 - ../default
 - ../samples
 - ../scorecard
@@ -11,7 +11,7 @@ patches:
 - path: serviceBindingPatch.yaml
   target:
     kind: ClusterServiceVersion
-    name: websphere-liberty.v0.0.0
+    name: ibm-websphere-liberty.v0.0.0
     namespace: placeholder
 
 # [WEBHOOK] To enable webhooks, uncomment all the sections with [WEBHOOK] prefix.
