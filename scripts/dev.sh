@@ -8,10 +8,14 @@
 # 1. Have "podman" and "oc" installed & on the path
 # 2. Run "oc login .." 
 # 3. Run "oc registry login --skip-check"
+
 #------------------------------------------------------------------------
 # Usage
 #------------------------------------------------------------------------
-# dev.sh
+# dev.sh [command] [parameters]
+
+#   Available commands:
+
 #   init      - Initialize new OCP cluster by patching registry settings and logging in
 #   build     - Build and push all images
 #   all       - Run all targets
