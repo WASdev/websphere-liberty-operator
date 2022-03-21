@@ -163,7 +163,7 @@ rules:
   resources:
   - securitycontextconstraints
   verbs:
-  - USE
+  - use
 - apiGroups:
   - serving.knative.dev
   resources:

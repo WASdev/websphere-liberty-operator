@@ -409,17 +409,6 @@ spec:
     mediatype: image/svg+xml
   install:
     spec:
-      clusterPermissions:
-      - rules:
-        - apiGroups:
-          - security.openshift.io
-          resourceNames:
-          - restricted
-          resources:
-          - securitycontextconstraints
-          verbs:
-          - USE
-        serviceAccountName: wlo-controller-manager
       deployments:
       - name: wlo-controller-manager
         spec:
@@ -656,7 +645,7 @@ spec:
           resources:
           - securitycontextconstraints
           verbs:
-          - USE
+          - use
         - apiGroups:
           - serving.knative.dev
           resources:
