@@ -2,21 +2,25 @@
 
 # Script to build & install the websphere liberty operator to a private registry of an OCP cluster
 
+# -----------------------------------------------------
 # Prereqs to running this script
 # -----------------------------------------------------
-# 1. Have "podman" and "oc" installed & on the PATH
-# 2. Run "oc login .."" 
+# 1. Have "podman" and "oc" installed & on the path
+# 2. Run "oc login .." 
 # 3. Run "oc registry login --skip-check"
+#------------------------------------------------------------------------
+# Usage
+#------------------------------------------------------------------------
+# dev.sh
+#   init      - Initialize new OCP cluster by patching registry settings and logging in
+#   build     - Build and push all images
+#   all       - Run all targets
+#   catalog   - Apply CatalogSource (install operator into operator hub)
+#   subscribe - Apply Subscription (install operator onto cluster)
 
 set -Eeo pipefail
 
-# dev.sh  init = initialize new OCP cluster
-# dev.sh  build = build and push all images
-# dev.sh  all = Run all targets
-# dev.sh  catalog = Apply CatalogSource (install operator into operator hub)
-# dev.sh  subscribe = Apply Subsciption (install operator)
-
-readonly USAGE="Usage: dev.sh all | init | build | catalog | subscribe  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog imager> -name <operator name> -namespace <namespace> ]"
+readonly USAGE="Usage: dev.sh all | init | build | catalog | subscribe  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
 
 main() {
 
@@ -47,6 +51,7 @@ main() {
   BUNDLE_IMG=${BUNDLE_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-bundle:$VVERSION}
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
   MAKEFILE_DIR=${MAKEFILE_DIR:=..}
+  TEMP_DIR=${TEMP_DIR:=/tmp}
   
   if [[ "$COMMAND" == "all" ]]; then
      init_cluster
@@ -56,6 +61,7 @@ main() {
      apply_subscribe
   elif [[ "$COMMAND" == "init" ]]; then
      init_cluster
+     login_registry
   elif [[ "$COMMAND" == "build" ]]; then
      build
      bundle
@@ -63,6 +69,7 @@ main() {
   elif [[ "$COMMAND" == "catalog" ]]; then
      apply_catalog
   elif [[ "$COMMAND" == "subscribe" ]]; then
+     apply_og
      apply_subscribe
   else 
     echo
@@ -74,14 +81,16 @@ main() {
 
 }
 
-
 #############################################################################
 # Setup an OCP cluster to use the private registry, insecurely (testing only)
 #############################################################################
 init_cluster() {
-    oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["$OCP_REGISTRY_URL"]}}}' --type=merge
+    oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["'$OCP_REGISTRY_URL'"]}}}' --type=merge
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
-    oc new-project $NAMESPACE
+    oc project $NAMESPACE > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+      oc new-project $NAMESPACE 
+    fi
 }
 
 login_registry() {
@@ -91,7 +100,7 @@ login_registry() {
 }
 
 apply_catalog() {
-    CATALOG_FILE=/tmp/catalog.yaml    
+    CATALOG_FILE=/$TEMP_DIR/catalog.yaml    
     
 cat << EOF > $CATALOG_FILE
     apiVersion: operators.coreos.com/v1alpha1
@@ -113,8 +122,8 @@ EOF
     rm  $CATALOG_FILE
 }
 
-apply_operator() {
-    SUBCRIPTION_FILE=/tmp/subscription.yaml    
+apply_subscribe() {
+    SUBCRIPTION_FILE=/$TEMP_DIR/subscription.yaml    
     
 cat << EOF > $SUBCRIPTION_FILE
 apiVersion: operators.coreos.com/v1alpha1
@@ -132,6 +141,21 @@ EOF
 
     oc apply -f $SUBCRIPTION_FILE
     rm $SUBCRIPTION_FILE          
+}
+
+apply_og() {
+    OG_FILE=/$TEMP_DIR/og.yaml    
+    
+cat << EOF > $OG_FILE
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: websphere-operator-group
+  namespace: $NAMESPACE
+EOF
+
+    oc apply -f $OG_FILE
+    rm $OG_FILE          
 }
 
 ###################################
@@ -181,7 +205,6 @@ catalog() {
 }
 
 parse_args() {
-
     readonly COMMAND="$1"
 
     while [ $# -gt 0 ]; do
@@ -206,7 +229,11 @@ parse_args() {
       ;;
     -bundle)
        BUNDLE_IMG="${1}"
-      ;;      
+      ;;   
+    -tempdir)
+      shift
+      TEMP_DIR="${1}"
+      ;;         
     esac
     shift
   done
