@@ -79,10 +79,6 @@ main() {
 build_release() {
   echo "*** Building ${full_image} for ${arch}"
 
-  if [[ "${RELEASE}" != "daily" ]]; then
-    git checkout -q "${RELEASE}"
-  fi
-
   docker build -t "${full_image}" .
   return $?
 }
