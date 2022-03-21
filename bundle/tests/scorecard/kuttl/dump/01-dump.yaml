@@ -1,0 +1,9 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyDump
+metadata:
+  name: test-dump
+spec:
+  podName: dump-ws-0
+  include:
+    - thread
+    - heap

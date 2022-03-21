@@ -36,7 +36,11 @@ main() {
     exit 1
   fi
 
-  echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+  if [[ -z "${REGISTRY}" ]]; then
+    echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+  else
+    echo "${DOCKER_PASSWORD}" | docker login "${REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+  fi
 
   # Build manifest for target release(s)
   if [[ "${TARGET}" != "releases" ]]; then
@@ -70,7 +74,7 @@ build_manifest() {
 
 # Build manifest for previous releases
 build_manifests() {
-  tags="$(git tag -l)"
+  local tags="$(git tag -l)"
   while read -r tag; do
     if [[ -z "${tag}" ]]; then
       break
@@ -82,7 +86,9 @@ build_manifests() {
       continue
     fi
 
+    ## Remove potential leading 'v' from tags
     local release_tag="${tag#*v}"
+    echo "****** Building manifest list for: ${release_tag}"
     build_manifest "${release_tag}"
   done <<< "${tags}"
 }
@@ -97,6 +103,10 @@ parse_args() {
     -p)
       shift
       readonly DOCKER_PASSWORD="${1}"
+      ;;
+    --registry)
+      shift
+      readonly REGISTRY="${1}"
       ;;
     --image)
       shift
