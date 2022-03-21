@@ -48,6 +48,7 @@ type ReconcileWebSphereLiberty struct {
 
 const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.ibm.com"
 
+// +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,resourceNames=restricted,verbs=use,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertyapplications;webspherelibertyapplications/status;webspherelibertyapplications/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
