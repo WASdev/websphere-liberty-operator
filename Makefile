@@ -5,7 +5,7 @@ OPERATOR_SDK_RELEASE_VERSION ?= v1.6.4
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.8.0
+VERSION ?= 1.0.0
 
 OPERATOR_IMAGE ?= icr.io/cpopen/websphere-liberty-operator
 
@@ -19,7 +19,7 @@ PUBLISH_REGISTRY=docker.io
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
 # - use the CHANNELS as arg of the bundle target (e.g make bundle CHANNELS=preview,fast,stable)
 # - use environment variables to overwrite this value (e.g export CHANNELS="preview,fast,stable")
-CHANNELS ?= v1
+CHANNELS ?= v1.0
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
@@ -29,7 +29,7 @@ endif
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
 # - use the DEFAULT_CHANNEL as arg of the bundle target (e.g make bundle DEFAULT_CHANNEL=stable)
 # - use environment variables to overwrite this value (e.g export DEFAULT_CHANNEL="stable")
-DEFAULT_CHANNEL ?= v1
+DEFAULT_CHANNEL ?= v1.0
 ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
@@ -38,7 +38,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 CREATEDAT ?= AUTO
 
 ifeq ($(CREATEDAT), AUTO)
-CREATEDAT := $(shell date +%y-%m-%dT%TZ)
+CREATEDAT := $(shell date +%Y-%m-%dT%TZ)
 endif
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
@@ -50,7 +50,7 @@ IMAGE_TAG_BASE ?= icr.io/cpopen/websphere-liberty-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(IMAGE_TAG_BASE):bundle-daily
+BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:daily
 
 # Image URL to use all building/pushing image targets
 IMG ?= icr.io/cpopen/websphere-liberty-operator:daily
@@ -271,6 +271,12 @@ build-pipeline-manifest: setup-manifest
 
 bundle-pipeline:
 	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
+
+catalog-pipeline-build: opm ## Build a catalog image.
+	$(OPM) index add --container-tool docker --mode semver --tag cp.stg.icr.io/cp/websphere-liberty-operator-catalog:$(RELEASE_TARGET) --bundles icr.io/cpopen/websphere-liberty-operator-bundle:$(RELEASE_TARGET) $(FROM_INDEX_OPT) --permissive
+
+catalog-pipeline-push: ## Push a catalog image.
+	$(MAKE) docker-push IMG=cp.stg.icr.io/cp/websphere-liberty-operator-catalog:$(RELEASE_TARGET)
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \

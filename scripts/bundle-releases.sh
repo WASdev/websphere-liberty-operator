@@ -56,11 +56,6 @@ bundle_release() {
   fi
   local operator_ref="${IMAGE}:${release_tag}"
 
-  # Switch to release tag
-  if [[ "${tag}" != "daily" ]]; then
-    git checkout -q "${tag}"
-  fi
-
   # Build the bundle
   local bundle_ref="${IMAGE}:bundle-${release_tag}"
   make kustomize bundle bundle-build-podman bundle-push-podman IMG="${operator_ref}" BUNDLE_IMG="${bundle_ref}"

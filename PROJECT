@@ -4,7 +4,7 @@ layout:
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: websphere-liberty
+projectName: ibm-websphere-liberty
 repo: github.com/WASdev/websphere-liberty-operator
 resources:
 - group: liberty.websphere.ibm.com

@@ -13,7 +13,7 @@ metadata:
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/os.linux: supported
-  name: websphere-liberty.v0.0.0
+  name: ibm-websphere-liberty.v0.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}

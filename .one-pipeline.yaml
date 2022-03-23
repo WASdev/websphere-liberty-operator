@@ -96,7 +96,7 @@ containerize:
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export RELEASE_TARGET=$(get_env release-target)
+    export RELEASE_TARGET=$(get_env branch)
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
     
@@ -116,13 +116,14 @@ containerize:
 
     # Build catalog image
     echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-    make catalog-build
+    make catalog-pipeline-build
+    make catalog-pipeline-push
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # declare -a tags=("daily-amd64" "daily-ppc64le" "daily-s390x")
+    # declare -a tags=("${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     echo "**** Saving Artifacts ****"
-    declare -a tags=("daily-amd64")
+    declare -a tags=("${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
@@ -132,10 +133,10 @@ containerize:
       save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
 
-    declare -a catalogs=("catalog-daily")
+    declare -a catalogs=("${RELEASE_TARGET}")
     for i in "${catalogs[@]}"
     do
-     IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
+     IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH=$(echo $i | cut -d'-' -f 2)
      ARCH=amd64
@@ -194,7 +195,7 @@ acceptance-test:
     export CLUSTER_URL=$(get_env test-cluster-url)
     export CLUSTER_TOKEN=$(get_env test-cluster-token)
     export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
-    export RELEASE_TARGET=$(get_env release-target)
+    export RELEASE_TARGET=$(get_env branch)
     make setup
     make test-pipeline-e2e
 

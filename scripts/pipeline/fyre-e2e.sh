@@ -24,11 +24,6 @@ setup_env() {
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
 
-    ## Switch to release branch
-    if [[ "${RELEASE}" != "daily" ]]; then
-      git checkout -q "${RELEASE}"
-    fi
-
     ## Create service account for Kuttl tests
     oc apply -f config/rbac/kuttl-rbac.yaml
 }
