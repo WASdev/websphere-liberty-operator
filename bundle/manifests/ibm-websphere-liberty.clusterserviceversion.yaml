@@ -528,9 +528,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -547,15 +545,12 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
           - ""
           resources:
-          - configmaps
           - persistentvolumeclaims
           - secrets
           - serviceaccounts
@@ -563,9 +558,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -613,9 +606,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -627,9 +618,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -639,9 +628,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -684,9 +671,7 @@ spec:
           verbs:
           - create
           - delete
-          - get
           - list
-          - patch
           - update
           - watch
         serviceAccountName: wlo-controller-manager
