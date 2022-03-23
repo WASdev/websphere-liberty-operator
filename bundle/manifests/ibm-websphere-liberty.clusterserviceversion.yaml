@@ -46,7 +46,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: 22-03-07T09:55:20Z
+    createdAt: "2022-03-21T15:00:52Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -55,7 +55,7 @@ metadata:
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/os.linux: supported
-  name: websphere-liberty.v0.8.0
+  name: ibm-websphere-liberty.v1.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -703,4 +703,4 @@ spec:
   maturity: beta
   provider:
     name: IBM
-  version: 0.8.0
+  version: 1.0.0
