@@ -82,8 +82,8 @@ function create_empty_db() {
 function add_to_db(){
     local img=$1
     local digest="$(skopeo inspect docker://$img | grep Digest | grep -o 'sha[^\"]*')"
-    local arrImg=(${img//:/ })
-    local img_digest="${arrImg[0]}@${digest}"
+    local taglessImg="$(echo $img | cut -d ':' -f 1)"
+    local img_digest="${taglessImg}@${digest}"
     echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
     "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
 }
@@ -109,13 +109,11 @@ function build_catalog() {
     ## for now, add the current build's image.  In future, we need to loop through all versions and add each releases bundle image
     add_to_db "${BUNDLE_IMAGE}"
 
-    # build catalog image
-    cp ./index.Dockerfile "${TMP_DIR}/index.Dockerfile"
-    cp ./LICENSE "${TMP_DIR}/LICENSE"
-    PREV_DIR="${PWD}"
-    cd "${TMP_DIR}"
+    # Copy bundles.db local prior to building the image
+    cp "${TMP_DIR}/bundles.db" .
+
+    # Build catalog image 
     "${CONTAINER_TOOL}" build -t "${CATALOG_IMAGE}" -f index.Dockerfile . 
-    cd "${PREV_DIR}"
 }
 
 
