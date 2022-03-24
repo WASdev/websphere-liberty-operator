@@ -17,7 +17,7 @@ setup_env() {
     oc login "${CLUSTER_URL}" -u kubeadmin -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
 
     # Set variables for rest of script to use
-    readonly TEST_NAMESPACE="websphere-liberty-operator-test-${TEST_TAG}"
+    readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
     readonly BUILD_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}:${RELEASE}"
     readonly BUNDLE_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}-bundle:${RELEASE}"
 
@@ -143,10 +143,10 @@ main() {
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
 
     echo "****** Starting scorecard tests..."
-    ## operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
-    ##    echo "****** Scorecard tests failed..."
-    ##    exit 1
-    ##}
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
+       echo "****** Scorecard tests failed..."
+       exit 1
+    }
     result=$?
 
     echo "****** Cleaning up test environment..."
