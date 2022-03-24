@@ -99,6 +99,11 @@ containerize:
     export RELEASE_TARGET=$(get_env branch)
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
+    export REDHAT_USERNAME=$(get_env redhat-user-id)
+    export REDHAT_PASSWORD=$(get_env redhat-password)
+    export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
+    export REDHAT_REGISTRY=$(get_env redhat-registry)
+    export OPM_VERSION=$(get_env opm-version)
     
     # Build amd64 image
     make build-pipeline-releases
@@ -116,6 +121,7 @@ containerize:
 
     # Build catalog image
     echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+    echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
     make catalog-pipeline-build
     make catalog-pipeline-push
 
