@@ -9,6 +9,7 @@ require (
 	github.com/openshift/api v0.0.0-20201019163320-c6a5ec25f267
 	github.com/openshift/library-go v0.0.0-20201026125231-a28d3d1bad23
 	github.com/pkg/errors v0.9.1
+	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
 	k8s.io/api v0.19.2
 	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v12.0.0+incompatible

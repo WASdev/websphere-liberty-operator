@@ -22,6 +22,9 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      hostIPC: false
+      hostPID: false
+      hostNetwork: false
       securityContext:
         runAsNonRoot: true
       containers:
@@ -64,6 +67,12 @@ spec:
                 fieldPath: metadata.annotations['olm.targetNamespaces']
         securityContext:
           allowPrivilegeEscalation: false
+          privileged: false
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         resources:
           limits:
             cpu: 200m
@@ -73,3 +82,12 @@ spec:
             memory: 64Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
