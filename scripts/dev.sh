@@ -5,7 +5,7 @@
 # -----------------------------------------------------
 # Prereqs to running this script
 # -----------------------------------------------------
-# 1. Have "podman" and "oc" installed & on the path
+# 1. Have "podman" or "docker" and "oc" installed & on the path
 # 2. Run "oc login .." 
 # 3. Run "oc registry login --skip-check"
 
@@ -16,11 +16,11 @@
 
 #   Available commands:
 
+#   all       - Run all targets
 #   init      - Initialize new OCP cluster by patching registry settings and logging in
 #   build     - Build and push all images
-#   all       - Run all targets
 #   catalog   - Apply CatalogSource (install operator into operator hub)
-#   subscribe - Apply Subscription (install operator onto cluster)
+#   subscribe - Apply OperatorGroup & Subscription (install operator onto cluster)
 
 set -Eeo pipefail
 
@@ -36,16 +36,26 @@ main() {
     echo
     exit 1
   fi
-  
-  if [[ -z "${OCP_REGISTRY_URL}" ]]; then
+
+  oc status > /dev/null 2>&1 && true
+  if [[ $? -ne 0 ]]; then
     echo
-    echo "OCP registry hostname is required. Set CLUSTER_REGISTRY_URL or use the -host command line option."
+    echo "Run 'oc login' to log into your cluster before running dev.sh"
     echo
-    echo "${USAGE}"
     exit 1
   fi
 
+  command -v podman > /dev/null 2>&1 && true
+  if [[ $? -eq 0 ]]; then
+     CONTAINER_COMMAND="podman"
+     TLS_VERIFY="--tls-verify=false"
+  else
+     CONTAINER_COMMAND="docker"
+     TLS_VERIFY=""
+  fi
+
   # Set defaults unless overridden. 
+  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
   VERSION=${VERSION:="0.0.1"}
   VVERSION=${VVERSION:=v$VERSION}
@@ -61,7 +71,10 @@ main() {
      init_cluster
      login_registry
      build
+     bundle
+     catalog
      apply_catalog
+     apply_og
      apply_subscribe
   elif [[ "$COMMAND" == "init" ]]; then
      init_cluster
@@ -89,17 +102,15 @@ main() {
 # Setup an OCP cluster to use the private registry, insecurely (testing only)
 #############################################################################
 init_cluster() {
-    oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["'$OCP_REGISTRY_URL'"]}}}' --type=merge
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
-    oc project $NAMESPACE > /dev/null 2>&1
+    oc project $NAMESPACE > /dev/null 2>&1 && true
     if [[ $? -ne 0 ]]; then
       oc new-project $NAMESPACE 
     fi
 }
 
 login_registry() {
-    HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
-    podman login -u kubeadmin -p $(oc whoami -t) --tls-verify=false $HOST  
+    $CONTAINER_COMMAND login -u kubeadmin -p $(oc whoami -t) $TLS_VERIFY $OCP_REGISTRY_URL
     oc registry login --skip-check   
 }
 
@@ -136,8 +147,8 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $NAMESPACE
 spec:
-  channel:  v1 
-  name: websphere-liberty
+  channel:  v1.0 
+  name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $NAMESPACE
   installPlanApproval: Automatic
