@@ -45,7 +45,7 @@ main() {
     exit 1
   fi
 
-  # Favor podman if installed. Fall back to docker. 
+  # Favor docker if installed. Fall back to podman. 
   # Override by setting CONTAINER_COMMAND
   docker -v > /dev/null 2>&1 && true
   if [[ $? -eq 0 ]]; then
@@ -53,7 +53,7 @@ main() {
     TLS_VERIFY=""
   else
     CONTAINER_COMMAND=${CONTAINER_COMMAND:="podman"}
-    TLS_VERIFY="--tls-verify=false"
+    TLS_VERIFY=${TLS_VERIFY:="--tls-verify=false"}
   fi
 
   SCRIPT_DIR="$(dirname "$0")"
