@@ -40,19 +40,23 @@ main() {
   oc status > /dev/null 2>&1 && true
   if [[ $? -ne 0 ]]; then
     echo
-    echo "Run 'oc login' to log into your cluster before running dev.sh"
+    echo "Run 'oc login' to log into a cluster before running dev.sh"
     echo
     exit 1
   fi
 
-  command -v podman > /dev/null 2>&1 && true
+  # Favor podman if installed. Fall back to docker. 
+  # Override by setting CONTAINER_COMMAND
+  docker -v > /dev/null 2>&1 && true
   if [[ $? -eq 0 ]]; then
-     CONTAINER_COMMAND="podman"
-     TLS_VERIFY="--tls-verify=false"
+    CONTAINER_COMMAND=${CONTAINER_COMMAND:="docker"}
+    TLS_VERIFY=""
   else
-     CONTAINER_COMMAND="docker"
-     TLS_VERIFY=""
+    CONTAINER_COMMAND=${CONTAINER_COMMAND:="podman"}
+    TLS_VERIFY="--tls-verify=false"
   fi
+
+  SCRIPT_DIR="$(dirname "$0")"
 
   # Set defaults unless overridden. 
   OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
@@ -64,7 +68,7 @@ main() {
   IMG=${IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME:$VVERSION}
   BUNDLE_IMG=${BUNDLE_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-bundle:$VVERSION}
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
-  MAKEFILE_DIR=${MAKEFILE_DIR:=..}
+  MAKEFILE_DIR=${MAKEFILE_DIR:=$SCRIPT_DIR/..}
   TEMP_DIR=${TEMP_DIR:=/tmp}
   
   if [[ "$COMMAND" == "all" ]]; then
@@ -110,7 +114,8 @@ init_cluster() {
 }
 
 login_registry() {
-    $CONTAINER_COMMAND login -u kubeadmin -p $(oc whoami -t) $TLS_VERIFY $OCP_REGISTRY_URL
+    echo  $CONTAINER_COMMAND login $TLS_VERIFY -u kubeadmin -p $(oc whoami -t) $OCP_REGISTRY_URL
+    $CONTAINER_COMMAND login $TLS_VERIFY -u kubeadmin -p $(oc whoami -t) $OCP_REGISTRY_URL
     oc registry login --skip-check   
 }
 

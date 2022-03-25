@@ -64,10 +64,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Use podman if it's available
-ifeq (, $(shell which podman))
-CONTAINER_COMMAND ?= "docker"
-else
+# Use docker if available. Otherwise default to podman. 
+# Override choice by setting CONTAINER_COMMAND
+ifneq (, $(shell which docker))
 CONTAINER_COMMAND ?= "podman"
 # Setup parameters for TLS verify, default if unspecified is true
 ifeq (false, $(TLS_VERIFY))
@@ -77,6 +76,8 @@ else
 TLS_VERIFY ?= true
 PODMAN_SKIP_TLS_VERIFY="--tls-verify=true"
 endif
+else
+CONTAINER_COMMAND ?= "docker"
 endif
 
 all: build
@@ -312,3 +313,6 @@ build-catalog:
 
 push-catalog: docker-login
 	podman push --format=docker "${CATALOG_IMG}"
+
+dev: 
+	./scripts/dev.sh all
