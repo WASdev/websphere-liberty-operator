@@ -64,6 +64,22 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# Use docker if available. Otherwise default to podman. 
+# Override choice by setting CONTAINER_COMMAND
+ifneq (, $(shell which docker))
+CONTAINER_COMMAND ?= "podman"
+# Setup parameters for TLS verify, default if unspecified is true
+ifeq (false, $(TLS_VERIFY))
+PODMAN_SKIP_TLS_VERIFY="--tls-verify=false"
+SKIP_TLS_VERIFY=--skip-tls
+else
+TLS_VERIFY ?= true
+PODMAN_SKIP_TLS_VERIFY="--tls-verify=true"
+endif
+else
+CONTAINER_COMMAND ?= "docker"
+endif
+
 all: build
 
 ##@ General
@@ -114,10 +130,10 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	$(CONTAINER_COMMAND) build -t ${IMG} .
 
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+	$(CONTAINER_COMMAND) push $(PODMAN_SKIP_TLS_VERIFY) ${IMG}
 
 ##@ Deployment
 
@@ -181,11 +197,13 @@ bundle: manifests setup kustomize ## Generate bundle manifests and metadata, the
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_COMMAND) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
-	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+	$(CONTAINER_COMMAND) push $(PODMAN_SKIP_TLS_VERIFY) $(BUNDLE_IMG)
+
 
 .PHONY: opm
 OPM = ./bin/opm
@@ -221,7 +239,7 @@ endif
 # https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
 .PHONY: catalog-build
 catalog-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
+	$(OPM) index add $(SKIP_TLS_VERIFY) --container-tool $(CONTAINER_COMMAND)  --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
 
 # Push the catalog image.
 .PHONY: catalog-push
@@ -295,3 +313,6 @@ build-catalog:
 
 push-catalog: docker-login
 	podman push --format=docker "${CATALOG_IMG}"
+
+dev: 
+	./scripts/dev.sh all
