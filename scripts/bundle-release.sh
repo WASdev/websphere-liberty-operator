@@ -55,7 +55,7 @@ main() {
     readonly release_tag="${RELEASE}"
   fi
 
-  readonly full_image="${IMAGE}:${release_tag}-${arch}"
+  readonly full_image="${PROD_IMAGE}:${release_tag}-${arch}"
   readonly bundle_image="${IMAGE}-bundle:${release_tag}"
 
   ## login to docker
@@ -103,7 +103,11 @@ parse_args() {
     --registry)
       shift
       readonly REGISTRY="${1}"
-      ;;        
+      ;;
+    --prod-image)
+      shift
+      readonly PROD_IMAGE="${1}"
+      ;;    
     --image)
       shift
       readonly IMAGE="${1}"
