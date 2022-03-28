@@ -55,7 +55,8 @@ main() {
     readonly release_tag="${RELEASE}"
   fi
 
-  readonly full_image="${PROD_IMAGE}:${release_tag}-${arch}"
+  readonly digest="$(skopeo inspect docker://$IMAGE:${release_tag}-${arch} | grep Digest | grep -o 'sha[^\"]*')"
+  readonly full_image="${PROD_IMAGE}:${digest}"
   readonly bundle_image="${IMAGE}-bundle:${release_tag}"
 
   ## login to docker
