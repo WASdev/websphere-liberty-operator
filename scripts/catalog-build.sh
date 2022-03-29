@@ -15,6 +15,7 @@ usage() {
     echo "  -b, --base-image         [REQUIRED] The base image that the index will be built upon (e.g. registry.redhat.io/openshift4/ose-operator-registry)"
     echo "  -t, --output             [REQUIRED] The location where the database should be output"
     echo "  -i, --image-name         [REQUIRED] The bundle image name"
+    echo "  -p, --prod-image         [REQUIRED] The name of the production image the bundle should point to"
     echo "  -a, --catalog-image-name [REQUIRED] the catalog image name"
     echo "  -c, --container-tool     Tool to build image [docker, podman] (default 'docker')"
     echo "  -o, --opm-tool           Name of the opm tool (default 'opm')"

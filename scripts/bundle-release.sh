@@ -12,13 +12,19 @@
 
 set -Eeo pipefail
 
-readonly usage="Usage: bundle-release.sh -u <docker-username> -p <docker-password> --image repository/image --release <release> [--skip-push]"
+readonly usage="Usage: bundle-release.sh -u <docker-username> -p <docker-password> --image repository/image --prod-image prod-repository/image --release <release> [--skip-push]"
 
 main() {
   parse_args "$@"
 
   if [[ -z "${IMAGE}" ]]; then
     echo "****** Missing target image for operator build, see usage"
+    echo "${usage}"
+    exit 1
+  fi
+
+  if [[ -z "${PROD_IMAGE}" ]]; then
+    echo "****** Missing production image reference for bundle, see usage"
     echo "${usage}"
     exit 1
   fi
