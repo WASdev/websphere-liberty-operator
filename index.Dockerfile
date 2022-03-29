@@ -22,11 +22,6 @@ LABEL name=$NAME \
 # Copy Apache license
 COPY LICENSE /licenses
 
-USER root
-
-# Pick up any latest fixes
-RUN microdnf update && microdnf clean all
-
 COPY --chown=1001:0 bundles.db /database/index.db
 LABEL operators.operatorframework.io.index.database.v1=/database/index.db
 
