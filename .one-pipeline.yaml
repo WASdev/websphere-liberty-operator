@@ -95,6 +95,7 @@ containerize:
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
+    export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
     export RELEASE_TARGET=$(get_env branch)
     export DOCKER_USERNAME=$(get_env docker-username)
