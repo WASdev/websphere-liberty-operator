@@ -105,8 +105,6 @@ containerize:
     export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
-
-    echo "PIPELINE_PRODUCTION_IMAGE=$PIPELINE_PRODUCTION_IMAGE"
     
     # Build amd64 image
     make build-pipeline-releases
@@ -120,7 +118,6 @@ containerize:
 
     # Build bundle image
     make setup
-    echo "PIPELINE_PRODUCTION_IMAGE=$PIPELINE_PRODUCTION_IMAGE"
     make bundle-pipeline
 
     # Build catalog image
