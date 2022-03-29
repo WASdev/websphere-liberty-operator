@@ -8,6 +8,8 @@ ARG NAME="websphere-liberty-operator-catalog"
 ARG SUMMARY="WebSphere Liberty operator catalog"
 ARG DESCRIPTION="This image contains the operator catalog for WebSphere Liberty."
 
+ARG USER_ID=1001
+
 LABEL name=$NAME \
       vendor=IBM \
       version=$VERSION_LABEL \
@@ -33,7 +35,7 @@ COPY --from=builder --chown=1001:0 /bin/grpc_health_probe /bin/grpc_health_probe
 
 EXPOSE 50051
 
-USER 1001
+USER ${USER_ID}
 
 WORKDIR /tmp
 ENTRYPOINT ["/registry-server"]
