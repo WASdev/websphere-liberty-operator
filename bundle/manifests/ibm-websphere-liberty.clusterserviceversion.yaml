@@ -46,7 +46,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-03-28T13:15:53Z"
+    createdAt: "2022-03-29T10:34:48Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -358,7 +358,7 @@ spec:
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       version: v1
-  displayName: WebSphere Liberty Operator
+  displayName: WebSphere Liberty
   description: |
         This advanced Operator can be used to deploy and manage WebSphere Liberty applications with consistent, production-grade QoS. This operator is based on the [Runtime Component Operator](https://github.com/application-stacks/runtime-component-operator) and provides all of its capabilities in addition to WebSphere Liberty specific features such as gathering traces and dumps (Day-2 operations) and easily configuring and managing the single sign-on information for your WebSphere Liberty applications.
     
