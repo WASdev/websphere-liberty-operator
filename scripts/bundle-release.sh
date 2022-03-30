@@ -12,13 +12,19 @@
 
 set -Eeo pipefail
 
-readonly usage="Usage: bundle-release.sh -u <docker-username> -p <docker-password> --image repository/image --release <release> [--skip-push]"
+readonly usage="Usage: bundle-release.sh -u <docker-username> -p <docker-password> --image repository/image --prod-image prod-repository/image --release <release> [--skip-push]"
 
 main() {
   parse_args "$@"
 
   if [[ -z "${IMAGE}" ]]; then
     echo "****** Missing target image for operator build, see usage"
+    echo "${usage}"
+    exit 1
+  fi
+
+  if [[ -z "${PROD_IMAGE}" ]]; then
+    echo "****** Missing production image reference for bundle, see usage"
     echo "${usage}"
     exit 1
   fi
@@ -55,7 +61,8 @@ main() {
     readonly release_tag="${RELEASE}"
   fi
 
-  readonly full_image="${IMAGE}:${release_tag}-${arch}"
+  readonly digest="$(skopeo inspect docker://$IMAGE:${release_tag}-${arch} | grep Digest | grep -o 'sha[^\"]*')"
+  readonly full_image="${PROD_IMAGE}@${digest}"
   readonly bundle_image="${IMAGE}-bundle:${release_tag}"
 
   ## login to docker
@@ -103,7 +110,11 @@ parse_args() {
     --registry)
       shift
       readonly REGISTRY="${1}"
-      ;;        
+      ;;
+    --prod-image)
+      shift
+      readonly PROD_IMAGE="${1}"
+      ;;    
     --image)
       shift
       readonly IMAGE="${1}"

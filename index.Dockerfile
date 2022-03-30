@@ -8,6 +8,8 @@ ARG NAME="websphere-liberty-operator-catalog"
 ARG SUMMARY="WebSphere Liberty operator catalog"
 ARG DESCRIPTION="This image contains the operator catalog for WebSphere Liberty."
 
+ARG USER_ID=1001
+
 LABEL name=$NAME \
       vendor=IBM \
       version=$VERSION_LABEL \
@@ -20,11 +22,6 @@ LABEL name=$NAME \
 # Copy Apache license
 COPY LICENSE /licenses
 
-USER root
-
-# Pick up any latest fixes
-RUN microdnf update && microdnf clean all
-
 COPY --chown=1001:0 bundles.db /database/index.db
 LABEL operators.operatorframework.io.index.database.v1=/database/index.db
 
@@ -33,7 +30,7 @@ COPY --from=builder --chown=1001:0 /bin/grpc_health_probe /bin/grpc_health_probe
 
 EXPOSE 50051
 
-USER 1001
+USER ${USER_ID}
 
 WORKDIR /tmp
 ENTRYPOINT ["/registry-server"]
