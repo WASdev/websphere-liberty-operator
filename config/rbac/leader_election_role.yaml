@@ -6,18 +6,15 @@ metadata:
 rules:
 - apiGroups:
   - ""
-  - coordination.k8s.io
   resources:
   - configmaps
-  - leases
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
   - update
-  - patch
-  - delete
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -25,3 +22,13 @@ rules:
   verbs:
   - create
   - patch
+- apiGroups:
+    - coordination.k8s.io
+  resources:
+    - leases
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - update

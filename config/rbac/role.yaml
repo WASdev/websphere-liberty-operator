@@ -38,6 +38,7 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - persistentvolumeclaims
   - secrets
   - serviceaccounts
