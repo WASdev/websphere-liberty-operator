@@ -66,8 +66,9 @@ endif
 
 # Use docker if available. Otherwise default to podman. 
 # Override choice by setting CONTAINER_COMMAND
-ifneq (, $(shell which docker))
-CONTAINER_COMMAND ?= "podman"
+CHECK_DOCKER_RC=$(shell docker -v > /dev/null 2>&1; echo $$?)
+ifneq (0, $(CHECK_DOCKER_RC))
+CONTAINER_COMMAND ?= podman
 # Setup parameters for TLS verify, default if unspecified is true
 ifeq (false, $(TLS_VERIFY))
 PODMAN_SKIP_TLS_VERIFY="--tls-verify=false"
@@ -77,7 +78,7 @@ TLS_VERIFY ?= true
 PODMAN_SKIP_TLS_VERIFY="--tls-verify=true"
 endif
 else
-CONTAINER_COMMAND ?= "docker"
+CONTAINER_COMMAND ?= docker
 endif
 
 all: build
