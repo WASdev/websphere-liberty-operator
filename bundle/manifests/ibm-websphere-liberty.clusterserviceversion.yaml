@@ -501,15 +501,18 @@ spec:
       - rules:
         - apiGroups:
           - ""
+          - coordination.k8s.io
           resources:
           - configmaps
+          - leases
           verbs:
-          - create
-          - delete
           - get
           - list
-          - update
           - watch
+          - create
+          - update
+          - patch
+          - delete
         - apiGroups:
           - ""
           resources:
@@ -517,16 +520,6 @@ spec:
           verbs:
           - create
           - patch
-        - apiGroups:
-          - coordination.k8s.io
-          resources:
-          - leases
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - update
         - apiGroups:
           - apps
           resources:
@@ -560,7 +553,6 @@ spec:
           resources:
           - configmaps
           - persistentvolumeclaims
-          - secrets
           - serviceaccounts
           - services
           verbs:
@@ -580,6 +572,17 @@ spec:
           - get
           - list
           - patch
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
           - update
           - watch
         - apiGroups:

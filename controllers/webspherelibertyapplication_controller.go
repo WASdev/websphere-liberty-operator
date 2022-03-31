@@ -53,7 +53,8 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 // +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertyapplications;webspherelibertyapplications/status;webspherelibertyapplications/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=services;serviceaccounts;configmaps;persistentvolumeclaims,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=list;watch;create;update;delete,namespace=websphere-liberty-operator
