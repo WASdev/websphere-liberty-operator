@@ -4,7 +4,7 @@ The WebSphere Liberty Operator allows you to deploy and manage applications runn
 
 # Issues and Contributions
 
-For issues relating specifically to the operator, please use the [GitHub issue tracker](https://github.com/WASdev/websphere-liberty-operator/issues). For more general issue relating to IBM WebSphere Application Server Liberty you can [get help](https://developer.ibm.com/wasdev/help/) through the WASdev community or, if you have production licenses for WebSphere Application Server, via the usual support channels. We welcome contributions following [our guidelines](https://github.com/WASdev/wasdev.github.io/blob/master/CONTRIBUTING.md).
+For issues relating specifically to the operator, please use the [GitHub Issues tracker](https://github.com/WASdev/websphere-liberty-operator/issues). For more general issues relating to IBM WebSphere Application Server Liberty you can [get help](https://developer.ibm.com/wasdev/help/) through the WASdev community or, if you have production licenses for WebSphere Application Server, via the usual support channels. We welcome contributions following [our guidelines](https://github.com/WASdev/wasdev.github.io/blob/master/CONTRIBUTING.md).
 
 # License
 
