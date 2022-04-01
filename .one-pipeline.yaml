@@ -16,15 +16,14 @@ setup:
     BRANCH=$(get_env branch)
 
     if [[ "$ENABLE_BRANCH_PROTECTION" == "true" && "$BRANCH" != "main" ]]; then
-      #GHE_TOKEN=$(get_env git-public-token)
-      #OWNER=$(jq -r '.services[] | select(.toolchain_binding.name=="app-repo") | .parameters.owner_id' /toolchain/toolchain.json)
+      GHE_TOKEN=$(get_env git-public-token)
       REPO=$(get_env app-repo)
+      REPO="$(echo ${REPO%.git} | sed 's/https:\/\/github.com\///')"
 
-      #echo "Owner: $OWNER"
       echo "REPO: $REPO"
-      #echo "BRANCH: $BRANCH"
+      echo "BRANCH: $BRANCH"
 
-      #curl -u :$GH_TOKEN https://api.github.com/repos/$OWNER/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
+      curl -u :$GH_TOKEN https://api.github.com/repos/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
     fi
   
 test:
