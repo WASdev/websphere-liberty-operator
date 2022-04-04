@@ -3,7 +3,7 @@ kind: WebSphereLibertyTrace
 metadata:
   name: websphereliberty-trace-sample
 spec:
-  podName: Specify_Pod_Name_Here
+  podName: wlo-app-1
   traceSpecification: "*=info:com.ibm.ws.webcontainer*=all"
   maxFileSize: 20
   maxFiles: 5

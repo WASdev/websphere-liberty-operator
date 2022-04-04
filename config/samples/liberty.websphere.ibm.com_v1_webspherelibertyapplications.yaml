@@ -1,16 +1,46 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: websphereliberty-app-sample
+  name: wlo-app
 spec:
-  # Add fields here
-  applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
-# MicroProfile Health Probes
-#  readinessProbe:
-#    httpGet:
-#      path: /health/ready
-#      port: 9080
-#  livenessProbe:
-#    httpGet:
-#      path: /health/live
-#      port: 9080
+  applicationImage: 'icr.io/appcafe/open-liberty/samples/getting-started'
+  expose: true
+  replicas: 3
+  probes:
+    liveness:
+      httpGet:
+        path: /health/live
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 40
+      periodSeconds: 20
+      timeoutSeconds: 10
+    readiness:
+      httpGet:
+        path: /health/ready
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 15
+      timeoutSeconds: 10
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 400Mi
+  service:
+    port: 9443
+  statefulSet: {}
+  serviceability:
+    size: 1Gi
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/instance: wlo-app
+            topologyKey: kubernetes.io/hostname
+          weight: 50
+
