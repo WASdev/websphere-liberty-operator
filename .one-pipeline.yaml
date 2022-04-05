@@ -10,15 +10,22 @@ setup:
     apt-get update
     apt-get -y install build-essential
     rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
-    # Added `go mod vendor` here because without it, the following error was generated:
-    # go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
-    # go: inconsistent vendoring in /workspace/app/one-pipeline-config-repo:
-    #   ... (list of pkgs) ...
-    #   To ignore the vendor directory, use -mod=readonly or -mod=mod.
-    #   To sync the vendor directory, run:
-    #     go mod vendor
-    # TODO: determine if this is necessary/best solution.
     go mod vendor
+
+    ENABLE_BRANCH_PROTECTION=$(get_env enable-branch-protection)
+    BRANCH=$(get_env branch)
+
+    # Only enable branch protection on branches that are not "main" or a patch branch (e.g. 1.1.x)
+    if [[ "$ENABLE_BRANCH_PROTECTION" == "true" && "$BRANCH" != "main" && ! "$BRANCH" =~ [0-9](.[0-9])?.x ]]; then
+      GHE_TOKEN=$(get_env git-public-token)
+      REPO=$(get_env app-repo)
+      REPO="$(echo ${REPO%.git} | sed 's/https:\/\/github.com\///')"
+
+      echo "REPO: $REPO"
+      echo "BRANCH: $BRANCH"
+
+      curl -u :$GH_TOKEN https://api.github.com/repos/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
+    fi
   
 test:
   dind: true
