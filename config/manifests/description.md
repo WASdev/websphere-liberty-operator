@@ -85,5 +85,3 @@ Deploy your serverless runtime component using a single toggle.  The Operator wi
 
 ## Integration with OpenShift's Topology UI
 We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
-
-See our [**documentation**](https://github.com/WASdev/websphere-liberty-operator/tree/master/doc/) for more information.
