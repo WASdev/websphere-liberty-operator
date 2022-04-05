@@ -32,6 +32,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 //Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
+const operandVersion = "1.0.0"
 
 // Validate if the WebSpherLibertyApplication is valid
 func Validate(wlapp *webspherelibertyv1.WebSphereLibertyApplication) (bool, error) {

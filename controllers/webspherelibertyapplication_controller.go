@@ -530,6 +530,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
 
+	instance.Status.Versions.Reconciled = lutils.operandVersion
+	reqLogger.Info("Updating status.versions.reconciled", "status.versions.reconciled", instance.Status.Versions.Reconciled)
+	err = r.UpdateStatus(instance)
+	if err != nil {
+		reqLogger.Error(err, "Error updating WebSphere Liberty application status")
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
 }
