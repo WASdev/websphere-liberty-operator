@@ -87,9 +87,11 @@ function create_empty_db() {
 function add_to_db(){
     local stg_img=$1
     local prod_img=$2
+    local img_tag="$(echo $stg_img | cut -d ':' -f 2)"
     local digest="$(skopeo inspect docker://$stg_img | grep Digest | grep -o 'sha[^\"]*')"
     local img_digest="${prod_img}@${digest}"
     echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
+    docker tag $stg_img $prod_img:$img_tag
     "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
 }
 
