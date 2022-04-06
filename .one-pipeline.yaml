@@ -62,7 +62,7 @@ static-scan:
     "${COMMONS_PATH}"/static-scan/run.sh
 
     ## Perform static lint
-    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token)
+    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
 
 containerize:
   dind: true

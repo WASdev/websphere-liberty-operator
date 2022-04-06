@@ -9,15 +9,14 @@ function install_linter() {
     curl -H "Authorization: token ${GIT_TOKEN}" -H "Accept: application/vnd.github.v3.raw" -s https://github.ibm.com/api/v3/repos/IBMPrivateCloud/content-verification/releases > "${WORK_DIR}/versions.json"
     
     # Using jq, parse list of versions to find download for the version required
-    # Linter version is hard-coded here, for now
-    LINTER_TOOL_URL=$(jq -r '.[] | .assets | .[] |  select (.browser_download_url | endswith("v3.0.1/cv-linux-amd64.tar.gz")) | .url' "${WORK_DIR}/versions.json")
+    DOWNLOAD_URL_POSTFIX="v${STATIC_LINTER_VERSION}/cv-linux-amd64.tar.gz"
+    LINTER_TOOL_URL=$(jq -r --arg URL_POSTFIX "${DOWNLOAD_URL_POSTFIX}" '.[] | .assets | .[] |  select (.browser_download_url | endswith($URL_POSTFIX)) | .url' "${WORK_DIR}/versions.json")    
     
     # Use wget to download the linter binary, confirm it was successful
     wget --user token --password $GIT_TOKEN --auth-no-challenge --header "Accept: application/octet-stream" $LINTER_TOOL_URL -O $WORK_DIR/cv.tar.gz
     rc=$?
     if [ $rc -ne 0 ]; then
-        # echo "Linter version ${STATIC_LINTER_VERSION} could not be located"
-        echo "Linter version 3.0.1 could not be located"
+        echo "Linter version ${STATIC_LINTER_VERSION} could not be located"
         # Don't exit catastrophically, we can deal with this type failure at another time
         exit 0
     fi
@@ -37,13 +36,11 @@ function main() {
         exit 1
     fi
 
-    # Skipping this parm for now because I was unable to come up with a solution for how to inject the version into the jq query
-    # Perhaps this is somthing that can be solved down the road.
-    # if [[ -z "${STATIC_LINTER_VERSION}" ]]; then
-    #    echo "****** Missing static linter version, see usage"
-    #    echo "${usage}"
-    #    exit 1
-    # fi
+    if [[ -z "${STATIC_LINTER_VERSION}" ]]; then
+       echo "****** Missing static linter version, see usage"
+       echo "${usage}"
+       exit 1
+    fi
 
     # Create working directory
     if [[ -d "${WORK_DIR}" ]]; then
