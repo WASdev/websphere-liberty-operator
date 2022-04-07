@@ -285,6 +285,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Knative Service")
 				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 			}
+
+			instance.Status.Versions.Reconciled = lutils.OperandVersion
 			return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
 		}
 		return r.ManageError(errors.New("failed to reconcile Knative service as operator could not find Knative CRDs"), common.StatusConditionTypeReconciled, instance)
@@ -531,12 +533,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
-	reqLogger.Info("Updating status.versions.reconciled", "status.versions.reconciled", instance.Status.Versions.Reconciled)
-	err = r.UpdateStatus(instance)
-	if err != nil {
-		reqLogger.Error(err, "Error updating WebSphere Liberty application status")
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-	}
 
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)

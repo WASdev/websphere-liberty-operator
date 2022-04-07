@@ -328,7 +328,7 @@ type WebSphereLibertyApplicationStatus struct {
 	Conditions     []StatusCondition `json:"conditions,omitempty"`
 	RouteAvailable *bool             `json:"routeAvailable,omitempty"`
 	ImageReference string            `json:"imageReference,omitempty"`
-	Versions       StatusVersions    'json:"versions,omitempty"'
+	Versions       StatusVersions    `json:"versions,omitempty"`
 
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Service Binding"
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
@@ -352,7 +352,7 @@ const (
 )
 
 type StatusVersions struct {
-	Reconciled string 'json:"reconciled,omitempty"'
+	Reconciled string `json:"reconciled,omitempty"`
 }
 
 // +kubebuilder:resource:path=webspherelibertyapplications,scope=Namespaced,shortName=wlapp;wlapps
@@ -1050,22 +1050,6 @@ func (s *WebSphereLibertyApplicationStatus) SetCondition(c common.StatusConditio
 	if !found {
 		s.Conditions = append(s.Conditions, *condition)
 	}
-}
-
-func (s *WebsphereLibertyApplicationStatus) GetVersions() *StatusVersions {
-	return s.versions
-}
-
-func (s *WebsphereLibertyApplicationStatus) SetVersions(v *StatusVersions) {
-        s.versions = v
-}
-
-func (v *StatusVersions) GetReconciled() string {
-        return v.Reconciled
-}
-
-func (v *StatusVersions) SetReconciled(r string) {
-	v.Reconciled = r
 }
 
 func convertToCommonStatusConditionType(c StatusConditionType) common.StatusConditionType {
