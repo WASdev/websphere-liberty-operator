@@ -30,6 +30,11 @@ type WebSphereLibertyTraceStatus struct {
 	// +listType=atomic
 	Conditions       []OperationStatusCondition `json:"conditions,omitempty"`
 	OperatedResource OperatedResource           `json:"operatedResource,omitempty"`
+	Versions         StatusVersions             `json:"versions,omitempty"`
+}
+
+type StatusVersions struct {
+	Reconciled string `json:"reconciled,omitempty"`
 }
 
 // +kubebuilder:object:root=true
