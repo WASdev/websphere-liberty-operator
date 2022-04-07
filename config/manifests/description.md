@@ -22,6 +22,10 @@ Review the [resource requirements](https://ibm.biz/wlo-reqs) before you plan to 
 
 Please see the [storage requirements](https://ibm.biz/wlo-reqs) for details.
 
+## Limitations 
+
+IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional limitations.
+
 ## Supported platforms
 
 Red Hat OpenShift Container Platform 4.8 or newer installed on one of the following platforms:
@@ -83,3 +87,4 @@ Deploy your serverless runtime component using a single toggle.  The Operator wi
 
 ### Integration with OpenShift's Topology UI
 We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
+
