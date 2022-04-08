@@ -30,6 +30,9 @@ spec:
       - kind: HorizontalPodAutoscaler
         name: ""
         version: v1
+      - kind: NetworkPolicy
+        name: ""
+        version: v1
       - kind: Route
         name: ""
         version: v1
@@ -230,6 +233,8 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - displayName: Network Policy
+        path: networkPolicy
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -299,6 +304,11 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: Specify the labels of pod(s) that incoming traffic is allowed from.
+        displayName: From Labels
+        path: networkPolicy.fromLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The license must be accepted before the Liberty application can be deployed.
         displayName: Accept License
         path: license.accept

@@ -2004,9 +2004,6 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
-              manageTLS:
-                description: Enable management of TLS certificates. Defaults to true.
-                type: boolean
               license:
                 description: License information is required.
                 properties:
@@ -2046,6 +2043,9 @@ spec:
                 required:
                 - accept
                 type: object
+              manageTLS:
+                description: Enable management of TLS certificates. Defaults to true.
+                type: boolean
               monitoring:
                 description: Specifies parameters for Service Monitor.
                 properties:
