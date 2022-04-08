@@ -380,7 +380,7 @@ type StatusVersions struct {
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].reason",priority=1,description="Reason for the failure of reconcile condition"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].message",priority=1,description="Failure message from reconcile condition"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",priority=0,description="Age of the resource"
-// +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1},{NetworkPolicy,v1}}
 
 // Represents the deployment of an WebSphere Liberty application
 type WebSphereLibertyApplication struct {
@@ -1003,11 +1003,12 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 // GetLabels returns set of labels to be added to all resources
 func (cr *WebSphereLibertyApplication) GetLabels() map[string]string {
 	labels := map[string]string{
-		"app.kubernetes.io/instance":   cr.Name,
-		"app.kubernetes.io/name":       cr.Name,
-		"app.kubernetes.io/managed-by": "websphere-liberty-operator",
-		"app.kubernetes.io/component":  "backend",
-		"app.kubernetes.io/part-of":    cr.Spec.ApplicationName,
+		"app.kubernetes.io/instance":     cr.Name,
+		"app.kubernetes.io/name":         cr.Name,
+		"app.kubernetes.io/managed-by":   "websphere-liberty-operator",
+		"app.kubernetes.io/component":    "backend",
+		"app.kubernetes.io/part-of":      cr.Spec.ApplicationName,
+		common.GetComponentNameLabel(cr): cr.Name,
 	}
 
 	if cr.Spec.ApplicationVersion != "" {

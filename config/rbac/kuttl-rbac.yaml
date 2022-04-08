@@ -111,3 +111,13 @@ rules:
     - get
     - list
     - delete
+- apiGroups:
+    - networking.k8s.io
+  resources:
+    - networkpolicies
+  verbs:
+    - get
+    - list
+    - create
+    - patch
+    - delete
