@@ -30,10 +30,10 @@ type WebSphereLibertyTraceStatus struct {
 	// +listType=atomic
 	Conditions       []OperationStatusCondition `json:"conditions,omitempty"`
 	OperatedResource OperatedResource           `json:"operatedResource,omitempty"`
-	Versions         StatusVersions             `json:"versions,omitempty"`
+	Versions         TraceStatusVersions        `json:"versions,omitempty"`
 }
 
-type StatusVersions struct {
+type TraceStatusVersions struct {
 	Reconciled string `json:"reconciled,omitempty"`
 }
 

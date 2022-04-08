@@ -32,13 +32,13 @@ const (
 type WebSphereLibertyDumpStatus struct {
 	// +listType=atomic
 	Conditions []OperationStatusCondition `json:"conditions,omitempty"`
-	Versions   StatusVersions             `json:"versions,omitempty"`
+	Versions   DumpStatusVersions         `json:"versions,omitempty"`
 	// Location of the generated dump file
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Dump File Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	DumpFile string `json:"dumpFile,omitempty"`
 }
 
-type StatusVersions struct {
+type DumpStatusVersions struct {
 	Reconciled string `json:"reconciled,omitempty"`
 }
 
