@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.16
 
 require (
-	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220408121058-c514b901b36a
+	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220408194314-73e3f766ba36
 	github.com/coreos/prometheus-operator v0.41.1
 	github.com/go-logr/logr v0.3.0
 	github.com/openshift/api v0.0.0-20201019163320-c6a5ec25f267
@@ -14,6 +14,7 @@ require (
 	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v12.0.0+incompatible
 	knative.dev/serving v0.18.1
+	github.com/jetstack/cert-manager v1.3.0
 	sigs.k8s.io/controller-runtime v0.7.2
 )
 
