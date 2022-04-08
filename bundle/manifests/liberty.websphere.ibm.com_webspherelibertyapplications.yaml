@@ -51,7 +51,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
+        description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://bm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -1348,7 +1348,7 @@ spec:
                     - Processor Value Unit
                     type: string
                   productEntitlementSource:
-                    description: 'Entitlement source for the server. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+                    description: 'Entitlement source for the product. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
                     enum:
                     - None
                     - IBM Cloud Pak for Applications

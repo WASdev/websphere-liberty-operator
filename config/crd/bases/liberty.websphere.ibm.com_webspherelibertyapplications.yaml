@@ -52,7 +52,7 @@ spec:
       openAPIV3Schema:
         description: 'Represents the deployment of a WebSphere Liberty application.
           Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs.
-          License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
+          License: By installing this product, you accept the license terms at https://bm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -2034,8 +2034,8 @@ spec:
                     - Processor Value Unit
                     type: string
                   productEntitlementSource:
-                    description: 'Entitlement source for the server. Defaults to None.
-                      Other options: IBM Cloud Pak for Applications, IBM WebSphere
+                    description: 'Entitlement source for the product. Defaults to
+                      None. Other options: IBM Cloud Pak for Applications, IBM WebSphere
                       Application Server Family Edition, IBM WebSphere Hybrid Edition'
                     enum:
                     - None

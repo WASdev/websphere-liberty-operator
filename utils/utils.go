@@ -157,6 +157,55 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *websphereliber
 	pts.Annotations = rcoutils.MergeMaps(pts.Annotations, libertyAnnotations)
 }
 
+func CustomizeMeteringAnnotations(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
+	source := la.Spec.License.ProductEntitlementSource
+	pts.Annotations["productID"] = "87f3487c22f34742a799164f3f3ffa78"
+	pts.Annotations["productChargedContainers"] = "app"
+
+	metricValue := "VIRTUAL_PROCESSOR_CORE"
+	if la.Spec.License.Metric == webspherelibertyv1.LicenseMetricPVU && source == webspherelibertyv1.LicenseEntitlementNone || source == webspherelibertyv1.LicenseEntitlementFamilyEdition {
+		metricValue = "PROCESSOR_VALUE_UNIT"
+	}
+	pts.Annotations["productMetric"] = metricValue
+
+	productName := ""
+	ratio := ""
+	switch la.Spec.License.Edition {
+	case webspherelibertyv1.LicenseEditionBase:
+		productName = string(webspherelibertyv1.LicenseEditionBase)
+		ratio = "4:1"
+	case webspherelibertyv1.LicenseEditionCore:
+		productName = string(webspherelibertyv1.LicenseEditionCore)
+		ratio = "8:1"
+	case webspherelibertyv1.LicenseEditionND:
+		productName = string(webspherelibertyv1.LicenseEditionND)
+		ratio = "1:1"
+	default:
+		productName = string(webspherelibertyv1.LicenseEditionBase)
+		ratio = "4:1"
+	}
+
+	pts.Annotations["productName"] = string(productName)
+
+	if string(source) == "" || source == webspherelibertyv1.LicenseEntitlementNone {
+		delete(pts.Annotations, "cloudpakName")
+		delete(pts.Annotations, "cloudpakId")
+		delete(pts.Annotations, "productCloudpakRatio")
+	} else {
+		pts.Annotations["cloudpakName"] = string(source)
+		pts.Annotations["productCloudpakRatio"] = ratio
+		cloudpakId := ""
+		if source == webspherelibertyv1.LicenseEntitlementWSHE {
+			cloudpakId = "6358611af04743f99f42dadcd6e39d52"
+		} else if source == webspherelibertyv1.LicenseEntitlementFamilyEdition {
+			cloudpakId = "be8ae84b3dd04d81b90af0d846849182"
+		} else if source == webspherelibertyv1.LicenseEntitlementCP4Apps {
+			cloudpakId = "4df52d2cdc374ba09f631a650ad2b5bf"
+		}
+		pts.Annotations["cloudpakId"] = cloudpakId
+	}
+}
+
 // findEnvVars checks if the environment variable is already present
 func findEnvVar(name string, envList []corev1.EnvVar) (*corev1.EnvVar, bool) {
 	for i, val := range envList {

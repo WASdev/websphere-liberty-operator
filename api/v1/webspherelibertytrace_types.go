@@ -58,7 +58,7 @@ type TraceStatusVersions struct {
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Enabled')].reason",priority=1,description="Reason for the failure of trace condition"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Enabled')].message",priority=1,description="Failure message from trace condition"
 // +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyTrace"
-// Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.
+// Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://bm.biz/was-license.
 type WebSphereLibertyTrace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
