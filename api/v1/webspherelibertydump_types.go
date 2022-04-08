@@ -8,6 +8,11 @@ import (
 
 // WebSphereLibertyDumpSpec defines the desired state of WebSphereLibertyDump
 type WebSphereLibertyDumpSpec struct {
+
+	// License information is required.
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	License LicenseSimple `json:"license"`
+
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyDump CR.
 	PodName string `json:"podName"`
 	// Optional. List of memory dump types to request: thread, heap, system.
@@ -53,7 +58,7 @@ type DumpStatusVersions struct {
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Completed')].message",priority=1,description="Message for dump operation failing to complete"
 // +kubebuilder:printcolumn:name="Dump file",type="string",JSONPath=".status.dumpFile",priority=0,description="Indicates filename of the server dump"
 //+operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyDump"
-// Day-2 operation for generating server dumps
+// Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.
 type WebSphereLibertyDump struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

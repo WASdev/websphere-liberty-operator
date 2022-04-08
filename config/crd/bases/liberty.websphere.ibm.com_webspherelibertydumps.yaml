@@ -55,7 +55,9 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: Day-2 operation for generating server dumps
+        description: 'Day-2 operation for generating server dumps. Documentation:
+          For more information about installation parameters, see https://ibm.biz/wlo-crs.
+          License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -84,11 +86,24 @@ spec:
                   type: string
                 type: array
                 x-kubernetes-list-type: set
+              license:
+                description: License information is required.
+                properties:
+                  accept:
+                    description: The license must be accepted before trace operation
+                      can be deployed.
+                    enum:
+                    - true
+                    type: boolean
+                required:
+                - accept
+                type: object
               podName:
                 description: The name of the Pod, which must be in the same namespace
                   as the WebSphereLibertyDump CR.
                 type: string
             required:
+            - license
             - podName
             type: object
           status:

@@ -46,7 +46,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-08T16:08:24Z"
+    createdAt: "2022-04-08T01:21:46Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -61,7 +61,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents the deployment of an WebSphere Liberty application
+    - description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
       displayName: WebSphereLibertyApplication
       kind: WebSphereLibertyApplication
       name: webspherelibertyapplications.liberty.websphere.ibm.com
@@ -98,6 +98,10 @@ spec:
         path: autoscaling.maxReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the application. Defaults to the name of this custom resource.
         displayName: Application Name
         path: applicationName
@@ -337,6 +341,11 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: The license must be accepted before the Liberty application can be deployed.
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
       - displayName: Service Binding
         path: binding
@@ -350,10 +359,21 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
       version: v1
-    - description: Day-2 operation for generating server dumps
+    - description: 'Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
       displayName: WebSphereLibertyDump
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
+      specDescriptors:
+      - description: License information is required.
+        displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The license must be accepted before trace operation can be deployed.
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
       - description: Location of the generated dump file
         displayName: Dump File Path
@@ -361,10 +381,21 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
-    - description: Day-2 operation for gathering server traces
+    - description: 'Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.'
       displayName: WebSphereLibertyTrace
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
+      specDescriptors:
+      - description: License information is required.
+        displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The license must be accepted before trace operation can be deployed.
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
       version: v1
   displayName: WebSphere Liberty
   description: |

@@ -17,6 +17,9 @@ import (
 // Defines the desired state of WebSphereLibertyApplication.
 type WebSphereLibertyApplicationSpec struct {
 
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	License License `json:"license"`
+
 	// Application image to deploy.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="Application Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	ApplicationImage string `json:"applicationImage"`
@@ -132,6 +135,62 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Network Policy"
 	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 }
+
+// License information is required.
+type License struct {
+	// The license must be accepted before the Liberty application can be deployed.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	// +kubebuilder:validation:Enum:=true
+	Accept bool `json:"accept"`
+
+	// Charge metric code. Defaults to Virtual Processor Core. Other option: Processor Value Unit
+	Metric LicenseMetric `json:"metric,omitempty"`
+
+	// Edition of the server. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
+	Edition LicenseEdition `json:"edition,omitempty"`
+
+	// Entitlement source for the product. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
+}
+
+// Defines the possible values for charge metric codes
+// +kubebuilder:validation:Enum=Virtual Processor Core;Processor Value Unit
+type LicenseMetric string
+
+const (
+	// Virtual Processor Core metric
+	LicenseMetricVPC LicenseMetric = "Virtual Processor Core"
+	// Processor Value Unit metric
+	LicenseMetricPVU LicenseMetric = "Processor Value Unit"
+)
+
+// Defines the possible values for editions
+// +kubebuilder:validation:Enum=IBM WebSphere Application Server;IBM WebSphere Application Server Liberty Core;IBM WebSphere Application Server Network Deployment
+type LicenseEdition string
+
+const (
+	// Edition IBM WebSphere Application Server
+	LicenseEditionBase LicenseEdition = "IBM WebSphere Application Server"
+	// Edition IBM WebSphere Application Server Liberty Core
+	LicenseEditionCore LicenseEdition = "IBM WebSphere Application Server Liberty Core"
+	// Edition IBM WebSphere Application Server Network Deployment
+	LicenseEditionND LicenseEdition = "IBM WebSphere Application Server Network Deployment"
+)
+
+// Defines the possible values for product entitlement source
+// +kubebuilder:validation:Enum=None;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
+type LicenseEntitlement string
+
+const (
+	// No entitlement source
+	LicenseEntitlementNone LicenseEntitlement = "None"
+	// Entitlement source IBM Cloud Pak for Applications
+	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
+	// Entitlement source IBM WebSphere Application Server Family Edition
+	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM WebSphere Hybrid Edition
+	LicenseEntitlementWSHE LicenseEntitlement = "IBM WebSphere Hybrid Edition"
+)
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
 type WebSphereLibertyApplicationProbes struct {
@@ -382,7 +441,7 @@ type StatusVersions struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",priority=0,description="Age of the resource"
 // +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1},{NetworkPolicy,v1}}
 
-// Represents the deployment of an WebSphere Liberty application
+// Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/wlo-license.
 type WebSphereLibertyApplication struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
