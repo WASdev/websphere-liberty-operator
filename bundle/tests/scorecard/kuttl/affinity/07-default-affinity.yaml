@@ -1,0 +1,12 @@
+# Test to see that if no affinity specified the default affinity is applied
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: pod-default-affinity-lib
+  labels:
+    test: affinity
+spec:
+  # Add fields here
+  applicationImage: 'k8s.gcr.io/pause:2.0'
+  replicas: 1
+
