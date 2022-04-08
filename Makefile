@@ -66,8 +66,9 @@ endif
 
 # Use docker if available. Otherwise default to podman. 
 # Override choice by setting CONTAINER_COMMAND
-ifneq (, $(shell which docker))
-CONTAINER_COMMAND ?= "podman"
+CHECK_DOCKER_RC=$(shell docker -v > /dev/null 2>&1; echo $$?)
+ifneq (0, $(CHECK_DOCKER_RC))
+CONTAINER_COMMAND ?= podman
 # Setup parameters for TLS verify, default if unspecified is true
 ifeq (false, $(TLS_VERIFY))
 PODMAN_SKIP_TLS_VERIFY="--tls-verify=false"
@@ -77,7 +78,7 @@ TLS_VERIFY ?= true
 PODMAN_SKIP_TLS_VERIFY="--tls-verify=true"
 endif
 else
-CONTAINER_COMMAND ?= "docker"
+CONTAINER_COMMAND ?= docker
 endif
 
 all: build
@@ -271,10 +272,10 @@ build-pipeline-manifest: setup-manifest
 	./scripts/build-manifest.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
 bundle-pipeline:
-	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
+	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
 catalog-pipeline-build: opm ## Build a catalog image.
-	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -a "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
+	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
 
 catalog-pipeline-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"

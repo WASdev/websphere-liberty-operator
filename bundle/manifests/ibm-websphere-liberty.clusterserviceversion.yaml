@@ -255,6 +255,9 @@ spec:
         path: statefulSet.storage.mountPath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Security context for the application container.
+        displayName: Security Context
+        path: securityContext
       - description: A YAML object that represents a volumeClaimTemplate component of a StatefulSet.
         displayName: Storage Volume Claim Template
         path: statefulSet.storage.volumeClaimTemplate
@@ -358,7 +361,7 @@ spec:
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       version: v1
-  displayName: WebSphere Liberty Operator
+  displayName: WebSphere Liberty
   description: |
     # Name
     
@@ -485,6 +488,8 @@ spec:
                         - amd64
               containers:
               - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
                 - --enable-leader-election
                 command:
                 - /manager
@@ -498,7 +503,27 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 image: icr.io/cpopen/websphere-liberty-operator:daily
+                livenessProbe:
+                  failureThreshold: 3
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                    scheme: HTTP
+                  initialDelaySeconds: 90
+                  periodSeconds: 30
+                  successThreshold: 1
+                  timeoutSeconds: 10
                 name: manager
+                readinessProbe:
+                  failureThreshold: 3
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                    scheme: HTTP
+                  initialDelaySeconds: 20
+                  periodSeconds: 30
+                  successThreshold: 1
+                  timeoutSeconds: 10
                 resources:
                   limits:
                     cpu: 200m
@@ -551,7 +576,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -570,7 +594,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -586,7 +609,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -662,7 +684,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -674,7 +695,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -687,7 +707,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         - apiGroups:
@@ -707,7 +726,6 @@ spec:
           - delete
           - get
           - list
-          - patch
           - update
           - watch
         serviceAccountName: wlo-controller-manager

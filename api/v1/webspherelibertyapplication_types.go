@@ -120,6 +120,10 @@ type WebSphereLibertyApplicationSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Affinity"
 	Affinity *WebSphereLibertyApplicationAffinity `json:"affinity,omitempty"`
+
+	// Security context for the application container.
+	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Security Context"
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
@@ -355,7 +359,7 @@ const (
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].reason",priority=1,description="Reason for the failure of reconcile condition"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].message",priority=1,description="Failure message from reconcile condition"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",priority=0,description="Age of the resource"
-//+operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1}}
 
 // Represents the deployment of an WebSphere Liberty application
 type WebSphereLibertyApplication struct {
@@ -530,6 +534,21 @@ func (p *WebSphereLibertyApplicationProbes) GetReadinessProbe() *corev1.Probe {
 // GetStartupProbe returns startup probe
 func (p *WebSphereLibertyApplicationProbes) GetStartupProbe() *corev1.Probe {
 	return p.Startup
+}
+
+// GetDefaultLivenessProbe returns default values for liveness probe
+func (p *WebSphereLibertyApplicationProbes) GetDefaultLivenessProbe(ba common.BaseComponent) *corev1.Probe {
+	return common.GetDefaultMicroProfileLivenessProbe(ba)
+}
+
+// GetDefaultReadinessProbe returns default values for readiness probe
+func (p *WebSphereLibertyApplicationProbes) GetDefaultReadinessProbe(ba common.BaseComponent) *corev1.Probe {
+	return common.GetDefaultMicroProfileReadinessProbe(ba)
+}
+
+// GetDefaultStartupProbe returns default values for startup probe
+func (p *WebSphereLibertyApplicationProbes) GetDefaultStartupProbe(ba common.BaseComponent) *corev1.Probe {
+	return common.GetDefaultMicroProfileStartupProbe(ba)
 }
 
 // GetVolumes returns volumes slice
@@ -865,6 +884,11 @@ func (a *WebSphereLibertyApplicationAffinity) GetArchitecture() []string {
 // GetNodeAffinityLabels returns list of architecture names
 func (a *WebSphereLibertyApplicationAffinity) GetNodeAffinityLabels() map[string]string {
 	return a.NodeAffinityLabels
+}
+
+// GetSecurityContext returns container security context
+func (cr *WebSphereLibertyApplication) GetSecurityContext() *corev1.SecurityContext {
+	return cr.Spec.SecurityContext
 }
 
 // Initialize sets default values

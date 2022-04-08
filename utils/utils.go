@@ -96,25 +96,6 @@ func ExecuteCommandInContainer(config *rest.Config, podName, podNamespace, conta
 	return stderr.String(), nil
 }
 
-// CustomizeSecurityContext ...
-func CustomizeSecurityContext(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
-	valFalse := false
-	valTrue := true
-
-	cap := make([]corev1.Capability, 1)
-	cap[0] = "ALL"
-
-	appContainer := *rcoutils.GetAppContainer(pts.Spec.Containers)
-	appContainer.SecurityContext = &corev1.SecurityContext{
-		AllowPrivilegeEscalation: &valFalse,
-		Capabilities: &corev1.Capabilities{
-			Drop: cap,
-		},
-		Privileged:   &valFalse,
-		RunAsNonRoot: &valTrue,
-	}
-}
-
 // CustomizeLibertyEnv adds configured env variables appending configured liberty settings
 func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication, client client.Client) error {
 	// ENV variables have already been set, check if they exist before setting defaults

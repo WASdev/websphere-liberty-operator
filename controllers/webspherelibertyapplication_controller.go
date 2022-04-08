@@ -51,15 +51,15 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,resourceNames=restricted,verbs=use,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=liberty.websphere.ibm.com,resources=webspherelibertyapplications;webspherelibertyapplications/status;webspherelibertyapplications/finalizers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=image.openshift.io,resources=imagestreams;imagestreamtags,verbs=get;list;watch,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=serving.knative.dev,resources=services,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=serving.knative.dev,resources=services,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -362,7 +362,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.CreateOrUpdate(statefulSet, instance, func() error {
 			oputils.CustomizeStatefulSet(statefulSet, instance)
 			oputils.CustomizePodSpec(&statefulSet.Spec.Template, instance)
-			lutils.CustomizeSecurityContext(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePersistence(statefulSet, instance)
 			if err := lutils.CustomizeLibertyEnv(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
 				reqLogger.Error(err, "Failed to reconcile Liberty env")
@@ -406,7 +405,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.CreateOrUpdate(deploy, instance, func() error {
 			oputils.CustomizeDeployment(deploy, instance)
 			oputils.CustomizePodSpec(&deploy.Spec.Template, instance)
-			lutils.CustomizeSecurityContext(&deploy.Spec.Template, instance)
 			if err := lutils.CustomizeLibertyEnv(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				reqLogger.Error(err, "Failed to reconcile Liberty env")
 				return err

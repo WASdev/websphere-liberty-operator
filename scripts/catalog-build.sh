@@ -15,6 +15,7 @@ usage() {
     echo "  -b, --base-image         [REQUIRED] The base image that the index will be built upon (e.g. registry.redhat.io/openshift4/ose-operator-registry)"
     echo "  -t, --output             [REQUIRED] The location where the database should be output"
     echo "  -i, --image-name         [REQUIRED] The bundle image name"
+    echo "  -p, --prod-image         [REQUIRED] The name of the production image the bundle should point to"
     echo "  -a, --catalog-image-name [REQUIRED] the catalog image name"
     echo "  -c, --container-tool     Tool to build image [docker, podman] (default 'docker')"
     echo "  -o, --opm-tool           Name of the opm tool (default 'opm')"
@@ -56,6 +57,10 @@ function parse_arguments() {
             shift
             BUNDLE_IMAGE=$1
             ;;
+        -p | --prod-image)
+            shift
+            PROD_IMAGE=$1
+            ;;
         -a | --catalog-image-name)
             shift
             CATALOG_IMAGE=$1
@@ -80,10 +85,10 @@ function create_empty_db() {
 }
 
 function add_to_db(){
-    local img=$1
-    local digest="$(skopeo inspect docker://$img | grep Digest | grep -o 'sha[^\"]*')"
-    local taglessImg="$(echo $img | cut -d ':' -f 1)"
-    local img_digest="${taglessImg}@${digest}"
+    local stg_img=$1
+    local prod_img=$2
+    local digest="$(docker pull $stg_img | grep Digest | grep -o 'sha[^\"]*')"
+    local img_digest="${prod_img}@${digest}"
     echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
     "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
 }
@@ -107,7 +112,7 @@ function build_catalog() {
 
     create_empty_db
     ## for now, add the current build's image.  In future, we need to loop through all versions and add each releases bundle image
-    add_to_db "${BUNDLE_IMAGE}"
+    add_to_db "${BUNDLE_IMAGE}" "${PROD_IMAGE}"
 
     # Copy bundles.db local prior to building the image
     cp "${TMP_DIR}/bundles.db" .
