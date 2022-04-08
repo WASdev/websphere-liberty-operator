@@ -34,6 +34,7 @@ import (
 
 	"github.com/application-stacks/runtime-component-operator/utils"
 	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
@@ -57,6 +58,8 @@ func init() {
 	utilruntime.Must(imagev1.AddToScheme(scheme))
 
 	utilruntime.Must(servingv1.AddToScheme(scheme))
+
+	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

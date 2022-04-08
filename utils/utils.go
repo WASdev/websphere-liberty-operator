@@ -121,17 +121,19 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.Web
 		}
 	}
 
-	if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
-		if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
-			return err
+	/*
+		if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
+				return err
+			}
 		}
-	}
 
-	if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
-		if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
-			return err
+		if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 
 	return nil
 }

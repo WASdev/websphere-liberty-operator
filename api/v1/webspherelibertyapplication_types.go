@@ -49,6 +49,10 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Expose",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Expose *bool `json:"expose,omitempty"`
 
+	// Enable management of TLS certificates. Defaults to true.
+	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Manage TLS",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	ManageTLS *bool `json:"manageTLS,omitempty"`
+
 	// Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
@@ -332,6 +336,8 @@ type WebSphereLibertyApplicationStatus struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Service Binding"
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
+
+	References common.StatusReferences `json:"references,omitempty"`
 }
 
 // Defines possible status conditions.
@@ -576,6 +582,11 @@ func (cr *WebSphereLibertyApplication) GetExpose() *bool {
 	return cr.Spec.Expose
 }
 
+// GetManageTLS returns deployment's node and pod affinity settings
+func (cr *WebSphereLibertyApplication) GetManageTLS() *bool {
+	return cr.Spec.ManageTLS
+}
+
 // GetEnv returns slice of environment variables
 func (cr *WebSphereLibertyApplication) GetEnv() []corev1.EnvVar {
 	return cr.Spec.Env
@@ -725,6 +736,24 @@ func (s *WebSphereLibertyApplicationStatus) SetBinding(r *corev1.LocalObjectRefe
 	s.Binding = r
 }
 
+func (s *WebSphereLibertyApplicationStatus) GetReferences() common.StatusReferences {
+	if s.References == nil {
+		s.References = make(common.StatusReferences)
+	}
+	return s.References
+}
+
+func (s *WebSphereLibertyApplicationStatus) SetReferences(refs common.StatusReferences) {
+	s.References = refs
+}
+
+func (s *WebSphereLibertyApplicationStatus) SetReference(name string, value string) {
+	if s.References == nil {
+		s.References = make(common.StatusReferences)
+	}
+	s.References[name] = value
+}
+
 // GetMinReplicas returns minimum replicas
 func (a *WebSphereLibertyApplicationAutoScaling) GetMinReplicas() *int32 {
 	return a.MinReplicas
@@ -780,7 +809,7 @@ func (s *WebSphereLibertyApplicationService) GetPort() int32 {
 	if s != nil && s.Port != 0 {
 		return s.Port
 	}
-	return 9080
+	return 9443
 }
 
 // GetNodePort returns service nodePort
@@ -931,7 +960,12 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 	}
 
 	if cr.Spec.Service.Port == 0 {
-		cr.Spec.Service.Port = 9080
+		if cr.Spec.ManageTLS == nil || *cr.Spec.ManageTLS {
+			cr.Spec.Service.Port = 9443
+
+		} else {
+			cr.Spec.Service.Port = 9080
+		}
 	}
 
 }
