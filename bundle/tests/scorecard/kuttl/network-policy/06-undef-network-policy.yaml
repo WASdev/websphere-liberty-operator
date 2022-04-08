@@ -1,0 +1,9 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: network-policy-rc
+spec:
+  applicationImage: k8s.gcr.io/pause:2.0
+  networkPolicy:
+  service:
+    ports: []

@@ -55,7 +55,7 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses;networkpolicies,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=image.openshift.io,resources=imagestreams;imagestreamtags,verbs=get;list;watch,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=services,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
@@ -329,6 +329,23 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile Service")
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
+	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
+	if np := instance.Spec.NetworkPolicy; np.IsNotDefined() || !np.IsEmpty() {
+		err = r.CreateOrUpdate(networkPolicy, instance, func() error {
+			oputils.CustomizeNetworkPolicy(networkPolicy, instance)
+			return nil
+		})
+		if err != nil {
+			reqLogger.Error(err, "Failed to reconcile network policy")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	} else {
+		if err := r.DeleteResource(networkPolicy); err != nil {
+			reqLogger.Error(err, "Failed to delete network policy")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
 	}
 
 	if instance.Spec.Serviceability != nil {

@@ -128,6 +128,9 @@ type WebSphereLibertyApplicationSpec struct {
 	// Security context for the application container.
 	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Network Policy"
+	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
@@ -226,6 +229,13 @@ type WebSphereLibertyApplicationService struct {
 	// Expose the application as a bindable service. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Bindable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Bindable *bool `json:"bindable,omitempty"`
+}
+
+// Defines the network policy
+type WebSphereLibertyApplicationNetworkPolicy struct {
+	// Specify the labels of pod(s) that incoming traffic is allowed from.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	FromLabels map[string]string `json:"fromLabels,omitempty"`
 }
 
 // Defines the desired state and cycle of applications.
@@ -626,6 +636,11 @@ func (cr *WebSphereLibertyApplication) GetService() common.BaseComponentService 
 	return cr.Spec.Service
 }
 
+// GetNetworkPolicy returns network policy settings
+func (cr *WebSphereLibertyApplication) GetNetworkPolicy() common.BaseComponentNetworkPolicy {
+	return cr.Spec.NetworkPolicy
+}
+
 // GetApplicationVersion returns application version
 func (cr *WebSphereLibertyApplication) GetApplicationVersion() string {
 	return cr.Spec.ApplicationVersion
@@ -848,6 +863,21 @@ func (s *WebSphereLibertyApplicationService) GetCertificateSecretRef() *string {
 // GetBindable returns whether the application should be exposable as a service
 func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
+	if np == nil {
+		return nil
+	}
+	return np.FromLabels
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsNotDefined() bool {
+	return np == nil
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsEmpty() bool {
+	return np != nil && (np.FromLabels == nil || len(np.FromLabels) == 0)
 }
 
 // GetLabels returns labels to be added on ServiceMonitor
