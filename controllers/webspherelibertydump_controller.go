@@ -84,6 +84,7 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 			Message: "Failed to find a pod or pod is not in running state",
 		}
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
 	}
@@ -119,6 +120,7 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 			Message: err.Error(),
 		}
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
 
@@ -131,6 +133,7 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 
 	instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
 	instance.Status.DumpFile = dumpFileName
+	instance.Status.Versions.Reconciled = utils.OperandVersion
 	r.Client.Status().Update(context.TODO(), instance)
 	return reconcile.Result{}, nil
 }

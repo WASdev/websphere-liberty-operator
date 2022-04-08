@@ -328,6 +328,7 @@ type WebSphereLibertyApplicationStatus struct {
 	Conditions     []StatusCondition `json:"conditions,omitempty"`
 	RouteAvailable *bool             `json:"routeAvailable,omitempty"`
 	ImageReference string            `json:"imageReference,omitempty"`
+	Versions       StatusVersions    `json:"versions,omitempty"`
 
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Service Binding"
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
@@ -349,6 +350,10 @@ const (
 	// StatusConditionTypeReconciled ...
 	StatusConditionTypeReconciled StatusConditionType = "Reconciled"
 )
+
+type StatusVersions struct {
+	Reconciled string `json:"reconciled,omitempty"`
+}
 
 // +kubebuilder:resource:path=webspherelibertyapplications,scope=Namespaced,shortName=wlapp;wlapps
 // +kubebuilder:object:root=true

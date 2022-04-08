@@ -192,6 +192,8 @@ func (r *ReconcileWebSphereLibertyTrace) UpdateStatus(issue error, conditionType
 
 	s.SetCondition(statusCondition)
 
+	instance.Status.Versions.Reconciled = lutils.OperandVersion
+
 	err := r.Client.Status().Update(context.Background(), &instance)
 	if err != nil {
 		r.Log.Error(err, "Unable to update status")
