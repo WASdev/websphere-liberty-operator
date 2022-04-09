@@ -3,6 +3,8 @@ kind: WebSphereLibertyTrace
 metadata:
   name: example-trace
 spec:
+  license:
+    accept: true
   podName: trace-ws-1
   traceSpecification: "*=info:com.ibm.ws.webcontainer*=all"
   maxFileSize: 20

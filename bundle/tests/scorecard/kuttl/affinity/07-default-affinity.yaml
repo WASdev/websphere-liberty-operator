@@ -8,5 +8,7 @@ metadata:
 spec:
   # Add fields here
   applicationImage: 'k8s.gcr.io/pause:2.0'
+  license:
+    accept: true
   replicas: 1
 

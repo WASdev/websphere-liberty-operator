@@ -3,6 +3,8 @@ kind: WebSphereLibertyDump
 metadata:
   name: test-dump
 spec:
+  license:
+    accept: true
   podName: dump-ws-0
   include:
     - thread
