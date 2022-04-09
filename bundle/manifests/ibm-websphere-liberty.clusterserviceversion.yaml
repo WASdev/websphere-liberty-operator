@@ -55,7 +55,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-08T23:48:10Z"
+    createdAt: "2022-04-09T00:51:35Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -535,6 +535,11 @@ spec:
           strategy: {}
           template:
             metadata:
+              annotations:
+                productChargedContainers: ALL
+                productID: 87f3487c22f34742a799164f3f3ffa78
+                productMetric: FREE
+                productName: IBM WebSphere Application Server
               labels:
                 app.kubernetes.io/instance: websphere-liberty-operator
                 app.kubernetes.io/managed-by: olm
