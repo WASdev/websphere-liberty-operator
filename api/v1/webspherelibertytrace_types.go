@@ -32,7 +32,7 @@ type WebSphereLibertyTraceSpec struct {
 
 // License information is required.
 type LicenseSimple struct {
-	// The license must be accepted before trace operation can be deployed.
+	// The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
 	// +kubebuilder:validation:Enum:=true
 	Accept bool `json:"accept"`
@@ -58,7 +58,7 @@ type TraceStatusVersions struct {
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Enabled')].reason",priority=1,description="Reason for the failure of trace condition"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Enabled')].message",priority=1,description="Failure message from trace condition"
 // +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyTrace"
-// Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://bm.biz/was-license.
+// Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.
 type WebSphereLibertyTrace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

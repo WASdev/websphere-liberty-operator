@@ -52,7 +52,7 @@ spec:
       openAPIV3Schema:
         description: 'Represents the deployment of a WebSphere Liberty application.
           Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs.
-          License: By installing this product, you accept the license terms at https://bm.biz/was-license.'
+          License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -2009,7 +2009,7 @@ spec:
                 properties:
                   accept:
                     description: The license must be accepted before the Liberty application
-                      can be deployed.
+                      can be deployed. License information is available at https://ibm.biz/was-license
                     enum:
                     - true
                     type: boolean

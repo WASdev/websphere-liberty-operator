@@ -157,7 +157,7 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *websphereliber
 	pts.Annotations = rcoutils.MergeMaps(pts.Annotations, libertyAnnotations)
 }
 
-func CustomizeMeteringAnnotations(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
+func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
 	source := la.Spec.License.ProductEntitlementSource
 	pts.Annotations["productID"] = "87f3487c22f34742a799164f3f3ffa78"
 	pts.Annotations["productChargedContainers"] = "app"

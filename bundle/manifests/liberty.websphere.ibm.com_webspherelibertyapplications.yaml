@@ -51,7 +51,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://bm.biz/was-license.'
+        description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -1327,7 +1327,7 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before the Liberty application can be deployed.
+                    description: The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
                     enum:
                     - true
                     type: boolean

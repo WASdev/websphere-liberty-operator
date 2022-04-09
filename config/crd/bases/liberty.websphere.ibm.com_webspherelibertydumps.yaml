@@ -57,7 +57,7 @@ spec:
       openAPIV3Schema:
         description: 'Day-2 operation for generating server dumps. Documentation:
           For more information about installation parameters, see https://ibm.biz/wlo-crs.
-          License: By installing this product, you accept the license terms at https://bm.biz/was-license.'
+          License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -90,8 +90,8 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before trace operation
-                      can be deployed.
+                    description: The license must be accepted before day-2 operations
+                      can be deployed. License information is available at https://ibm.biz/was-license
                     enum:
                     - true
                     type: boolean
