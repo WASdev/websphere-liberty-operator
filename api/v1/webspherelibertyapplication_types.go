@@ -144,12 +144,15 @@ type License struct {
 	Accept bool `json:"accept"`
 
 	// Charge metric code. Defaults to Virtual Processor Core. Other option: Processor Value Unit
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Metric"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
 	// Edition of the server. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
 	// Entitlement source for the product. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 }
 

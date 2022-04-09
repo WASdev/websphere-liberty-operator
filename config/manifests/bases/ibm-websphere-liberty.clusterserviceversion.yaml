@@ -314,6 +314,15 @@ spec:
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
+      - description: 'Edition of the server. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+        displayName: Edition
+        path: license.edition
+      - description: 'Charge metric code. Defaults to Virtual Processor Core. Other option: Processor Value Unit'
+        displayName: Metric
+        path: license.metric
+      - description: 'Entitlement source for the product. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+        displayName: Product Entitlement Source
+        path: license.productEntitlementSource
       statusDescriptors:
       - displayName: Service Binding
         path: binding
@@ -388,13 +397,10 @@ spec:
   - Spring
   - Application
   - Open Source
-  - WebSphereLiberty
   - WLO
   links:
   - name: Documentation
     url: https://www.ibm.com/docs/en/was-liberty
-  - name: WebSphere Liberty Images
-    url: https://github.com/WASdev/ci.docker
   maintainers:
   - email: support@ibm.com
     name: IBM Support
