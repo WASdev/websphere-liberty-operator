@@ -7,4 +7,6 @@ spec:
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
   createKnativeService: true
+  service:
+    port: 9080
 
