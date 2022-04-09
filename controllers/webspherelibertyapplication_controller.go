@@ -403,7 +403,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
-			lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance)
+			if err := lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance); err != nil {
+				return err
+			}
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -449,7 +451,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
-			lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance)
+			if err := lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance); err != nil {
+				return err
+			}
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {

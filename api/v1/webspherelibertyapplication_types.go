@@ -143,28 +143,28 @@ type License struct {
 	// +kubebuilder:validation:Enum:=true
 	Accept bool `json:"accept"`
 
-	// Charge metric code. Defaults to Virtual Processor Core. Other option: Processor Value Unit
+	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Metric"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
-	// Edition of the server. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
+	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
-	// Entitlement source for the product. Defaults to None. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 }
 
 // Defines the possible values for charge metric codes
-// +kubebuilder:validation:Enum=Virtual Processor Core;Processor Value Unit
+// +kubebuilder:validation:Enum=Virtual Processor Core (VPC);Processor Value Unit (PVU)
 type LicenseMetric string
 
 const (
-	// Virtual Processor Core metric
-	LicenseMetricVPC LicenseMetric = "Virtual Processor Core"
-	// Processor Value Unit metric
-	LicenseMetricPVU LicenseMetric = "Processor Value Unit"
+	// Metric Virtual Processor Core (VPC)
+	LicenseMetricVPC LicenseMetric = "Virtual Processor Core (VPC)"
+	// Metric Processor Value Unit (PVU)
+	LicenseMetricPVU LicenseMetric = "Processor Value Unit (PVU)"
 )
 
 // Defines the possible values for editions
@@ -181,12 +181,12 @@ const (
 )
 
 // Defines the possible values for product entitlement source
-// +kubebuilder:validation:Enum=None;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
+// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
 type LicenseEntitlement string
 
 const (
-	// No entitlement source
-	LicenseEntitlementNone LicenseEntitlement = "None"
+	// Entitlement source Standalone
+	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
 	// Entitlement source IBM Cloud Pak for Applications
 	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
 	// Entitlement source IBM WebSphere Application Server Family Edition

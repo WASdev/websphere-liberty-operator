@@ -2014,10 +2014,9 @@ spec:
                     - true
                     type: boolean
                   edition:
-                    description: 'Edition of the server. Defaults to IBM WebSphere
-                      Application Server. Other options: IBM WebSphere Application
-                      Server Liberty Core, IBM WebSphere Application Server Network
-                      Deployment'
+                    description: 'Product edition. Defaults to IBM WebSphere Application
+                      Server. Other options: IBM WebSphere Application Server Liberty
+                      Core, IBM WebSphere Application Server Network Deployment'
                     enum:
                     - IBM WebSphere Application Server
                     - IBM WebSphere Application Server Liberty Core
@@ -2025,17 +2024,18 @@ spec:
                     type: string
                   metric:
                     description: 'Charge metric code. Defaults to Virtual Processor
-                      Core. Other option: Processor Value Unit'
+                      Core (VPC). Other option: Processor Value Unit (PVU)'
                     enum:
-                    - Virtual Processor Core
-                    - Processor Value Unit
+                    - Virtual Processor Core (VPC)
+                    - Processor Value Unit (PVU)
                     type: string
                   productEntitlementSource:
                     description: 'Entitlement source for the product. Defaults to
-                      None. Other options: IBM Cloud Pak for Applications, IBM WebSphere
-                      Application Server Family Edition, IBM WebSphere Hybrid Edition'
+                      Standalone. Other options: IBM Cloud Pak for Applications, IBM
+                      WebSphere Application Server Family Edition, IBM WebSphere Hybrid
+                      Edition'
                     enum:
-                    - None
+                    - Standalone
                     - IBM Cloud Pak for Applications
                     - IBM WebSphere Application Server Family Edition
                     - IBM WebSphere Hybrid Edition
