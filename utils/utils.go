@@ -161,18 +161,12 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	pts.Annotations["productID"] = "87f3487c22f34742a799164f3f3ffa78"
 	pts.Annotations["productChargedContainers"] = "app"
 
-	if la.Spec.License.ProductEntitlementSource == "" {
-		la.Spec.License.ProductEntitlementSource = wlv1.LicenseEntitlementStandalone
-	}
 	entitlement := la.Spec.License.ProductEntitlementSource
 
-	if la.Spec.License.Metric == "" {
-		la.Spec.License.Metric = wlv1.LicenseMetricVPC
-	}
 	metricValue := "VIRTUAL_PROCESSOR_CORE"
 	if la.Spec.License.Metric == wlv1.LicenseMetricPVU {
 		if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
-			return fmt.Errorf("Invalid metric value %v is specified for product entitlement source %v", la.Spec.License.Metric, entitlement)
+			return fmt.Errorf("Invalid metric value '%v' is specified for product entitlement source '%v'", la.Spec.License.Metric, entitlement)
 		} else {
 			metricValue = "PROCESSOR_VALUE_UNIT"
 		}
@@ -188,7 +182,6 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	case wlv1.LicenseEditionND:
 		ratio = "1:1"
 	default:
-		la.Spec.License.Edition = wlv1.LicenseEditionBase
 		ratio = "4:1"
 	}
 	pts.Annotations["productName"] = string(la.Spec.License.Edition)

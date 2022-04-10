@@ -1060,6 +1060,16 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 		}
 	}
 
+	if cr.Spec.License.Edition == "" {
+		cr.Spec.License.Edition = LicenseEditionBase
+	}
+	if cr.Spec.License.ProductEntitlementSource == "" {
+		cr.Spec.License.ProductEntitlementSource = LicenseEntitlementStandalone
+	}
+	if cr.Spec.License.Metric == "" {
+		cr.Spec.License.Metric = LicenseMetricVPC
+	}
+
 }
 
 // GetLabels returns set of labels to be added to all resources

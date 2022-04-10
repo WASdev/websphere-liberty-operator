@@ -5,5 +5,8 @@ metadata:
 spec:
   license:
     accept: false
-  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
+    edition: IBM WebSphere Application Server
+    productEntitlementSource: Standalone
+    metric: Virtual Processor Core (VPC)
+  applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
 

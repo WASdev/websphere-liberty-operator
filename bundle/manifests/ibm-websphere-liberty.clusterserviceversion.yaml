@@ -11,9 +11,12 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started",
+            "applicationImage": "registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic",
             "license": {
-              "accept": false
+              "accept": false,
+              "edition": "IBM WebSphere Application Server",
+              "metric": "Virtual Processor Core (VPC)",
+              "productEntitlementSource": "Standalone"
             }
           }
         },
@@ -55,7 +58,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-09T14:28:47Z"
+    createdAt: "2022-04-10T13:05:46Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -425,7 +428,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
       version: v1
-  displayName: WebSphere Liberty
+  displayName: IBM WebSphere Liberty
   description: |
     # Name
     
