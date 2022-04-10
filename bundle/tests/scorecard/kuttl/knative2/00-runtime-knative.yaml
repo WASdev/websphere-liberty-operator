@@ -9,4 +9,6 @@ spec:
     accept: true
   replicas: 1
   createKnativeService: true
+  service:
+    port: 9080
 

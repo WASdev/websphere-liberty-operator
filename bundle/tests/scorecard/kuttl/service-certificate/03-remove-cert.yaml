@@ -7,6 +7,7 @@ spec:
     accept: true
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
+  manageTLS: false
   service:
     certificateSecretRef:
 
