@@ -50,7 +50,9 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: Represents the deployment of an WebSphere Liberty application
+        description: 'Represents the deployment of a WebSphere Liberty application.
+          Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs.
+          License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -2002,6 +2004,45 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+              license:
+                description: License information is required.
+                properties:
+                  accept:
+                    description: The license must be accepted before the Liberty application
+                      can be deployed. License information is available at https://ibm.biz/was-license
+                    enum:
+                    - true
+                    type: boolean
+                  edition:
+                    description: 'Product edition. Defaults to IBM WebSphere Application
+                      Server. Other options: IBM WebSphere Application Server Liberty
+                      Core, IBM WebSphere Application Server Network Deployment'
+                    enum:
+                    - IBM WebSphere Application Server
+                    - IBM WebSphere Application Server Liberty Core
+                    - IBM WebSphere Application Server Network Deployment
+                    type: string
+                  metric:
+                    description: 'Charge metric code. Defaults to Virtual Processor
+                      Core (VPC). Other option: Processor Value Unit (PVU)'
+                    enum:
+                    - Virtual Processor Core (VPC)
+                    - Processor Value Unit (PVU)
+                    type: string
+                  productEntitlementSource:
+                    description: 'Entitlement source for the product. Defaults to
+                      Standalone. Other options: IBM Cloud Pak for Applications, IBM
+                      WebSphere Application Server Family Edition, IBM WebSphere Hybrid
+                      Edition'
+                    enum:
+                    - Standalone
+                    - IBM Cloud Pak for Applications
+                    - IBM WebSphere Application Server Family Edition
+                    - IBM WebSphere Hybrid Edition
+                    type: string
+                required:
+                - accept
+                type: object
               manageTLS:
                 description: Enable management of TLS certificates. Defaults to true.
                 type: boolean
@@ -6070,6 +6111,7 @@ spec:
                 x-kubernetes-list-type: map
             required:
             - applicationImage
+            - license
             type: object
           status:
             description: Defines the observed state of WebSphereLibertyApplication.

@@ -4,5 +4,7 @@ metadata:
   name: imagestream-wsliberty-app
 spec:
   applicationImage: imagestream-example
+  license:
+    accept: true
   replicas: 1
   expose: false

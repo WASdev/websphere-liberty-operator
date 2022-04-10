@@ -8,7 +8,7 @@ function update_csv() {
     DESCRIPTION_FILE=/tmp/description.md
     echo "  description: |" > $DESCRIPTION_FILE
     cat "$BASE_DIR/../config/manifests/description.md" | sed 's/^/    /' >> $DESCRIPTION_FILE
-    sed -i.bak '/^  displayName: WebSphere Liberty/r /tmp/description.md' $FILE
+    sed -i.bak '/^  displayName: IBM WebSphere Liberty/r /tmp/description.md' $FILE
     rm -f "${FILE}.bak"
     rm -f $DESCRIPTION_FILE
     }

@@ -3,7 +3,8 @@ kind: WebSphereLibertyApplication
 metadata:
   name: service-binding-ws
 spec:
-  # Add fields here
+  license:
+    accept: true
   applicationImage: k8s.gcr.io/pause:2.0
   replicas: 1
   service:

@@ -19,7 +19,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents the deployment of an WebSphere Liberty application
+    - description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyApplication
       kind: WebSphereLibertyApplication
       name: webspherelibertyapplications.liberty.websphere.ibm.com
@@ -28,6 +28,9 @@ spec:
         name: ""
         version: v1
       - kind: HorizontalPodAutoscaler
+        name: ""
+        version: v1
+      - kind: NetworkPolicy
         name: ""
         version: v1
       - kind: Route
@@ -56,6 +59,10 @@ spec:
         path: autoscaling.maxReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the application. Defaults to the name of this custom resource.
         displayName: Application Name
         path: applicationName
@@ -226,6 +233,8 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - displayName: Network Policy
+        path: networkPolicy
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -295,6 +304,25 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: Specify the labels of pod(s) that incoming traffic is allowed from.
+        displayName: From Labels
+        path: networkPolicy.fromLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
+      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+        displayName: Edition
+        path: license.edition
+      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+        displayName: Metric
+        path: license.metric
+      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+        displayName: Product Entitlement Source
+        path: license.productEntitlementSource
       statusDescriptors:
       - displayName: Service Binding
         path: binding
@@ -303,10 +331,21 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       version: v1
-    - description: Day-2 operation for generating server dumps
+    - description: 'Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyDump
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
+      specDescriptors:
+      - description: License information is required.
+        displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
       - description: Location of the generated dump file
         displayName: Dump File Path
@@ -314,12 +353,23 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
-    - description: Day-2 operation for gathering server traces
+    - description: 'Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyTrace
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
+      specDescriptors:
+      - description: License information is required.
+        displayName: License
+        path: license
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+        displayName: Accept License
+        path: license.accept
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:checkbox
       version: v1
-  displayName: WebSphere Liberty
+  displayName: IBM WebSphere Liberty
   icon:
   - base64data: PHN2ZyBpZD0iV2Vic3BoZXJlTGliZXJ0eSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMzIgMzIiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0ia2MxZXdoeGhoYSIgeDE9IjE2IiB5MT0iMjkiIHgyPSIxNiIgeTI9IjMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPjxzdG9wIG9mZnNldD0iLjI2IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9InNsMGYxYWJudGIiIHgxPSIyIiB5MT0iMjIuNSIgeDI9IjMwIiB5Mj0iMjIuNSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjZmZmIi8+PHN0b3Agb2Zmc2V0PSIuNyIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJhd3JyY2JjcXJjIiB4MT0iMi40NSIgeTE9IjEyLjgzOSIgeDI9IjE2IiB5Mj0iMTIuODM5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9IjAiLz48c3RvcCBvZmZzZXQ9Ii44IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9IndvcGp4c3V4NGUiIHkxPSIzMiIgeDI9IjMyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIuMSIgc3RvcC1jb2xvcj0iI2E1NmVmZiIvPjxzdG9wIG9mZnNldD0iLjkiIHN0b3AtY29sb3I9IiMwZjYyZmUiLz48L2xpbmVhckdyYWRpZW50PjxtYXNrIGlkPSI2a3kxMnd4eDlkIiB4PSIwIiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIHN0eWxlPSJmaWxsOnVybCgja2MxZXdoeGhoYSkiIGQ9Ik0xNSAzaDJ2MjZoLTJ6Ii8+PHBhdGggZD0iTTE2IDMwQTE0LjAxNSAxNC4wMTUgMCAwIDEgMiAxNmwxLTEgMSAxYTEyIDEyIDAgMCAwIDI0IDBoMmExNC4wMTUgMTQuMDE1IDAgMCAxLTE0IDE0eiIgc3R5bGU9ImZpbGw6dXJsKCNzbDBmMWFibnRiKSIvPjxwYXRoIGQ9Ik0xNiAyMmEyMi43NCAyMi43NCAwIDAgMS0xMy41NS00LjA4OGwxLjIxMi0xLjU5MUEyMC43MTYgMjAuNzE2IDAgMCAwIDE2IDIweiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjxwYXRoIGQ9Ik0zLjY2MiAxNS42NzkgMi40NSAxNC4wODhBMjIuNzM2IDIyLjczNiAwIDAgMSAxNiAxMHYyYTIwLjcxNiAyMC43MTYgMCAwIDAtMTIuMzM4IDMuNjc5eiIgc3R5bGU9ImZpbGw6dXJsKCNhd3JyY2JjcXJjKSIvPjxwYXRoIGQ9Ik00IDE2SDJBMTQuMDA2IDE0LjAwNiAwIDAgMSAyMS44NTUgMy4yOEwyMS4wMiA1LjFBMTIuMDA4IDEyLjAwOCAwIDAgMCA0IDE2eiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjwvbWFzaz48L2RlZnM+PGcgc3R5bGU9Im1hc2s6dXJsKCM2a3kxMnd4eDlkKSI+PHBhdGggc3R5bGU9ImZpbGw6dXJsKCN3b3BqeHN1eDRlKSIgZD0iTTAgMGgzMnYzMkgweiIvPjwvZz48cGF0aCBkPSJNMjcgMTRhMy42MTUgMy42MTUgMCAwIDEgLjgzMi0xLjk0NUE1LjMzNCA1LjMzNCAwIDAgMCAyOSA5aC0yYTMuNjE1IDMuNjE1IDAgMCAxLS44MzIgMS45NDVBNS4zMzQgNS4zMzQgMCAwIDAgMjUgMTR6IiBzdHlsZT0iZmlsbDojMDAxZDZjIi8+PHBhdGggZD0iTTI1IDE5YTUuMDA2IDUuMDA2IDAgMCAwIDUtNWgtMmEzIDMgMCAwIDEtNiAwYzAtMS40ODguOC0yLjUyIDEuNzM2LTMuNzE2QTguMjMxIDguMjMxIDAgMCAwIDI2IDVWNGgtMnYxYzAgMS42OTEtLjg1NCAyLjc4Ny0xLjg0MiA0LjA1NUE3LjgxMSA3LjgxMSAwIDAgMCAyMCAxNGE1LjAwNiA1LjAwNiAwIDAgMCA1IDV6TTI4LjUgMjAuMDY0YTcuMTI2IDcuMTI2IDAgMCAxLTcgMGwtMSAxLjczMWE4Ljk0MyA4Ljk0MyAwIDAgMCAzLjUgMS4xMzlWMjhoMnYtNS4wNjZhOC45NDMgOC45NDMgMCAwIDAgMy41LTEuMTM0eiIgc3R5bGU9ImZpbGw6IzAwMWQ2YyIvPjwvc3ZnPg==
     mediatype: image/svg+xml
@@ -347,21 +397,14 @@ spec:
   - Spring
   - Application
   - Open Source
-  - WebSphereLiberty
   - WLO
   links:
   - name: Documentation
-    url: https://github.com/WASdev/websphere-liberty-operator/tree/master/doc
-  - name: WebSphere Liberty
-    url: https://openliberty.io/
-  - name: WebSphere Liberty Images
-    url: https://github.com/WASdev/ci.docker
+    url: https://www.ibm.com/docs/en/was-liberty
   maintainers:
-  - email: arturdzm@ibm.com
-    name: Artur Dzmitryieu
-  - email: leojc@ca.ibm.com
-    name: Leo Christy Jesuraj
-  maturity: beta
+  - email: support@ibm.com
+    name: IBM Support
+  maturity: stable
   provider:
     name: IBM
   version: 0.0.0

@@ -4,3 +4,5 @@ metadata:
   name: imagestream-wsliberty-app
 spec:
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  license:
+    accept: true

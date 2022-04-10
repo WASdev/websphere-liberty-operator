@@ -3,14 +3,10 @@ kind: WebSphereLibertyApplication
 metadata:
   name: websphereliberty-app-sample
 spec:
-  # Add fields here
+  license:
+    accept: false
+    edition: IBM WebSphere Application Server
+    productEntitlementSource: Standalone
+    metric: Virtual Processor Core (VPC)
   applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
-# MicroProfile Health Probes
-#  readinessProbe:
-#    httpGet:
-#      path: /health/ready
-#      port: 9080
-#  livenessProbe:
-#    httpGet:
-#      path: /health/live
-#      port: 9080
+

@@ -54,6 +54,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	pts := &corev1.PodTemplateSpec{}
 
 	targetEnv := []corev1.EnvVar{
+		{Name: "TLS_DIR", Value: "/etc/x509/certs"},
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "message,accessLog,ffdc,audit"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "json"},
@@ -72,7 +73,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
 	testEnv := []Test{
-		{"Test environment defaults", pts.Spec.Containers[0].Env, targetEnv},
+		{"Test environment defaults", targetEnv, pts.Spec.Containers[0].Env},
 	}
 
 	if err := verifyTests(testEnv); err != nil {
@@ -80,14 +81,14 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	}
 
 	// test with env variables set by user
-	targetEnv = []corev1.EnvVar{
+	userEnv := []corev1.EnvVar{
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "error"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "trace,accessLog,ffdc"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "basic"},
 	}
 
 	spec = webspherelibertyv1.WebSphereLibertyApplicationSpec{
-		Env:     targetEnv,
+		Env:     userEnv,
 		Service: svc,
 	}
 	pts = &corev1.PodTemplateSpec{}
@@ -96,8 +97,9 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	oputils.CustomizePodSpec(pts, wl)
 	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
+	expectedEnv := append(userEnv, corev1.EnvVar{Name: "TLS_DIR", Value: "/etc/x509/certs"})
 	testEnv = []Test{
-		{"Test environment config", pts.Spec.Containers[0].Env, targetEnv},
+		{"Test environment config", expectedEnv, pts.Spec.Containers[0].Env},
 	}
 	if err := verifyTests(testEnv); err != nil {
 		t.Fatalf("%v", err)
