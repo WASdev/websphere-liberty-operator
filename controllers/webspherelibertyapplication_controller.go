@@ -16,11 +16,11 @@ import (
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	imageutil "github.com/openshift/library-go/pkg/image/imageutil"
 	"github.com/pkg/errors"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"

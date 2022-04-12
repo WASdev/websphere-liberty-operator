@@ -6,7 +6,7 @@ require (
 	// github.com/application-stacks/runtime-component-operator v0.8.1-0.20220408223952-8135353c6a87
 
 	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220412135608-4cddca0048bc // github.com/application-stacks/runtime-component-operator@upgrade-deps2
-	
+
 	github.com/coreos/prometheus-operator v0.41.1
 	github.com/go-logr/logr v0.4.0
 	github.com/openshift/api v0.0.0-20211028023115-7224b732cc14 // Openshift 4.9
