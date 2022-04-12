@@ -6,7 +6,6 @@ require (
 	// github.com/application-stacks/runtime-component-operator v0.8.1-0.20220408223952-8135353c6a87
 
 	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220412135608-4cddca0048bc // github.com/application-stacks/runtime-component-operator@upgrade-deps2
-
 	github.com/coreos/prometheus-operator v0.41.1
 	github.com/go-logr/logr v0.4.0
 	github.com/openshift/api v0.0.0-20211028023115-7224b732cc14 // Openshift 4.9
@@ -17,6 +16,11 @@ require (
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/serving v0.26.0
 	sigs.k8s.io/controller-runtime v0.9.2
+)
+
+require (
+	github.com/jetstack/cert-manager v1.5.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.50.0
 )
 
 require (
@@ -39,13 +43,11 @@ require (
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/jetstack/cert-manager v1.5.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.50.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.30.0 // indirect
