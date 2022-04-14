@@ -217,11 +217,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	err = r.ReconcileBindings(instance)
-	if err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-	}
-
 	if instance.Spec.ServiceAccountName == nil || *instance.Spec.ServiceAccountName == "" {
 		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(serviceAccount, instance, func() error {
@@ -367,6 +362,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	} else {
 		r.deletePVC(reqLogger, instance.Name+"-serviceability", instance.Namespace)
+	}
+
+	err = r.ReconcileBindings(instance)
+	if err != nil {
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
 	if instance.Spec.StatefulSet != nil {
