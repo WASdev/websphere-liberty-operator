@@ -9,4 +9,28 @@ spec:
     productEntitlementSource: Standalone
     metric: Virtual Processor Core (VPC)
   applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
-
+  expose: true
+  replicas: 3
+  probes:
+    liveness:
+      httpGet:
+        path: /
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 90
+    readiness:
+      httpGet:
+        path: /
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 50
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 400Mi
+  statefulSet: {}
+  serviceability:
+    size: 1Gi
