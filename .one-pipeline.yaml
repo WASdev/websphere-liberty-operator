@@ -139,9 +139,9 @@ containerize:
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # declare -a tags=("${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     echo "**** Saving Artifacts ****"
-    declare -a tags=("${RELEASE_TARGET}-amd64")
+    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
@@ -149,6 +149,17 @@ containerize:
       ARCH=$(echo $i | cut -d'-' -f 2)
       echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
       save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+    done
+
+    declare -a bundles=("${RELEASE_TARGET}")
+    for i in "${bundles[@]}"
+    do
+     IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
+     DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+     #ARCH=$(echo $i | cut -d'-' -f 2)
+     ARCH=amd64
+     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+     save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
 
     declare -a catalogs=("${RELEASE_TARGET}")
