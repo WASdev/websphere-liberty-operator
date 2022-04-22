@@ -253,9 +253,42 @@ scan-artifact:
     ./commons/aqua/aqua-local-scan
 
 release:
-  abort_on_failure: false
-  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/ibm-compliance-automation:1.9.1@sha256:3f3e344a1efb160d83c48cf2ee878a39cbad058c8640c423472e0546316232fd
-  script: |
-    #!/usr/bin/env bash
-    echo "release"
-    #set_env ibmcloud-api-key $(get_env ibmcloud-api-key-prod)
+    abort_on_failure: false
+    image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+    script: |
+      #!/usr/bin/env bash
+      SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
+      ./scripts/pipeline/evaluator.sh      
+      if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
+        if [[  $SKIP_ALL_CHECKS == "true" ]]; then
+          echo "Skipping image scan checks"
+        fi
+        APP_REPO=$(pwd)
+        echo "Application Repository: $APP_REPO"
+        # export GIT_AUTH_USER=${GIT_AUTH_USER}
+        INVENTORY_REPO=$(get_env inventory-repo)       
+        echo "Cloning inventory repository: $INVENTORY_REPO"
+        cd "$WORKSPACE"
+        APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
+        . "${ONE_PIPELINE_PATH}"/git/clone_repo \
+          "$INVENTORY_REPO" \
+          "master"  \
+          "" \
+          "$APP_TOKEN_PATH" 
+        REPO=${INVENTORY_REPO##*/} 
+        NAME=${REPO%.*}
+        echo "Inventory name: $NAME"
+        cd $WORKSPACE/$NAME
+        if [ "$(ls )" ]; then
+          echo "Clearing inventory repository: $INVENTORY_REPO"
+          git config --global user.email "tekton@example.com"
+          git config --global user.name "Tekton"
+          git rm *
+          git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
+          git push origin master
+        fi
+        cd $APP_REPO   
+        ./scripts/pipeline/release.sh
+      else
+        echo "Errors found.  images will not be released"
+      fi
