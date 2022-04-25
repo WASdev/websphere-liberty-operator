@@ -211,7 +211,8 @@ acceptance-test:
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
     export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_TOKEN=$(get_env test-cluster-token | base64 -d)
+    TOKEN=$(get_env test-cluster-token)
+    export CLUSTER_TOKEN="$(echo $TOKEN | base64 -d)"
     export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
     export RELEASE_TARGET=$(get_env branch)
     make setup
