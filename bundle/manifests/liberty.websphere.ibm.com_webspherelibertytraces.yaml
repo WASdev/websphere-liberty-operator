@@ -43,7 +43,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: Day-2 operation for gathering server traces
+        description: 'Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -59,6 +59,17 @@ spec:
               disable:
                 description: Set to true to stop tracing.
                 type: boolean
+              license:
+                description: License information is required.
+                properties:
+                  accept:
+                    description: The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+                    enum:
+                    - true
+                    type: boolean
+                required:
+                - accept
+                type: object
               maxFileSize:
                 description: The maximum size (in MB) that a log file can reach before it is rolled. To disable this attribute, set the value to 0.
                 format: int32
@@ -74,6 +85,7 @@ spec:
                 description: The trace string to be used to selectively enable trace. The default is *=info.
                 type: string
             required:
+            - license
             - podName
             - traceSpecification
             type: object

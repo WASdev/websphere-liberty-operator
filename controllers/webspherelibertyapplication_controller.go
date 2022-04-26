@@ -16,11 +16,11 @@ import (
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	imageutil "github.com/openshift/library-go/pkg/image/imageutil"
 	"github.com/pkg/errors"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -55,11 +55,12 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
-// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses;networkpolicies,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=image.openshift.io,resources=imagestreams;imagestreamtags,verbs=get;list;watch,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=serving.knative.dev,resources=services,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates;issuers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -216,11 +217,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	err = r.ReconcileBindings(instance)
-	if err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-	}
-
 	if instance.Spec.ServiceAccountName == nil || *instance.Spec.ServiceAccountName == "" {
 		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(serviceAccount, instance, func() error {
@@ -301,10 +297,22 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
+	useCertmanager, err := r.GenerateSvcCertSecret(ba, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
+	if err != nil {
+		reqLogger.Error(err, "Failed to reconcile CertManager Certificate")
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+	if ba.GetService().GetCertificateSecretRef() != nil {
+		ba.GetStatus().SetReference(common.StatusReferenceCertSecretName, *ba.GetService().GetCertificateSecretRef())
+	}
+
 	svc := &corev1.Service{ObjectMeta: defaultMeta}
 	err = r.CreateOrUpdate(svc, instance, func() error {
 		oputils.CustomizeService(svc, ba)
 		svc.Annotations = oputils.MergeMaps(svc.Annotations, instance.Spec.Service.Annotations)
+		if !useCertmanager && r.IsOpenShift() {
+			oputils.AddOCPCertAnnotation(ba, svc)
+		}
 		monitoringEnabledLabelName := getMonitoringEnabledLabelName(ba)
 		if instance.Spec.Monitoring != nil {
 			svc.Labels[monitoringEnabledLabelName] = "true"
@@ -316,6 +324,23 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile Service")
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
+	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
+	if np := instance.Spec.NetworkPolicy; np.IsNotDefined() || !np.IsEmpty() {
+		err = r.CreateOrUpdate(networkPolicy, instance, func() error {
+			oputils.CustomizeNetworkPolicy(networkPolicy, instance)
+			return nil
+		})
+		if err != nil {
+			reqLogger.Error(err, "Failed to reconcile network policy")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	} else {
+		if err := r.DeleteResource(networkPolicy); err != nil {
+			reqLogger.Error(err, "Failed to delete network policy")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
 	}
 
 	if instance.Spec.Serviceability != nil {
@@ -337,6 +362,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	} else {
 		r.deletePVC(reqLogger, instance.Name+"-serviceability", instance.Namespace)
+	}
+
+	err = r.ReconcileBindings(instance)
+	if err != nil {
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
 	if instance.Spec.StatefulSet != nil {
@@ -369,7 +399,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env")
 				return err
 			}
+			if err := oputils.CustomizePodWithSVCCertificate(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
+				return err
+			}
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
+			if err := lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance); err != nil {
+				return err
+			}
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -411,7 +447,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env")
 				return err
 			}
+			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
+				return err
+			}
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
+			if err := lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance); err != nil {
+				return err
+			}
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {

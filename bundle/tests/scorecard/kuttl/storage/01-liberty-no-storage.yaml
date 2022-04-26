@@ -3,6 +3,8 @@ kind: WebSphereLibertyApplication
 metadata:
   name: storage-wsliberty
 spec:
+  license:
+    accept: true
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
   expose: false

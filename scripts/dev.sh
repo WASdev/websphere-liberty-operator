@@ -107,6 +107,7 @@ main() {
 #############################################################################
 init_cluster() {
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+    oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["'$OCP_REGISTRY_URL'"]}}}' --type=merge
     oc project $NAMESPACE > /dev/null 2>&1 && true
     if [[ $? -ne 0 ]]; then
       oc new-project $NAMESPACE 

@@ -3,7 +3,8 @@ kind: WebSphereLibertyApplication
 metadata:
   name: service-with-cert-lib-app
 spec:
-  # Add fields here
+  license:
+    accept: true
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
   service:

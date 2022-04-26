@@ -13,7 +13,7 @@ metadata:
   name: service-monitor-wsliberty
 spec:
   endpoints:
-  - port: 9080-tcp
+  - port: 9443-tcp
   selector:
     matchLabels:
       app.kubernetes.io/instance: service-monitor-wsliberty

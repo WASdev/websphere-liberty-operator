@@ -129,7 +129,7 @@ main() {
     oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
 
     echo "****** Installing Bundle image: ${BUNDLE_IMAGE}"
-    operator-sdk run bundle --install-mode OwnNamespace --pull-secret-name regcred "${BUNDLE_IMAGE}" || {
+    operator-sdk run bundle --install-mode OwnNamespace --pull-secret-name regcred "${BUNDLE_IMAGE}" --timeout 5m || {
         echo "****** Installing bundle failed..."
         exit 1
     }

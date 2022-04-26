@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -35,7 +35,7 @@ const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.0.0"
 
 // Validate if the WebSpherLibertyApplication is valid
-func Validate(wlapp *webspherelibertyv1.WebSphereLibertyApplication) (bool, error) {
+func Validate(wlapp *wlv1.WebSphereLibertyApplication) (bool, error) {
 	// Serviceability validation
 	if wlapp.GetServiceability() != nil {
 		if wlapp.GetServiceability().GetVolumeClaimName() == "" && wlapp.GetServiceability().GetSize() == "" {
@@ -98,7 +98,7 @@ func ExecuteCommandInContainer(config *rest.Config, podName, podNamespace, conta
 }
 
 // CustomizeLibertyEnv adds configured env variables appending configured liberty settings
-func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication, client client.Client) error {
+func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
 	// ENV variables have already been set, check if they exist before setting defaults
 	targetEnv := []corev1.EnvVar{
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
@@ -121,22 +121,24 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.Web
 		}
 	}
 
-	if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
-		if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
-			return err
+	/*
+		if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
+				return err
+			}
 		}
-	}
 
-	if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
-		if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
-			return err
+		if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 
 	return nil
 }
 
-func addSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
+func addSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
 	secret := &corev1.Secret{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
 	if err != nil {
@@ -148,11 +150,61 @@ func addSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *websphere
 	return nil
 }
 
-func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
+func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
 	libertyAnnotations := map[string]string{
 		"libertyOperator": "WebSphere Liberty",
 	}
 	pts.Annotations = rcoutils.MergeMaps(pts.Annotations, libertyAnnotations)
+}
+
+func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) error {
+	pts.Annotations["productID"] = "87f3487c22f34742a799164f3f3ffa78"
+	pts.Annotations["productChargedContainers"] = "app"
+
+	entitlement := la.Spec.License.ProductEntitlementSource
+
+	metricValue := "VIRTUAL_PROCESSOR_CORE"
+	if la.Spec.License.Metric == wlv1.LicenseMetricPVU {
+		if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
+			return fmt.Errorf("Invalid metric value '%v' is specified for product entitlement source '%v'", la.Spec.License.Metric, entitlement)
+		} else {
+			metricValue = "PROCESSOR_VALUE_UNIT"
+		}
+	}
+	pts.Annotations["productMetric"] = metricValue
+
+	ratio := ""
+	switch la.Spec.License.Edition {
+	case wlv1.LicenseEditionBase:
+		ratio = "4:1"
+	case wlv1.LicenseEditionCore:
+		ratio = "8:1"
+	case wlv1.LicenseEditionND:
+		ratio = "1:1"
+	default:
+		ratio = "4:1"
+	}
+	pts.Annotations["productName"] = string(la.Spec.License.Edition)
+
+	if entitlement == wlv1.LicenseEntitlementStandalone {
+		delete(pts.Annotations, "cloudpakName")
+		delete(pts.Annotations, "cloudpakId")
+		delete(pts.Annotations, "productCloudpakRatio")
+	} else {
+		pts.Annotations["cloudpakName"] = string(entitlement)
+		pts.Annotations["productCloudpakRatio"] = ratio
+		cloudpakId := ""
+		if entitlement == wlv1.LicenseEntitlementWSHE {
+			cloudpakId = "6358611af04743f99f42dadcd6e39d52"
+		} else if entitlement == wlv1.LicenseEntitlementFamilyEdition {
+			cloudpakId = "be8ae84b3dd04d81b90af0d846849182"
+		} else if entitlement == wlv1.LicenseEntitlementCP4Apps {
+			cloudpakId = "4df52d2cdc374ba09f631a650ad2b5bf"
+		}
+		pts.Annotations["cloudpakId"] = cloudpakId
+	}
+
+	return nil
 }
 
 // findEnvVars checks if the environment variable is already present
@@ -166,7 +218,7 @@ func findEnvVar(name string, envList []corev1.EnvVar) (*corev1.EnvVar, bool) {
 }
 
 // CreateServiceabilityPVC creates PersistentVolumeClaim for Serviceability
-func CreateServiceabilityPVC(instance *webspherelibertyv1.WebSphereLibertyApplication) *corev1.PersistentVolumeClaim {
+func CreateServiceabilityPVC(instance *wlv1.WebSphereLibertyApplication) *corev1.PersistentVolumeClaim {
 	persistentVolume := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        instance.Name + "-serviceability",
@@ -193,7 +245,7 @@ func CreateServiceabilityPVC(instance *webspherelibertyv1.WebSphereLibertyApplic
 }
 
 // ConfigureServiceability setups the shared-storage for serviceability
-func ConfigureServiceability(pts *corev1.PodTemplateSpec, la *webspherelibertyv1.WebSphereLibertyApplication) {
+func ConfigureServiceability(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
 	if la.GetServiceability() != nil {
 		name := "serviceability"
 
@@ -275,7 +327,7 @@ func writeSSOSecretIfNeeded(client client.Client, ssoSecret *corev1.Secret, ssoS
 }
 
 // CustomizeEnvSSO Process the configuration for SSO login providers
-func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *webspherelibertyv1.WebSphereLibertyApplication, client client.Client, isOpenShift bool) error {
+func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication, client client.Client, isOpenShift bool) error {
 	const ssoSecretNameSuffix = "-wlapp-sso"
 	const autoregFragment = "-autoreg-"
 	secretName := instance.GetName() + ssoSecretNameSuffix

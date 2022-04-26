@@ -1,0 +1,16 @@
+# Test to see that the default affinity is is overwritten if supplied with a user defined affinity
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: pod-default-affinity-lib
+  labels:
+    test: affinity
+spec:
+  # Add fields here
+  applicationImage: 'k8s.gcr.io/pause:2.0'
+  license:
+    accept: true
+  replicas: 1
+  affinity:
+    nodeAffinityLabels:
+      kuttlTest: test1

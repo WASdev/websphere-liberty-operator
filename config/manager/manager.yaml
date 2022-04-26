@@ -21,6 +21,11 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+      annotations:
+        productID: "87f3487c22f34742a799164f3f3ffa78"
+        productName: "IBM WebSphere Application Server"
+        productMetric: "FREE"
+        productChargedContainers: "ALL"
     spec:
       hostIPC: false
       hostPID: false

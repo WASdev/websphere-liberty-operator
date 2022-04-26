@@ -8,7 +8,7 @@ IBM WebSphere Liberty is a modern Java EE, Jakarta EE, MicroProfile runtime, ide
 
 ## Details 
 
-WebSphere Liberty Operator enables enterprise architects to govern the way their applications get deployed & managed in the cluster, while dramatically reducing the learning curve for developers to deploy into Kubernetes - allowing them to focus on writing the code!
+The WebSphere Liberty Operator allows you to deploy and manage applications running on WebSphere Liberty into Kubernetes-based platforms, such as Red Hat OpenShift. You can also perform Day-2 operations such as gathering traces and dumps using the operator.
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ Please see the [storage requirements](https://ibm.biz/wlo-reqs) for details.
 
 ## Limitations 
 
-IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional limitations.
+IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional information.
 
 ## Supported platforms
 
@@ -79,8 +79,8 @@ The WebSphere Liberty Operator exposes the runtime container's metrics via the [
 ### Easily mount logs and transaction directories
 If you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster), simply add the following (customizing the folder location and size) to your WebSphereLibertyApplication CR: ``` storage: size: 2Gi mountPath: \"/logs\" ```
 
-### Integration with OpenShift's Certificate Manager
-The WebSphere Liberty Operator takes advantage of the [cert-manager tool](https://cert-manager.io/), if it is installed on the cluster. This allows the operator to automatically provision TLS certificates for pods as well as routes. When creating certificates via the WebSphereLibertyApplication CR the user can specify a particular issuer name and toggle the scopes between ClusterIssuer (cluster scoped) and Issuer (namespace scoped). If not specified, these values are retrieved from a ConfigMap, with a default value of `self-signed` and `ClusterIssuer`. The certificate is mounted into the container via a Secret so that it is automatically refreshed once the certificate is updated.
+### Integration with Certificate Managers
+The perator will automatically provision TLS certificates for pods as well as routes and it is automatically refreshed when the certificates are updated. The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods as well as routes and they are automatically refreshed when the certificates are updated.
 
 ### Integration with OpenShift Serverless
 Deploy your serverless runtime component using a single toggle.  The Operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing your pod to automatically scale to 0 when it is idle.

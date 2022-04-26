@@ -3,8 +3,10 @@ kind: WebSphereLibertyApplication
 metadata:
   name: probes-wsliberty
 spec:
-  # Add fields here
+  license:
+    accept: true
   applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
+  manageTLS: false
   service:
     port: 9443
   replicas: 1

@@ -3,7 +3,10 @@ kind: WebSphereLibertyApplication
 metadata:
   name: provider-wsliberty
 spec:
+  license:
+    accept: true
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  manageTLS: false
   sso:
     github:
       hostname: "github.com"

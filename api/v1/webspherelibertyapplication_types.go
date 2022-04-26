@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/application-stacks/runtime-component-operator/common"
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -16,6 +16,9 @@ import (
 
 // Defines the desired state of WebSphereLibertyApplication.
 type WebSphereLibertyApplicationSpec struct {
+
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	License License `json:"license"`
 
 	// Application image to deploy.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="Application Image",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
@@ -48,6 +51,10 @@ type WebSphereLibertyApplicationSpec struct {
 	// Expose the application externally via a Route, a Knative Route or an Ingress resource.
 	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Expose",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Expose *bool `json:"expose,omitempty"`
+
+	// Enable management of TLS certificates. Defaults to true.
+	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Manage TLS",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	ManageTLS *bool `json:"manageTLS,omitempty"`
 
 	// Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
@@ -124,7 +131,69 @@ type WebSphereLibertyApplicationSpec struct {
 	// Security context for the application container.
 	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Network Policy"
+	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 }
+
+// License information is required.
+type License struct {
+	// The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	// +kubebuilder:validation:Enum:=true
+	Accept bool `json:"accept"`
+
+	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Metric"
+	Metric LicenseMetric `json:"metric,omitempty"`
+
+	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Edition"
+	Edition LicenseEdition `json:"edition,omitempty"`
+
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Product Entitlement Source"
+	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
+}
+
+// Defines the possible values for charge metric codes
+// +kubebuilder:validation:Enum=Virtual Processor Core (VPC);Processor Value Unit (PVU)
+type LicenseMetric string
+
+const (
+	// Metric Virtual Processor Core (VPC)
+	LicenseMetricVPC LicenseMetric = "Virtual Processor Core (VPC)"
+	// Metric Processor Value Unit (PVU)
+	LicenseMetricPVU LicenseMetric = "Processor Value Unit (PVU)"
+)
+
+// Defines the possible values for editions
+// +kubebuilder:validation:Enum=IBM WebSphere Application Server;IBM WebSphere Application Server Liberty Core;IBM WebSphere Application Server Network Deployment
+type LicenseEdition string
+
+const (
+	// Edition IBM WebSphere Application Server
+	LicenseEditionBase LicenseEdition = "IBM WebSphere Application Server"
+	// Edition IBM WebSphere Application Server Liberty Core
+	LicenseEditionCore LicenseEdition = "IBM WebSphere Application Server Liberty Core"
+	// Edition IBM WebSphere Application Server Network Deployment
+	LicenseEditionND LicenseEdition = "IBM WebSphere Application Server Network Deployment"
+)
+
+// Defines the possible values for product entitlement source
+// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
+type LicenseEntitlement string
+
+const (
+	// Entitlement source Standalone
+	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
+	// Entitlement source IBM Cloud Pak for Applications
+	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
+	// Entitlement source IBM WebSphere Application Server Family Edition
+	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM WebSphere Hybrid Edition
+	LicenseEntitlementWSHE LicenseEntitlement = "IBM WebSphere Hybrid Edition"
+)
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
 type WebSphereLibertyApplicationProbes struct {
@@ -222,6 +291,13 @@ type WebSphereLibertyApplicationService struct {
 	// Expose the application as a bindable service. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Bindable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Bindable *bool `json:"bindable,omitempty"`
+}
+
+// Defines the network policy
+type WebSphereLibertyApplicationNetworkPolicy struct {
+	// Specify the labels of pod(s) that incoming traffic is allowed from.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	FromLabels map[string]string `json:"fromLabels,omitempty"`
 }
 
 // Defines the desired state and cycle of applications.
@@ -332,6 +408,8 @@ type WebSphereLibertyApplicationStatus struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Service Binding"
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
+
+	References common.StatusReferences `json:"references,omitempty"`
 }
 
 // Defines possible status conditions.
@@ -364,9 +442,9 @@ type StatusVersions struct {
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].reason",priority=1,description="Reason for the failure of reconcile condition"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Reconciled')].message",priority=1,description="Failure message from reconcile condition"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",priority=0,description="Age of the resource"
-// +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="WebSphereLibertyApplication",resources={{Deployment,v1},{Service,v1},{StatefulSet,v1},{Route,v1},{HorizontalPodAutoscaler,v1},{ServiceAccount,v1},{Secret,v1},{NetworkPolicy,v1}}
 
-// Represents the deployment of an WebSphere Liberty application
+// Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.
 type WebSphereLibertyApplication struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -576,6 +654,11 @@ func (cr *WebSphereLibertyApplication) GetExpose() *bool {
 	return cr.Spec.Expose
 }
 
+// GetManageTLS returns deployment's node and pod affinity settings
+func (cr *WebSphereLibertyApplication) GetManageTLS() *bool {
+	return cr.Spec.ManageTLS
+}
+
 // GetEnv returns slice of environment variables
 func (cr *WebSphereLibertyApplication) GetEnv() []corev1.EnvVar {
 	return cr.Spec.Env
@@ -613,6 +696,11 @@ func (cr *WebSphereLibertyApplication) GetService() common.BaseComponentService 
 		return nil
 	}
 	return cr.Spec.Service
+}
+
+// GetNetworkPolicy returns network policy settings
+func (cr *WebSphereLibertyApplication) GetNetworkPolicy() common.BaseComponentNetworkPolicy {
+	return cr.Spec.NetworkPolicy
 }
 
 // GetApplicationVersion returns application version
@@ -725,6 +813,24 @@ func (s *WebSphereLibertyApplicationStatus) SetBinding(r *corev1.LocalObjectRefe
 	s.Binding = r
 }
 
+func (s *WebSphereLibertyApplicationStatus) GetReferences() common.StatusReferences {
+	if s.References == nil {
+		s.References = make(common.StatusReferences)
+	}
+	return s.References
+}
+
+func (s *WebSphereLibertyApplicationStatus) SetReferences(refs common.StatusReferences) {
+	s.References = refs
+}
+
+func (s *WebSphereLibertyApplicationStatus) SetReference(name string, value string) {
+	if s.References == nil {
+		s.References = make(common.StatusReferences)
+	}
+	s.References[name] = value
+}
+
 // GetMinReplicas returns minimum replicas
 func (a *WebSphereLibertyApplicationAutoScaling) GetMinReplicas() *int32 {
 	return a.MinReplicas
@@ -780,7 +886,7 @@ func (s *WebSphereLibertyApplicationService) GetPort() int32 {
 	if s != nil && s.Port != 0 {
 		return s.Port
 	}
-	return 9080
+	return 9443
 }
 
 // GetNodePort returns service nodePort
@@ -819,6 +925,21 @@ func (s *WebSphereLibertyApplicationService) GetCertificateSecretRef() *string {
 // GetBindable returns whether the application should be exposable as a service
 func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
+	if np == nil {
+		return nil
+	}
+	return np.FromLabels
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsNotDefined() bool {
+	return np == nil
+}
+
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsEmpty() bool {
+	return np != nil && (np.FromLabels == nil || len(np.FromLabels) == 0)
 }
 
 // GetLabels returns labels to be added on ServiceMonitor
@@ -931,7 +1052,22 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 	}
 
 	if cr.Spec.Service.Port == 0 {
-		cr.Spec.Service.Port = 9080
+		if cr.Spec.ManageTLS == nil || *cr.Spec.ManageTLS {
+			cr.Spec.Service.Port = 9443
+
+		} else {
+			cr.Spec.Service.Port = 9080
+		}
+	}
+
+	if cr.Spec.License.Edition == "" {
+		cr.Spec.License.Edition = LicenseEditionBase
+	}
+	if cr.Spec.License.ProductEntitlementSource == "" {
+		cr.Spec.License.ProductEntitlementSource = LicenseEntitlementStandalone
+	}
+	if cr.Spec.License.Metric == "" {
+		cr.Spec.License.Metric = LicenseMetricVPC
 	}
 
 }
@@ -939,11 +1075,12 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 // GetLabels returns set of labels to be added to all resources
 func (cr *WebSphereLibertyApplication) GetLabels() map[string]string {
 	labels := map[string]string{
-		"app.kubernetes.io/instance":   cr.Name,
-		"app.kubernetes.io/name":       cr.Name,
-		"app.kubernetes.io/managed-by": "websphere-liberty-operator",
-		"app.kubernetes.io/component":  "backend",
-		"app.kubernetes.io/part-of":    cr.Spec.ApplicationName,
+		"app.kubernetes.io/instance":     cr.Name,
+		"app.kubernetes.io/name":         cr.Name,
+		"app.kubernetes.io/managed-by":   "websphere-liberty-operator",
+		"app.kubernetes.io/component":    "backend",
+		"app.kubernetes.io/part-of":      cr.Spec.ApplicationName,
+		common.GetComponentNameLabel(cr): cr.Name,
 	}
 
 	if cr.Spec.ApplicationVersion != "" {
