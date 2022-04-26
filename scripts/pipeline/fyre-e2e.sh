@@ -18,7 +18,6 @@ setup_env() {
 
     # Set variables for rest of script to use
     readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
-    readonly BUILD_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}:${RELEASE}"
     readonly BUNDLE_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}-bundle:${RELEASE}"
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
@@ -32,27 +31,6 @@ setup_env() {
 cleanup_env() {
   oc delete project "${TEST_NAMESPACE}"
 }
-
-#push_images() {
-#    echo "****** Logging into private registry..."
-#    oc sa get-token "${SERVICE_ACCOUNT}" -n default | docker login -u unused --password-stdin "${DEFAULT_REGISTRY}" || {
-#        echo "Failed to log into docker registry as ${SERVICE_ACCOUNT}, exiting..."
-#        exit 1
-#    }
-
-#    echo "****** Creating pull secret using Docker config..."
-#    oc create secret generic regcred --from-file=.dockerconfigjson="${HOME}/.docker/config.json" --type=kubernetes.io/dockerconfigjson
-
-#    docker push "${BUILD_IMAGE}" || {
-#        echo "Failed to push ref: ${BUILD_IMAGE} to docker registry, exiting..."
-#        exit 1
-#    }
-
-#    docker push "${BUNDLE_IMAGE}" || {
-#        echo "Failed to push ref: ${BUNDLE_IMAGE} to docker registry, exiting..."
-#        exit 1
-#    }
-#}
 
 main() {
     parse_args "$@"
@@ -102,15 +80,6 @@ main() {
 
     # login to docker to avoid rate limiting during build
     echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-
-    #echo "****** Building image..."
-    #docker build -t "${BUILD_IMAGE}" .
-
-    #echo "****** Building bundle..."
-    #IMG="${BUILD_IMAGE}" BUNDLE_IMG="${BUNDLE_IMAGE}" make kustomize bundle bundle-build
-
-    #echo "****** Pushing operator and operator bundle images into registry..."
-    #push_images
 
     trap "rm -f /tmp/pull-secret-*.yaml" EXIT
 
