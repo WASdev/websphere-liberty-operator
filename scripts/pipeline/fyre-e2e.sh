@@ -79,6 +79,11 @@ main() {
         exit 1
     fi
 
+    if [[ -z "${DEFAULT_CHANNEL}" ]]; then
+            echo "****** Missing DEFAULT_CHANNEL, set environment variable to channel to use for the test subscription"
+            exit 1
+    fi
+
     echo "****** Setting up test environment..."
     setup_env
 
