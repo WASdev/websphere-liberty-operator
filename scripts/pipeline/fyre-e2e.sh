@@ -158,7 +158,7 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $TEST_NAMESPACE
 spec:
-  channel:  v1.0
+  channel: $DEFAULT_CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $TEST_NAMESPACE
