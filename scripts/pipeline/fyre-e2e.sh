@@ -33,6 +33,15 @@ cleanup_env() {
   oc delete project "${TEST_NAMESPACE}"
 }
 
+## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
+trap_cleanup() {
+  last_status=$?
+  if [[ $last_status != 0 ]]; then
+    cleanup_env
+  fi
+  exit $last_status
+}
+
 #push_images() {
 #    echo "****** Logging into private registry..."
 #    oc sa get-token "${SERVICE_ACCOUNT}" -n default | docker login -u unused --password-stdin "${DEFAULT_REGISTRY}" || {
@@ -99,6 +108,17 @@ main() {
 
     echo "****** Setting up test environment..."
     setup_env
+
+    if [[ -z "${DEBUG_FAILURE}" ]]; then
+        trap trap_cleanup EXIT
+    else
+        echo "#####################################################################################"
+        echo "WARNING: --debug-failure is set. If e2e tests fail, any created resources will remain"
+        echo "on the cluster for debugging/troubleshooting. YOU MUST DELETE THESE RESOURCES when"
+        echo "you're done, or else they will cause future tests to fail. To cleanup manually, just"
+        echo "delete the namespace \"${TEST_NAMESPACE}\": oc delete project \"${TEST_NAMESPACE}\" "
+        echo "#####################################################################################"
+    fi
 
     # login to docker to avoid rate limiting during build
     echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
@@ -197,6 +217,9 @@ parse_args() {
     --test-tag)
       shift
       readonly TEST_TAG="${1}"
+      ;;
+    --debug-failure)
+      readonly DEBUG_FAILURE=true
       ;;
     *)
       echo "Error: Invalid argument - $1"
