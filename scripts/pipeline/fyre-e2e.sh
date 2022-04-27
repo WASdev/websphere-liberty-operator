@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly usage="Usage: fyre-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id> --catalog-image <catalog-image>"
+readonly usage="Usage: fyre-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id> --catalog-image <catalog-image> --channel <channel>"
 readonly OC_CLIENT_VERSION="4.6.0"
 readonly CONTROLLER_MANAGER_NAME="wlo-controller-manager"
 
@@ -79,9 +79,10 @@ main() {
         exit 1
     fi
 
-    if [[ -z "${DEFAULT_CHANNEL}" ]]; then
-            echo "****** Missing DEFAULT_CHANNEL, set environment variable to channel to use for the test subscription"
-            exit 1
+    if [[ -z "${CHANNEL}" ]]; then
+        echo "****** Missing channel, see usage"
+        echo "${usage}"
+        exit 1
     fi
 
     echo "****** Setting up test environment..."
@@ -217,6 +218,10 @@ parse_args() {
     --catalog-image)
       shift
       readonly CATALOG_IMAGE="${1}"
+      ;;
+    --channel)
+      shift
+      readonly CHANNEL="${1}"
       ;;
     *)
       echo "Error: Invalid argument - $1"
