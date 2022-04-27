@@ -1,12 +1,37 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: websphereliberty-app-sample
+  name: wlo-app
 spec:
   license:
-    accept: false
-    edition: IBM WebSphere Application Server
-    productEntitlementSource: Standalone
-    metric: Virtual Processor Core (VPC)
+    accept: true
   applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
-
+  expose: true
+  replicas: 3
+  probes:
+    liveness:
+      httpGet:
+        path: /
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 70
+    readiness:
+      httpGet:
+        path: /
+        port: 9443
+        scheme: HTTPS
+      initialDelaySeconds: 60
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 400Mi
+      ephemeral-storage: 1Gi
+  statefulSet: {}
+  serviceability:
+    size: 1Gi
+  affinity:
+    architecture:
+      - amd64
