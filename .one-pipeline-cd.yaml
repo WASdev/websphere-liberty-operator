@@ -33,6 +33,7 @@ setup:
 
       echo "${ARTIFACT}"
       echo "${DIGEST}"
+      echo "${APP}" | jq '.'
 
       SAVED_DIGEST="$(skopeo inspect docker://$ARTIFACT | grep Digest | grep -o 'sha[^\"]*')"
       if [[ ${DIGEST} == ${SAVED_DIGEST} ]]; then
