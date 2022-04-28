@@ -147,7 +147,7 @@ containerize:
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
       ARCH=$(echo $i | cut -d'-' -f 2)
-      echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST"
       save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
 
@@ -158,7 +158,7 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH=$(echo $i | cut -d'-' -f 2)
      ARCH=amd64
-     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
      save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
 
@@ -169,7 +169,7 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH=$(echo $i | cut -d'-' -f 2)
      ARCH=amd64
-     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
+     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
      save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
     done
 
