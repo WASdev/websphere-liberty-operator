@@ -83,12 +83,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
-	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
+	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", request.Namespace)
 	if err != nil {
-		reqLogger.Info("Failed to find websphere-liberty-operator config map")
+		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		common.Config = common.DefaultOpConfig()
-		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: ns}}
+		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: request.Namespace}}
 		configMap.Data = common.Config
+		configMap.Namespace = request.Namespace
 	} else {
 		common.Config.LoadFromConfigMap(configMap)
 	}
@@ -99,7 +100,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	})
 
 	if err != nil {
-		reqLogger.Info("Failed to update websphere-liberty-operator config map")
+		reqLogger.Info("Failed to create or update websphere-liberty-operator config map, error: " + err.Error())
 	}
 
 	// Fetch the WebSphereLiberty instance
