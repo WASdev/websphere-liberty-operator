@@ -89,7 +89,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		common.Config = common.DefaultOpConfig()
 		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: request.Namespace}}
 		configMap.Data = common.Config
-		configMap.Namespace = request.Namespace
 	} else {
 		common.Config.LoadFromConfigMap(configMap)
 	}
