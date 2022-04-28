@@ -54,9 +54,12 @@ fi
 #    --version="$(cat /config/version)" \
 #    --name="${APP_REPO_NAME}_deployment"
 # loop through listed artifact images and scan each amd64 image
+pipelinectl serialize --all-artifacts
+
 for artifact_image in $(list_artifacts); do
   IMAGE_ARTIFACT=$(load_artifact $artifact_image name)
   DIGEST=$(load_artifact $artifact_image digest)
+  ARCH=$(load_artifact $artifact_image arch)
   NAME="$(echo "$artifact_image" | awk '{print $1}')"
 
   echo "image from load_artifact:" $IMAGE_LOCATION 
