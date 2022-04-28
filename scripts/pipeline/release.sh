@@ -62,6 +62,20 @@ for artifact_image in $(list_artifacts); do
   echo "image from load_artifact:" $IMAGE_LOCATION 
   echo "arch:" $ARCH
 
+  echo  "cocoa inventory add"
+  echo  "  --artifact=${IMAGE_ARTIFACT}"
+  echo  "  --repository-url=${APP_REPO}"
+  echo  "  --commit-sha=${COMMIT_SHA}"
+  echo  "  --build-number=${BUILD_NUMBER}"
+  echo  "  --pipeline-run-id=${PIPELINE_RUN_ID}"
+  echo  "  --version=""$(cat /config/version)"
+  echo  "  --name=${NAME}"
+  echo  "  --app-artifacts=${APP_ARTIFACTS}"
+  echo  "  --signature=${SIGNATURE}"
+  echo  "  --provenance=${IMAGE_ARTIFACT}"
+  echo  "  --sha256=${DIGEST}"
+  echo  "  --type=\"image\""
+
   cocoa inventory add \
     --artifact="${IMAGE_ARTIFACT}" \
     --repository-url="${APP_REPO}" \
