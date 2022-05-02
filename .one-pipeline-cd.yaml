@@ -107,10 +107,11 @@ deploy:
     #
 sign-artifact:
   #  image: icr.io/continuous-delivery/pipeline/image-signing:1.0.0@sha256:e9d8e354668ba3d40be2aaee08298d2aa7f0e1c8a1829cca4094ec93830e3e6a0 
-  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/csso-image-sign:1.0.0@sha256:cb22e6ad6b3469155719f6bf09bde641208a1e349e5ccc09407204bb069f7b4e        
+  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/csso-image-sign:1.0.0@sha256:cb22e6ad6b3469155719f6bf09bde641208a1e349e5ccc09407204bb069f7b4e
   script: |
     #!/usr/bin/env bash
     echo "sign-artifact stage"
+    gpg-agent --daemon
     "${COMMONS_PATH}"/ciso/sign_icr.sh
     gpg2 --armor --output wlo.gpg --export $(get_env signing-alias)
     save_file gpg_file wlo.gpg
