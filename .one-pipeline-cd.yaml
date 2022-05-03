@@ -158,4 +158,5 @@ finish:
   script: |
     #!/usr/bin/env bash
     echo "finish stage"
+    chmod +x ./scripts/pipeline/cd_finish
     ./scripts/pipeline/cd_finish
