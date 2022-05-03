@@ -68,7 +68,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	reqLogger := r.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - starting")
 	ns, err := oputils.GetOperatorNamespace()
-
 	if err != nil {
 		reqLogger.Info("Failed to get operator namespace, error: " + err.Error())
 	}
