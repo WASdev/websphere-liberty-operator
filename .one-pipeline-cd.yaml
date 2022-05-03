@@ -139,7 +139,7 @@ acceptance-test:
         base_tag="${tag%-(amd64|s390x|ppc64le)}"
         echo "base_tag=$base_tag"
         echo "image_name=$image_name"
-        if [[ $tag == $base_tag ]]; then
+        if [[ -n $tag && $tag == $base_tag ]]; then
           echo "skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images"
           skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images
           skopeo standalone-verify ./images/manifest.json ${image_name} ${fingerprint} ./images/signature-1
