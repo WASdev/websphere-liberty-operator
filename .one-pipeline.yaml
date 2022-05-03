@@ -272,6 +272,9 @@ release:
     script: |
       #!/usr/bin/env bash
       echo "saving artifact for operator manifest"
+      PIPELINE_REGISTRY=$(get_env pipeline-registry)
+      PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+      RELEASE_TARGET=$(get_env branch)
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$RELEASE_TARGET
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
       save_artifact operator-$RELEASE_TARGET type=image name="$IMAGE" "digest=$DIGEST" "arch=amd64"
