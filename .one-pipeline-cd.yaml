@@ -131,8 +131,14 @@ acceptance-test:
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
         image_name="$(load_artifact "$artifact" "name")"
+        echo "image_name=$image_name"
+        echo "{image_name}=${image_name}"
         tag="${image_name##*:}"
+        echo "tag=$tag"
+        echo "image_name=$image_name"
         base_tag="${tag%-(amd64|s390x|ppc64le)}"
+        echo "base_tag=$base_tag"
+        echo "image_name=$image_name"
         if [[ $tag == $base_tag ]]; then
           echo "skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images"
           skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images
