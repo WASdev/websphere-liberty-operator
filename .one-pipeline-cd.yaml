@@ -111,7 +111,6 @@ sign-artifact:
   script: |
     #!/usr/bin/env bash
     echo "sign-artifact stage"
-    gpg-agent --daemon
     "${COMMONS_PATH}"/ciso/sign_icr.sh
     gpg2 --armor --output wlo.gpg --export $(get_env signing-alias)
     save_file gpg_file wlo.gpg
@@ -131,16 +130,10 @@ acceptance-test:
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
         image_name="$(load_artifact "$artifact" "name")"
-        echo "image_name=$image_name"
-        echo "{image_name}=${image_name}"
         tag="${image_name##*:}"
-        echo "tag=$tag"
-        echo "image_name=$image_name"
-        base_tag="${tag%-(amd64|s390x|ppc64le)}"
-        echo "base_tag=$base_tag"
-        echo "image_name=$image_name"
-        if [[ -n $tag && $tag == $base_tag ]]; then
-          echo "skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images"
+        base_tag="$(echo $tag | sed 's/-\(amd64\|s390x\|ppc64le\)$//')"
+        if [[ $tag == $base_tag ]]; then
+          echo "Verifying image ${image_name}"
           skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) docker://${image_name} dir:./images
           skopeo standalone-verify ./images/manifest.json ${image_name} ${fingerprint} ./images/signature-1
           if [[ $? != 0 ]]; then
