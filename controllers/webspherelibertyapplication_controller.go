@@ -68,6 +68,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	reqLogger := r.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - starting")
 	ns, err := oputils.GetOperatorNamespace()
+	if err != nil {
+		reqLogger.Info("Failed to get operator namespace, error: " + err.Error())
+	}
+
 	// When running the operator locally, `ns` will be empty string
 	if ns == "" {
 		// Since this method can be called directly from unit test, populate `watchNamespaces`.
@@ -85,7 +89,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
 	if err != nil {
-		reqLogger.Info("Failed to find websphere-liberty-operator config map")
+		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		common.Config = common.DefaultOpConfig()
 		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: ns}}
 		configMap.Data = common.Config
@@ -99,7 +103,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	})
 
 	if err != nil {
-		reqLogger.Info("Failed to update websphere-liberty-operator config map")
+		reqLogger.Info("Failed to create or update websphere-liberty-operator config map, error: " + err.Error())
 	}
 
 	// Fetch the WebSphereLiberty instance
