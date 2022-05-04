@@ -257,9 +257,7 @@ scan-artifact:
     curl -fsSL https://get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
     # get aqua scan executables
-    # git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
-    # TODO: Using paul-baity's fork until https://github.ibm.com/CICD-CPP/cpp-pipelines/issues/41 is fixed
-    git clone https://$(get_env git-token)@github.ibm.com/paul-baity/cpp-pipelines.git
+    git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
     chmod -R +x cpp-pipelines
     # setup and execute aqua scan
     cd cpp-pipelines
