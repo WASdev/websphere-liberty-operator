@@ -58,7 +58,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-10T13:05:46Z"
+    createdAt: "2022-05-06T09:21:38Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -363,20 +363,20 @@ spec:
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
+      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+        displayName: Edition
+        path: license.edition
+      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+        displayName: Product Entitlement Source
+        path: license.productEntitlementSource
+      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+        displayName: Metric
+        path: license.metric
+      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced above and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
-      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
-        displayName: Edition
-        path: license.edition
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
-        displayName: Metric
-        path: license.metric
-      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
-        displayName: Product Entitlement Source
-        path: license.productEntitlementSource
       statusDescriptors:
       - displayName: Service Binding
         path: binding

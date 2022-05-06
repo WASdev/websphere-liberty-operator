@@ -2341,8 +2341,12 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before the Liberty application
-                      can be deployed. License information is available at https://ibm.biz/was-license
+                    description: I represent that the software in the above-referenced
+                      application container includes the IBM Program referenced above
+                      and I accept the terms of the license agreement corresponding
+                      to the version of IBM Program in the application container by
+                      setting this value to true. See https://ibm.biz/was-license
+                      for the license agreements applicable to this IBM Program
                     enum:
                     - true
                     type: boolean

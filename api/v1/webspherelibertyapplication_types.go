@@ -138,22 +138,23 @@ type WebSphereLibertyApplicationSpec struct {
 
 // License information is required.
 type License struct {
-	// The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
-	// +kubebuilder:validation:Enum:=true
-	Accept bool `json:"accept"`
-
-	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Metric"
-	Metric LicenseMetric `json:"metric,omitempty"`
-
 	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Edition"
+	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
 	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Product Entitlement Source"
+	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
+
+	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
+	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
+	Metric LicenseMetric `json:"metric,omitempty"`
+
+	// I represent that the software in the above-referenced application container includes the IBM Program referenced above and I accept the terms of the license agreement corresponding
+	// to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
+	// +operator-sdk:csv:customresourcedefinitions:order=103,type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	// +kubebuilder:validation:Enum:=true
+	Accept bool `json:"accept"`
 }
 
 // Defines the possible values for charge metric codes
