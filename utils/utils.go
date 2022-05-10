@@ -250,7 +250,6 @@ func CreateServiceabilityPVC(instance *wlv1.WebSphereLibertyApplication) *corev1
 			},
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteMany,
-				corev1.ReadWriteOnce,
 			},
 		},
 	}
