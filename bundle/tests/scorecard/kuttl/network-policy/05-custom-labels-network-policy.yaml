@@ -6,6 +6,14 @@ spec:
   license:
     accept: true
   applicationImage: k8s.gcr.io/pause:2.0
-  networkPolicy: {}
+  expose: false
+  networkPolicy:
+    namespaceLabels:
+      namespace: test
+    fromLabels:
+      foo: bar
   service:
-    port: 8081
+    port: 8080
+    ports:
+      - port: 9090
+        protocol: TCP

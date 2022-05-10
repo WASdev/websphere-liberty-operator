@@ -8,5 +8,5 @@ spec:
   applicationImage: k8s.gcr.io/pause:2.0
   expose: true
   service:
-    port: 9080
+    port: 8080
     ports: []

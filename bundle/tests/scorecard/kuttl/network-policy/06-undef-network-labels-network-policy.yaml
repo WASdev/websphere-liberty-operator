@@ -6,7 +6,11 @@ spec:
   license:
     accept: true
   applicationImage: k8s.gcr.io/pause:2.0
-  expose: true
+  expose: false
+  networkPolicy:
+    namespaceLabels:
+    fromLabels:
+      foo: bar
   service:
     port: 8080
     ports:

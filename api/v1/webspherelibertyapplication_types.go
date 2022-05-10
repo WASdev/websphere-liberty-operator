@@ -312,8 +312,16 @@ type WebSphereLibertyApplicationService struct {
 
 // Defines the network policy
 type WebSphereLibertyApplicationNetworkPolicy struct {
+	// Disable the creation of the network policy. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Disable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	Disable *bool `json:"disable,omitempty"`
+
+	// Specify the labels of namespaces that incoming traffic is allowed from.
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Namespace Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	NamespaceLabels map[string]string `json:"namespaceLabels,omitempty"`
+
 	// Specify the labels of pod(s) that incoming traffic is allowed from.
-	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	FromLabels map[string]string `json:"fromLabels,omitempty"`
 }
 
@@ -968,6 +976,15 @@ func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
 }
 
+// GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetNamespaceLabels() map[string]string {
+	if np == nil {
+		return nil
+	}
+	return np.NamespaceLabels
+}
+
+// GetFromLabels returns the pod selector labels that should be used for the ingress rule
 func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
 	if np == nil {
 		return nil
@@ -975,12 +992,9 @@ func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]s
 	return np.FromLabels
 }
 
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsNotDefined() bool {
-	return np == nil
-}
-
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsEmpty() bool {
-	return np != nil && (np.FromLabels == nil || len(np.FromLabels) == 0)
+// IsDisabled returns whether the network policy should be created or not
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsDisabled() bool {
+	return np != nil && np.Disable != nil && *np.Disable
 }
 
 // GetLabels returns labels to be added on ServiceMonitor
