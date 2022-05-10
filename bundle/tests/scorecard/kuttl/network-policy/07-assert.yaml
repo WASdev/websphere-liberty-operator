@@ -18,6 +18,8 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+        - port: 9090
+          protocol: TCP
   podSelector:
     matchLabels:
       liberty.websphere.ibm.com/name: network-policy-rc
