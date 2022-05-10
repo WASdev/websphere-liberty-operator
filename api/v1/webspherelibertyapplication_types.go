@@ -262,8 +262,8 @@ type WebSphereLibertyApplicationService struct {
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// Node proxies this port into your service.
-	// +kubebuilder:validation:Maximum=65535
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=32767
+	// +kubebuilder:validation:Minimum=30000
 	// +operator-sdk:csv:customresourcedefinitions:order=11,type=spec,displayName="Node Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	NodePort *int32 `json:"nodePort,omitempty"`
 
