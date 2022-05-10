@@ -2,7 +2,10 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: node-affinity-lib
+  name: affinity-rc
 spec:
-  # Add fields here
+  license:
+    accept: true
   affinity:
+    architecture:
+      - amd64
