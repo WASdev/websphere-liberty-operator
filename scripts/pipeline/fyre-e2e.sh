@@ -1,7 +1,6 @@
 #!/bin/bash
 
-readonly usage="Usage: fyre-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id>"
-#readonly SERVICE_ACCOUNT="travis-tests"
+readonly usage="Usage: fyre-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id> --catalog-image <catalog-image> --channel <channel>"
 readonly OC_CLIENT_VERSION="4.6.0"
 readonly CONTROLLER_MANAGER_NAME="wlo-controller-manager"
 
@@ -18,8 +17,6 @@ setup_env() {
 
     # Set variables for rest of script to use
     readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
-    readonly BUILD_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}:${RELEASE}"
-    readonly BUNDLE_IMAGE="${REGISTRY_NAME}/${REGISTRY_IMAGE}-bundle:${RELEASE}"
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
@@ -106,6 +103,18 @@ main() {
         exit 1
     fi
 
+    if [[ -z "${CATALOG_IMAGE}" ]]; then
+        echo "****** Missing catalog image, see usage"
+        echo "${usage}"
+        exit 1
+    fi
+
+    if [[ -z "${CHANNEL}" ]]; then
+        echo "****** Missing channel, see usage"
+        echo "${usage}"
+        exit 1
+    fi
+
     echo "****** Setting up test environment..."
     setup_env
 
@@ -123,15 +132,6 @@ main() {
     # login to docker to avoid rate limiting during build
     echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-    #echo "****** Building image..."
-    #docker build -t "${BUILD_IMAGE}" .
-
-    #echo "****** Building bundle..."
-    #IMG="${BUILD_IMAGE}" BUNDLE_IMG="${BUNDLE_IMAGE}" make kustomize bundle bundle-build
-
-    #echo "****** Pushing operator and operator bundle images into registry..."
-    #push_images
-
     trap "rm -f /tmp/pull-secret-*.yaml" EXIT
 
     echo "****** Logging into private registry..."
@@ -148,11 +148,8 @@ main() {
     echo "Updating global pull secret"
     oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
 
-    echo "****** Installing Bundle image: ${BUNDLE_IMAGE}"
-    operator-sdk run bundle --install-mode OwnNamespace --pull-secret-name regcred "${BUNDLE_IMAGE}" --timeout 5m || {
-        echo "****** Installing bundle failed..."
-        exit 1
-    }
+    echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
+    install_operator
 
     # Wait for operator deployment to be ready
     while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
@@ -173,6 +170,47 @@ main() {
     cleanup_env
 
     return $result
+}
+
+install_operator() {
+    # Apply the catalog
+    echo "****** Applying the catalog source..."
+    cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: websphere-liberty-catalog
+  namespace: $TEST_NAMESPACE
+spec:
+  sourceType: grpc
+  image: $CATALOG_IMAGE
+  displayName: WebSphere Liberty Catalog
+  publisher: IBM
+EOF
+
+    echo "****** Applying the operator group..."
+    cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: websphere-operator-group
+  namespace: $TEST_NAMESPACE
+EOF
+
+    echo "****** Applying the subscription..."
+    cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: websphere-liberty-operator-subscription
+  namespace: $TEST_NAMESPACE
+spec:
+  channel: $DEFAULT_CHANNEL
+  name: ibm-websphere-liberty
+  source: websphere-liberty-catalog
+  sourceNamespace: $TEST_NAMESPACE
+  installPlanApproval: Automatic
+EOF
 }
 
 parse_args() {
@@ -224,6 +262,14 @@ parse_args() {
       ;;
     --debug-failure)
       readonly DEBUG_FAILURE=true
+      ;;
+    --catalog-image)
+      shift
+      readonly CATALOG_IMAGE="${1}"
+      ;;
+    --channel)
+      shift
+      readonly CHANNEL="${1}"
       ;;
     *)
       echo "Error: Invalid argument - $1"

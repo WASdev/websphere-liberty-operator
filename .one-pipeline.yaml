@@ -226,6 +226,7 @@ acceptance-test:
     export CLUSTER_TOKEN=$(get_env test-cluster-token)
     export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
     export RELEASE_TARGET=$(get_env branch)
+    export CATALOG_IMAGE="$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$RELEASE_TARGET"
     make setup
     make test-pipeline-e2e
 

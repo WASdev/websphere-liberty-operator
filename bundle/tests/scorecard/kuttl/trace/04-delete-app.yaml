@@ -5,3 +5,6 @@ delete:
   - apiVersion: liberty.websphere.ibm.com/v1
     kind: WebSphereLibertyApplication
     name: trace-ws
+  - apiVersion: liberty.websphere.ibm.com/v1
+    kind: WebSphereLibertyTrace
+    name: example-trace
