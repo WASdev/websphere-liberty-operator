@@ -166,7 +166,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
-	// I represent that the software in the above-referenced application container includes the IBM Program referenced above and I accept the terms of the license agreement corresponding
+	// I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
 	// to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
 	// +operator-sdk:csv:customresourcedefinitions:order=103,type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
 	// +kubebuilder:validation:Enum:=true
