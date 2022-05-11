@@ -49,6 +49,7 @@ rules:
   verbs:
   - get
   - create
+  - patch
 - apiGroups:
   - autoscaling
   resources:
