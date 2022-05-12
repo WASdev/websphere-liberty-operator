@@ -166,7 +166,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
-	// I represent that the software in the above-referenced application container includes the IBM Program referenced above and I accept the terms of the license agreement corresponding
+	// I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
 	// to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
 	// +operator-sdk:csv:customresourcedefinitions:order=103,type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
 	// +kubebuilder:validation:Enum:=true
@@ -278,8 +278,8 @@ type WebSphereLibertyApplicationService struct {
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// Node proxies this port into your service.
-	// +kubebuilder:validation:Maximum=65535
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=32767
+	// +kubebuilder:validation:Minimum=30000
 	// +operator-sdk:csv:customresourcedefinitions:order=11,type=spec,displayName="Node Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	NodePort *int32 `json:"nodePort,omitempty"`
 
@@ -312,8 +312,16 @@ type WebSphereLibertyApplicationService struct {
 
 // Defines the network policy
 type WebSphereLibertyApplicationNetworkPolicy struct {
+	// Disable the creation of the network policy. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Disable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	Disable *bool `json:"disable,omitempty"`
+
+	// Specify the labels of namespaces that incoming traffic is allowed from.
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Namespace Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	NamespaceLabels map[string]string `json:"namespaceLabels,omitempty"`
+
 	// Specify the labels of pod(s) that incoming traffic is allowed from.
-	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	FromLabels map[string]string `json:"fromLabels,omitempty"`
 }
 
@@ -968,6 +976,15 @@ func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
 }
 
+// GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetNamespaceLabels() map[string]string {
+	if np == nil {
+		return nil
+	}
+	return np.NamespaceLabels
+}
+
+// GetFromLabels returns the pod selector labels that should be used for the ingress rule
 func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
 	if np == nil {
 		return nil
@@ -975,12 +992,9 @@ func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]s
 	return np.FromLabels
 }
 
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsNotDefined() bool {
-	return np == nil
-}
-
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsEmpty() bool {
-	return np != nil && (np.FromLabels == nil || len(np.FromLabels) == 0)
+// IsDisabled returns whether the network policy should be created or not
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsDisabled() bool {
+	return np != nil && np.Disable != nil && *np.Disable
 }
 
 // GetLabels returns labels to be added on ServiceMonitor

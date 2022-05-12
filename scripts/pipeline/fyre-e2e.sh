@@ -195,6 +195,9 @@ kind: OperatorGroup
 metadata:
   name: websphere-operator-group
   namespace: $TEST_NAMESPACE
+spec:
+  targetNamespaces:
+    - $TEST_NAMESPACE
 EOF
 
     echo "****** Applying the subscription..."

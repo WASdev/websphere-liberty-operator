@@ -8,10 +8,12 @@ spec:
   applicationImage: k8s.gcr.io/pause:2.0
   expose: false
   networkPolicy:
+    namespaceLabels:
+      namespace: test
     fromLabels:
       foo: bar
   service:
-    port: 9080
+    port: 8080
     ports:
       - port: 9090
         protocol: TCP

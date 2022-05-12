@@ -1,9 +1,13 @@
-apiVersion: apps/v1
-kind: StatefulSet
+# Check that if there is a matching node affinity lab a pod is created
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
 metadata:
-  name: node-affinity-lib
+  name: affinity-rc
 spec:
-  # Add fields here
+  license:
+    accept: true
+  applicationImage: 'k8s.gcr.io/pause:2.0'
+  replicas: 1
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -13,5 +17,3 @@ spec:
                 operator: In
                 values:
                   - test1
-status:
-  readyReplicas: 1

@@ -58,7 +58,7 @@ metadata:
     categories: Application Runtime
     certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-05-06T09:21:38Z"
+    createdAt: "2022-05-10T18:45:23Z"
     description: Deploy and manage applications running on Liberty
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -358,6 +358,16 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: Disable the creation of the network policy. Defaults to false.
+        displayName: Disable
+        path: networkPolicy.disable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specify the labels of namespaces that incoming traffic is allowed from.
+        displayName: Namespace Labels
+        path: networkPolicy.namespaceLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
@@ -372,7 +382,7 @@ spec:
       - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
         displayName: Metric
         path: license.metric
-      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced above and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
+      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
