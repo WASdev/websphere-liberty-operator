@@ -5,9 +5,9 @@ metadata:
     alm-examples: '[]'
     capabilities: Auto Pilot
     categories: Application Runtime
-    certified: "true"
     createdAt: "2021-11-25T14:00:00Z"
     description: Deploy and manage applications running on Liberty
+    operators.openshift.io/infrastructure-features: '["disconnected"]'
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
   labels:
@@ -113,7 +113,7 @@ spec:
         path: manageTLS
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+      - description: Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
         displayName: Replicas
         path: replicas
         x-descriptors:
@@ -410,11 +410,14 @@ spec:
   - WLO
   links:
   - name: Documentation
-    url: https://www.ibm.com/docs/en/was-liberty
+    url: https://ibm.biz/wlo-docs
   maintainers:
   - email: support@ibm.com
     name: IBM Support
   maturity: stable
   provider:
     name: IBM
+  relatedImages:
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:5d3afaf6f5b4762213ab6fdabb2f1d8d8b374646702ef50a46f784795147fac3
+    name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 0.0.0
