@@ -59,8 +59,11 @@ main() {
   SCRIPT_DIR="$(dirname "$0")"
 
   # Set defaults unless overridden. 
-  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
+  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
+  if [[ "$OCP_REGISTRY_URL" == "" ]]; then
+     init_cluster
+  elif 
   VERSION=${VERSION:="latest"}
   if [[ "$VERSION" == "latest" ]]; then
       VVERSION=$VERSION
@@ -76,7 +79,6 @@ main() {
   TEMP_DIR=${TEMP_DIR:=/tmp}
   
   if [[ "$COMMAND" == "all" ]]; then
-     init_cluster
      login_registry
      build
      bundle
@@ -115,6 +117,7 @@ main() {
 #############################################################################
 init_cluster() {
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+    OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
     oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["'$OCP_REGISTRY_URL'"]}}}' --type=merge
     oc project $NAMESPACE > /dev/null 2>&1 && true
     if [[ $? -ne 0 ]]; then
