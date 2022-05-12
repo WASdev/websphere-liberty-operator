@@ -20,7 +20,7 @@ setup:
       skopeo --version
     fi
     if [ -n "$(get_env commit_hash "")" ]; then
-      ./ci/inventory.sh "$(get_env commit_hash)"
+      ./scripts/pipeline/inventory.sh "$(get_env commit_hash)"
     fi
     INVENTORY_PATH="$(get_env inventory-path)"
     INVENTORY_ENTRIES_PATH="$WORKSPACE/$(get_env INVENTORY_ENTRIES_PATH)"
