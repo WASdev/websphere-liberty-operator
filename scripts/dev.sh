@@ -61,9 +61,9 @@ main() {
   # Set defaults unless overridden. 
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
   OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
-  if [[ "$OCP_REGISTRY_URL" == "" ]]; then
+  if [[ -z "${OCP_REGISTRY_URL}" ]]; then
      init_cluster
-  elif 
+  fi
   VERSION=${VERSION:="latest"}
   if [[ "$VERSION" == "latest" ]]; then
       VVERSION=$VERSION
