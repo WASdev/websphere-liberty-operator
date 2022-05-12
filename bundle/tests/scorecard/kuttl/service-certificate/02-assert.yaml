@@ -12,7 +12,6 @@ kind: Deployment
 metadata:
   name: service-with-cert-lib-app
 status:
-  observedGeneration: 2
   replicas: 1
   readyReplicas: 1
   updatedReplicas: 1
