@@ -411,8 +411,6 @@ spec:
   links:
   - name: Documentation
     url: https://ibm.biz/wlo-docs
-  - name: WebSphere Liberty
-    url: https://www.ibm.com/docs/en/was-liberty
   maintainers:
   - email: support@ibm.com
     name: IBM Support
