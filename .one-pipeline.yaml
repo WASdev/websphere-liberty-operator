@@ -146,7 +146,7 @@ containerize:
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      { ARCH="$(echo $tag | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
+      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
       echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
       save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=$MANIFEST"
     done
