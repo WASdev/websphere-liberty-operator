@@ -72,7 +72,7 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Manage TLS",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	ManageTLS *bool `json:"manageTLS,omitempty"`
 
-	// Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+	// Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
 
