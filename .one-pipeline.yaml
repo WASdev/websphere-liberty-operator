@@ -139,16 +139,16 @@ containerize:
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # declare -a tags=("${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     echo "**** Saving Artifacts ****"
-    declare -a tags=("${RELEASE_TARGET}-amd64")
+    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+      { ARCH="$(echo $tag | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
       echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST"
-      save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+      save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=$MANIFEST"
     done
 
     declare -a bundles=("${RELEASE_TARGET}")
@@ -159,7 +159,7 @@ containerize:
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
      echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
-     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
     declare -a catalogs=("${RELEASE_TARGET}")
@@ -170,7 +170,7 @@ containerize:
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
      echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
-     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
 sign-artifact:
@@ -244,9 +244,10 @@ scan-artifact:
         image="$(load_artifact "$artifact" "name")"
         type="$(load_artifact "$artifact" "type")"
         digest="$(load_artifact "$artifact" "digest")"
+        manifest="$(load_artifact "$artifact" "manifest")"
         name="$(echo "$artifact" | awk '{print $1}')"
         if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* ]]; then
+          if [[ "$image" == *"icr.io"* && "$manifest" == false ]]; then
             start_va_scan "$name" "$image" "$digest"
           fi
         fi
@@ -281,19 +282,6 @@ release:
       else
         skopeo --version
       fi
-
-      echo "saving artifact for operator manifest"
-      PIPELINE_REGISTRY=$(get_env pipeline-registry)
-      PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-      RELEASE_TARGET=$(get_env branch)
-      DOCKER_USERNAME=$(get_env docker-username)
-      DOCKER_PASSWORD=$(get_env docker-password)
-      
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-
-      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$RELEASE_TARGET
-      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      save_artifact operator-$RELEASE_TARGET type=image name="$IMAGE" "digest=$DIGEST" "arch=amd64"
 
       SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
       ./scripts/pipeline/evaluator.sh      
