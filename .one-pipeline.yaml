@@ -29,7 +29,7 @@ setup:
 
     // Update repo with Whitesource enabled
     GHE_TOKEN=$(get_env git-token)
-    WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo)
+    WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo | sed 's/https:\/\///')
     echo "git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO +refs/remotes/origin/$BRANCH:refs/heads/$BRANCH +refs/tags/*:refs/tags/*"
     git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO +refs/remotes/origin/$BRANCH:refs/heads/$BRANCH +refs/tags/*:refs/tags/*
   
