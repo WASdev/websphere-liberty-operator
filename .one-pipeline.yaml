@@ -274,17 +274,6 @@ release:
     image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
     script: |
       #!/usr/bin/env bash
-      # Download and install skopeo
-      if ! command -v skopeo &> /dev/null; then
-        if [ ! -f "/apt/sources.list.d/devel:kubic:libcontainers:stable.list" ]; then
-          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-          wget --no-check-certificate -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key -O- | sudo apt-key add -
-          sudo apt-get update -qq
-        fi
-        sudo apt-get -y install skopeo
-      else
-        skopeo --version
-      fi
 
       SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
       ./scripts/pipeline/evaluator.sh      
