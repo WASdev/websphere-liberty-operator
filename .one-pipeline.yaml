@@ -158,7 +158,7 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
+     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST manifest=false"
      save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
@@ -169,7 +169,7 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
+     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST manifest=false"
      save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
