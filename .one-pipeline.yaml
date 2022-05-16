@@ -17,7 +17,7 @@ setup:
 
     # Only enable branch protection on branches that are not "main" or a patch branch (e.g. 1.1.x)
     if [[ "$ENABLE_BRANCH_PROTECTION" == "true" && "$BRANCH" != "main" && ! "$BRANCH" =~ [0-9](.[0-9])?.x ]]; then
-      GHE_TOKEN=$(get_env git-public-token)
+      GH_TOKEN=$(get_env git-public-token)
       REPO=$(get_env app-repo)
       REPO="$(echo ${REPO%.git} | sed 's/https:\/\/github.com\///')"
 
@@ -26,6 +26,12 @@ setup:
 
       curl -u :$GH_TOKEN https://api.github.com/repos/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
     fi
+
+    // Update repo with Whitesource enabled
+    GHE_TOKEN=$(get_env git-token)
+    WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo)
+    echo "git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO +refs/remotes/origin/$BRANCH:refs/heads/$BRANCH +refs/tags/*:refs/tags/*"
+    git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO +refs/remotes/origin/$BRANCH:refs/heads/$BRANCH +refs/tags/*:refs/tags/*
   
 test:
   dind: true
