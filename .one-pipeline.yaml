@@ -24,7 +24,9 @@ setup:
       echo "REPO: $REPO"
       echo "BRANCH: $BRANCH"
 
-      curl -u :$GH_TOKEN https://api.github.com/repos/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
+      # Commenting this out because it "locks" whatever branch you're building and prevents pushes to it. This is good for a main branch, 
+      # but not for dev branches. This means that the branch-protection check will fail. 
+      # curl -u :$GH_TOKEN https://api.github.com/repos/$REPO/branches/$BRANCH/protection -H "Accept: application/vnd.github.v3+json" -X PUT -d '{"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"enforce_admins":null,"restrictions":null,"required_status_checks":null}'
     fi
 
     // Update repo with Whitesource enabled
