@@ -1,3 +1,19 @@
+/*
+  Copyright contributors to the WASdev project.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package v1
 
 import (
@@ -56,7 +72,7 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Manage TLS",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	ManageTLS *bool `json:"manageTLS,omitempty"`
 
-	// Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+	// Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
 
@@ -138,22 +154,23 @@ type WebSphereLibertyApplicationSpec struct {
 
 // License information is required.
 type License struct {
-	// The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
-	// +kubebuilder:validation:Enum:=true
-	Accept bool `json:"accept"`
-
-	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Metric"
-	Metric LicenseMetric `json:"metric,omitempty"`
-
 	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Edition"
+	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
 	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Product Entitlement Source"
+	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
+
+	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
+	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
+	Metric LicenseMetric `json:"metric,omitempty"`
+
+	// I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
+	// to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
+	// +operator-sdk:csv:customresourcedefinitions:order=103,type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	// +kubebuilder:validation:Enum:=true
+	Accept bool `json:"accept"`
 }
 
 // Defines the possible values for charge metric codes
@@ -261,8 +278,8 @@ type WebSphereLibertyApplicationService struct {
 	Type *corev1.ServiceType `json:"type,omitempty"`
 
 	// Node proxies this port into your service.
-	// +kubebuilder:validation:Maximum=65535
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=32767
+	// +kubebuilder:validation:Minimum=30000
 	// +operator-sdk:csv:customresourcedefinitions:order=11,type=spec,displayName="Node Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	NodePort *int32 `json:"nodePort,omitempty"`
 
@@ -295,9 +312,17 @@ type WebSphereLibertyApplicationService struct {
 
 // Defines the network policy
 type WebSphereLibertyApplicationNetworkPolicy struct {
+	// Disable the creation of the network policy. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Disable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	Disable *bool `json:"disable,omitempty"`
+
+	// Specify the labels of namespaces that incoming traffic is allowed from.
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Namespace Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	NamespaceLabels *map[string]string `json:"namespaceLabels,omitempty"`
+
 	// Specify the labels of pod(s) that incoming traffic is allowed from.
-	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
-	FromLabels map[string]string `json:"fromLabels,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	FromLabels *map[string]string `json:"fromLabels,omitempty"`
 }
 
 // Defines the desired state and cycle of applications.
@@ -951,19 +976,25 @@ func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
 }
 
-func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
-	if np == nil {
+// GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetNamespaceLabels() map[string]string {
+	if np == nil || np.NamespaceLabels == nil {
 		return nil
 	}
-	return np.FromLabels
+	return *np.NamespaceLabels
 }
 
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsNotDefined() bool {
-	return np == nil
+// GetFromLabels returns the pod selector labels that should be used for the ingress rule
+func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
+	if np == nil || np.FromLabels == nil {
+		return nil
+	}
+	return *np.FromLabels
 }
 
-func (np *WebSphereLibertyApplicationNetworkPolicy) IsEmpty() bool {
-	return np != nil && (np.FromLabels == nil || len(np.FromLabels) == 0)
+// IsDisabled returns whether the network policy should be created or not
+func (np *WebSphereLibertyApplicationNetworkPolicy) IsDisabled() bool {
+	return np != nil && np.Disable != nil && *np.Disable
 }
 
 // GetLabels returns labels to be added on ServiceMonitor

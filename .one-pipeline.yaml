@@ -146,9 +146,9 @@ containerize:
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      ARCH=$(echo $i | cut -d'-' -f 2)
-      echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
-      save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
+      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
+      save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=$MANIFEST"
     done
 
     declare -a bundles=("${RELEASE_TARGET}")
@@ -156,10 +156,10 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH=$(echo $i | cut -d'-' -f 2)
+     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
-     save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST manifest=false"
+     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
     declare -a catalogs=("${RELEASE_TARGET}")
@@ -167,10 +167,10 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH=$(echo $i | cut -d'-' -f 2)
+     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact $i name=$IMAGE digest=$DIGEST"
-     save_artifact $i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST manifest=false"
+     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
     done
 
 sign-artifact:
@@ -222,6 +222,7 @@ acceptance-test:
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
     export CLUSTER_URL=$(get_env test-cluster-url)
+    export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
     export CLUSTER_TOKEN=$(get_env test-cluster-token)
     export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
     export RELEASE_TARGET=$(get_env branch)
@@ -243,10 +244,14 @@ scan-artifact:
         image="$(load_artifact "$artifact" "name")"
         type="$(load_artifact "$artifact" "type")"
         digest="$(load_artifact "$artifact" "digest")"
+        manifest="$(load_artifact "$artifact" "manifest")"
         name="$(echo "$artifact" | awk '{print $1}')"
         if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* ]]; then
+          if [[ "$image" == *"icr.io"* && "$manifest" == false ]]; then
+            echo "Starting VA scan for $image"
             start_va_scan "$name" "$image" "$digest"
+          else
+            echo "Skipping VA scan for $image"
           fi
         fi
       done
@@ -265,9 +270,43 @@ scan-artifact:
     ./commons/aqua/aqua-local-scan
 
 release:
-  abort_on_failure: false
-  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/ibm-compliance-automation:1.9.1@sha256:3f3e344a1efb160d83c48cf2ee878a39cbad058c8640c423472e0546316232fd
-  script: |
-    #!/usr/bin/env bash
-    echo "release"
-    #set_env ibmcloud-api-key $(get_env ibmcloud-api-key-prod)
+    abort_on_failure: false
+    image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+    script: |
+      #!/usr/bin/env bash
+
+      SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
+      ./scripts/pipeline/evaluator.sh      
+      if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
+        if [[  $SKIP_ALL_CHECKS == "true" ]]; then
+          echo "Skipping image scan checks"
+        fi
+        APP_REPO=$(pwd)
+        echo "Application Repository: $APP_REPO"
+        # export GIT_AUTH_USER=${GIT_AUTH_USER}
+        INVENTORY_REPO=$(get_env inventory-repo)       
+        echo "Cloning inventory repository: $INVENTORY_REPO"
+        cd "$WORKSPACE"
+        APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
+        . "${ONE_PIPELINE_PATH}"/git/clone_repo \
+          "$INVENTORY_REPO" \
+          "master"  \
+          "" \
+          "$APP_TOKEN_PATH" 
+        REPO=${INVENTORY_REPO##*/} 
+        NAME=${REPO%.*}
+        echo "Inventory name: $NAME"
+        cd $WORKSPACE/$NAME
+        if [ "$(ls )" ]; then
+          echo "Clearing inventory repository: $INVENTORY_REPO"
+          git config --global user.email "tekton@example.com"
+          git config --global user.name "Tekton"
+          git rm *
+          git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
+          git push origin master
+        fi
+        cd $APP_REPO   
+        ./scripts/pipeline/release.sh
+      else
+        echo "Errors found.  images will not be released"
+      fi

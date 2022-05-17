@@ -1,3 +1,19 @@
+/*
+  Copyright contributors to the WASdev project.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 package utils
 
 import (
@@ -33,6 +49,18 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.0.0"
+
+var editionProductID = map[wlv1.LicenseEdition]string{
+	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
+	wlv1.LicenseEditionCore: "87f3487c22f34742a799164f3f3ffa78",
+	wlv1.LicenseEditionND:   "c6a988d93b0f4d1388200d40ddc84e5b",
+}
+
+var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
+	wlv1.LicenseEntitlementCP4Apps:       "4df52d2cdc374ba09f631a650ad2b5bf",
+	wlv1.LicenseEntitlementFamilyEdition: "be8ae84b3dd04d81b90af0d846849182",
+	wlv1.LicenseEntitlementWSHE:          "6358611af04743f99f42dadcd6e39d52",
+}
 
 // Validate if the WebSpherLibertyApplication is valid
 func Validate(wlapp *wlv1.WebSphereLibertyApplication) (bool, error) {
@@ -158,7 +186,11 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 }
 
 func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) error {
-	pts.Annotations["productID"] = "87f3487c22f34742a799164f3f3ffa78"
+	pid := ""
+	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
+		pid = val
+	}
+	pts.Annotations["productID"] = pid
 	pts.Annotations["productChargedContainers"] = "app"
 
 	entitlement := la.Spec.License.ProductEntitlementSource
@@ -194,12 +226,8 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 		pts.Annotations["cloudpakName"] = string(entitlement)
 		pts.Annotations["productCloudpakRatio"] = ratio
 		cloudpakId := ""
-		if entitlement == wlv1.LicenseEntitlementWSHE {
-			cloudpakId = "6358611af04743f99f42dadcd6e39d52"
-		} else if entitlement == wlv1.LicenseEntitlementFamilyEdition {
-			cloudpakId = "be8ae84b3dd04d81b90af0d846849182"
-		} else if entitlement == wlv1.LicenseEntitlementCP4Apps {
-			cloudpakId = "4df52d2cdc374ba09f631a650ad2b5bf"
+		if val, ok := entitlementCloudPakID[entitlement]; ok {
+			cloudpakId = val
 		}
 		pts.Annotations["cloudpakId"] = cloudpakId
 	}
@@ -234,7 +262,6 @@ func CreateServiceabilityPVC(instance *wlv1.WebSphereLibertyApplication) *corev1
 			},
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteMany,
-				corev1.ReadWriteOnce,
 			},
 		},
 	}

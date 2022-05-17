@@ -11,13 +11,14 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:5d3afaf6f5b4762213ab6fdabb2f1d8d8b374646702ef50a46f784795147fac3",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
               "metric": "Virtual Processor Core (VPC)",
               "productEntitlementSource": "Standalone"
-            }
+            },
+            "manageTLS": true
           }
         },
         {
@@ -56,10 +57,10 @@ metadata:
       ]
     capabilities: Auto Pilot
     categories: Application Runtime
-    certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-10T13:05:46Z"
+    createdAt: "2022-05-12T13:14:08Z"
     description: Deploy and manage applications running on Liberty
+    operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
@@ -167,7 +168,7 @@ spec:
         path: manageTLS
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+      - description: Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
         displayName: Replicas
         path: replicas
         x-descriptors:
@@ -358,25 +359,35 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: Disable the creation of the network policy. Defaults to false.
+        displayName: Disable
+        path: networkPolicy.disable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specify the labels of namespaces that incoming traffic is allowed from.
+        displayName: Namespace Labels
+        path: networkPolicy.namespaceLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
+      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+        displayName: Edition
+        path: license.edition
+      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+        displayName: Product Entitlement Source
+        path: license.productEntitlementSource
+      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+        displayName: Metric
+        path: license.metric
+      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
-      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
-        displayName: Edition
-        path: license.edition
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
-        displayName: Metric
-        path: license.metric
-      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
-        displayName: Product Entitlement Source
-        path: license.productEntitlementSource
       statusDescriptors:
       - displayName: Service Binding
         path: binding
@@ -838,11 +849,14 @@ spec:
   - WLO
   links:
   - name: Documentation
-    url: https://www.ibm.com/docs/en/was-liberty
+    url: https://ibm.biz/wlo-docs
   maintainers:
   - email: support@ibm.com
     name: IBM Support
   maturity: stable
   provider:
     name: IBM
+  relatedImages:
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:5d3afaf6f5b4762213ab6fdabb2f1d8d8b374646702ef50a46f784795147fac3
+    name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 1.0.0

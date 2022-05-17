@@ -3,5 +3,4 @@ kind: TestStep
 delete:
 - apiVersion: liberty.websphere.ibm.com/v1
   kind: WebSphereLibertyApplication
-  labels:
-    test: affinity
+  name: affinity-other-rc

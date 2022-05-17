@@ -2,14 +2,11 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: anti-affinity-pod-lib
-  labels:
-    test: affinity
+  name: anti-affinity-rc
 spec:
-  # Add fields here
-  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   license:
     accept: true
+  applicationImage: 'k8s.gcr.io/pause:2.0'
   replicas: 1
   affinity:
     podAntiAffinity:
@@ -21,5 +18,5 @@ spec:
             - key: app.kubernetes.io/instance
               operator: In
               values:
-                - node-affinity-label-lib
+                - affinity-rc
           topologyKey: kubernetes.io/hostname

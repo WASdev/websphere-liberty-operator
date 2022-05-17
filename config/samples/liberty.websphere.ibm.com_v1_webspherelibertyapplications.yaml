@@ -8,5 +8,5 @@ spec:
     edition: IBM WebSphere Application Server
     productEntitlementSource: Standalone
     metric: Virtual Processor Core (VPC)
-  applicationImage: registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic
-
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started@sha256:5d3afaf6f5b4762213ab6fdabb2f1d8d8b374646702ef50a46f784795147fac3
+  manageTLS: true

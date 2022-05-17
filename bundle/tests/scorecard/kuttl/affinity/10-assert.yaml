@@ -1,9 +1,8 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: node-affinity-lib
+  name: affinity-rc
 spec:
-  # Add fields here
   template:
     spec:
       affinity:
@@ -15,6 +14,14 @@ spec:
                     operator: In
                     values:
                       - amd64
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: affinity-rc
+                topologyKey: kubernetes.io/hostname
 status:
   replicas: 1
   readyReplicas: 1
