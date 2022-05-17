@@ -2179,7 +2179,7 @@ spec:
                 description: Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.
                 type: string
               replicas:
-                description: Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+                description: Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
                 format: int32
                 type: integer
               resources:

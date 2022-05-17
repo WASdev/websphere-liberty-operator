@@ -72,7 +72,7 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec,displayName="Manage TLS",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	ManageTLS *bool `json:"manageTLS,omitempty"`
 
-	// Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+	// Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
 
@@ -318,11 +318,11 @@ type WebSphereLibertyApplicationNetworkPolicy struct {
 
 	// Specify the labels of namespaces that incoming traffic is allowed from.
 	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Namespace Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
-	NamespaceLabels map[string]string `json:"namespaceLabels,omitempty"`
+	NamespaceLabels *map[string]string `json:"namespaceLabels,omitempty"`
 
 	// Specify the labels of pod(s) that incoming traffic is allowed from.
 	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="From Labels",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
-	FromLabels map[string]string `json:"fromLabels,omitempty"`
+	FromLabels *map[string]string `json:"fromLabels,omitempty"`
 }
 
 // Defines the desired state and cycle of applications.
@@ -978,18 +978,18 @@ func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 
 // GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
 func (np *WebSphereLibertyApplicationNetworkPolicy) GetNamespaceLabels() map[string]string {
-	if np == nil {
+	if np == nil || np.NamespaceLabels == nil {
 		return nil
 	}
-	return np.NamespaceLabels
+	return *np.NamespaceLabels
 }
 
 // GetFromLabels returns the pod selector labels that should be used for the ingress rule
 func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromLabels() map[string]string {
-	if np == nil {
+	if np == nil || np.FromLabels == nil {
 		return nil
 	}
-	return np.FromLabels
+	return *np.FromLabels
 }
 
 // IsDisabled returns whether the network policy should be created or not
