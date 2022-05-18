@@ -24,7 +24,7 @@
 
 set -Eeo pipefail
 
-readonly USAGE="Usage: dev.sh all | init | build | catalog | subscribe  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
+readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
 
 main() {
 
@@ -59,10 +59,17 @@ main() {
   SCRIPT_DIR="$(dirname "$0")"
 
   # Set defaults unless overridden. 
-  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
-  VERSION=${VERSION:="0.0.1"}
-  VVERSION=${VVERSION:=v$VERSION}
+  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
+  if [[ -z "${OCP_REGISTRY_URL}" ]]; then
+     init_cluster
+  fi
+  VERSION=${VERSION:="latest"}
+  if [[ "$VERSION" == "latest" ]]; then
+      VVERSION=$VERSION
+  else
+      VVERSION=${VVERSION:=v$VERSION}
+  fi
   OPERATOR_NAME=${OPERATOR_NAME:="operator"}
   IMAGE_TAG_BASE=${IMAGE_TAG_BASE:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME:$VVERSION}
   IMG=${IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME:$VVERSION}
@@ -72,7 +79,6 @@ main() {
   TEMP_DIR=${TEMP_DIR:=/tmp}
   
   if [[ "$COMMAND" == "all" ]]; then
-     init_cluster
      login_registry
      build
      bundle
@@ -92,6 +98,10 @@ main() {
   elif [[ "$COMMAND" == "subscribe" ]]; then
      apply_og
      apply_subscribe
+  elif [[ "$COMMAND" == "login" ]]; then
+     login_registry
+  elif [[ "$COMMAND" == "deploy" ]]; then
+     deploy
   else 
     echo
     echo "Command $COMMAND unrecognized."
@@ -107,6 +117,7 @@ main() {
 #############################################################################
 init_cluster() {
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+    OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
     oc patch image.config.openshift.io/cluster  --patch '{"spec":{"registrySources":{"insecureRegistries":["'$OCP_REGISTRY_URL'"]}}}' --type=merge
     oc project $NAMESPACE > /dev/null 2>&1 && true
     if [[ $? -ne 0 ]]; then
@@ -132,6 +143,7 @@ cat << EOF > $CATALOG_FILE
     spec:
       sourceType: grpc
       image: $CATALOG_IMG
+      imagePullPolicy: Always
       displayName: WebSphere Liberty Catalog
       publisher: IBM
       updateStrategy:
@@ -180,6 +192,17 @@ EOF
 }
 
 ###################################
+# Make deploy
+###################################
+deploy() {
+    echo "------------"
+    echo "deploy"
+    echo "------------"
+    make -C  $MAKEFILE_DIR install VERSION=$VVERSION IMG=$IMG IMAGE_TAG_BASE=$IMAGE_TAG_BASE BUNDLE_IMG=$BUNDLE_IMG CATALOG_IMG=$CATALOG_IMG TLS_VERIFY=false
+    make -C  $MAKEFILE_DIR deploy VERSION=$VVERSION IMG=$IMG IMAGE_TAG_BASE=$IMAGE_TAG_BASE BUNDLE_IMG=$BUNDLE_IMG CATALOG_IMG=$CATALOG_IMG TLS_VERIFY=false
+}
+
+###################################
 # Build and push the operator image
 ###################################
 build() {
@@ -200,9 +223,16 @@ bundle() {
     echo "------------"
     echo "bundle"
     echo "------------"
-    make -C  $MAKEFILE_DIR bundle IMG=$IMG VERSION=$VERSION
+    # Special case, Makefile make bundle only handles semantic versioning
+    if [[ "$VERSION" == "latest" ]]; then
+        make -C  $MAKEFILE_DIR bundle IMG=$IMG VERSION=9.9.9
+        sed -i 's/$OCP_REGISTRY_URL\/$NAMESPACE\/$OPERATOR_NAME:v9.9.9/$OCP_REGISTRY_URL\/$NAMESPACE\/$OPERATOR_NAME:latest/g' $MAKEFILE_DIR/bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml
+    else
+        make -C  $MAKEFILE_DIR bundle IMG=$IMG VERSION=$VERSION
+    fi
+
     echo "------------"
-    echo "build-build"
+    echo "bundle-build"
     echo "------------"
     make -C  $MAKEFILE_DIR bundle-build VERSION=$VVERSION IMG=$IMG IMAGE_TAG_BASE=$IMAGE_TAG_BASE BUNDLE_IMG=$BUNDLE_IMG CATALOG_IMG=$CATALOG_IMG TLS_VERIFY=false 
     echo "------------"
