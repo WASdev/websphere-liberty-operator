@@ -33,10 +33,10 @@ setup:
     GHE_TOKEN=$(get_env git-token)
     WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo | sed 's/https:\/\///')
 
-    if [[ -f ".git/refs/remotes/origin/$BRANCH" ]]; then
+    if [[ -n "$(git branch --list -r origin/$BRANCH)" ]]; then
       echo "Pushing branch $BRANCH to $WHITESOURCE_GHE_REPO"
       REFS="+refs/remotes/origin/$BRANCH:refs/heads/$BRANCH +refs/tags/*:refs/tags/*"
-    elif [[ -f ".git/refs/tags/$BRANCH" ]]; then
+    elif [[ -n "$(git tag --list $BRANCH)" ]]; then
       echo "The given 'branch' ($BRANCH) is a tag. Pushing it to $WHITESOURCE_GHE_REPO."
       REFS="+refs/tags/$BRANCH:refs/tags/$BRANCH"
     else
