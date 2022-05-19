@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
-	"github.com/application-stacks/runtime-component-operator/common"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -127,7 +126,7 @@ func ExecuteCommandInContainer(config *rest.Config, podName, podNamespace, conta
 }
 
 // CustomizeLibertyEnv adds configured env variables appending configured liberty settings
-func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, ba common.BaseComponent) error {
+func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
 	// ENV variables have already been set, check if they exist before setting defaults
 	targetEnv := []corev1.EnvVar{
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
@@ -143,10 +142,9 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 		)
 	}
 
-	if ba.GetManageTLS() == nil || *ba.GetManageTLS() {
-		if _, found := findEnvVar("SEC_IMPORT_K8S_CERTS", pts.Spec.Containers[0].Env); !found {
-			pts.Spec.Containers[0].Env = append(pts.Spec.Containers[0].Env, corev1.EnvVar{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"})
-		}
+	// If manageTLS is true or not set, and SEC_IMPORT_K8S_CERTS is not set then default it to "true"
+	if la.GetManageTLS() == nil || *la.GetManageTLS() {
+		targetEnv = append(targetEnv, corev1.EnvVar{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"})
 	}
 
 	envList := pts.Spec.Containers[0].Env

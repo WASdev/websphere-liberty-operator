@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
-	"github.com/application-stacks/runtime-component-operator/common"
 	oputils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/openshift/api/route/v1"
@@ -65,9 +64,6 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	logf.SetLogger(logger)
 	os.Setenv("WATCH_NAMESPACE", namespace)
 
-	instance := &webspherelibertyv1.WebSphereLibertyApplication{}
-	var ba common.BaseComponent = instance
-
 	// Test default values no config
 	svc := &webspherelibertyv1.WebSphereLibertyApplicationService{Port: 8080, Type: &clusterType}
 	spec := webspherelibertyv1.WebSphereLibertyApplicationSpec{Service: svc}
@@ -78,6 +74,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "message,accessLog,ffdc,audit"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "json"},
+		{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"},
 	}
 	// Always call CustomizePodSpec to populate Containers & simulate real behaviour
 	wl := createWebSphereLibertyApp(name, namespace, spec)
@@ -90,7 +87,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 	rb := oputils.NewReconcilerBase(rcl, cl, s, &rest.Config{}, record.NewFakeRecorder(10))
 
 	oputils.CustomizePodSpec(pts, wl)
-	CustomizeLibertyEnv(pts, wl, rb.GetClient(), ba)
+	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
 	testEnv := []Test{
 		{"Test environment defaults", targetEnv, pts.Spec.Containers[0].Env},
@@ -105,6 +102,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "error"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "trace,accessLog,ffdc"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "basic"},
+		{Name: "SEC_IMPORT_K8S_CERTS", Value: "false"},
 	}
 
 	spec = webspherelibertyv1.WebSphereLibertyApplicationSpec{
@@ -115,7 +113,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 
 	wl = createWebSphereLibertyApp(name, namespace, spec)
 	oputils.CustomizePodSpec(pts, wl)
-	CustomizeLibertyEnv(pts, wl, rb.GetClient(), ba)
+	CustomizeLibertyEnv(pts, wl, rb.GetClient())
 
 	expectedEnv := append(userEnv, corev1.EnvVar{Name: "TLS_DIR", Value: "/etc/x509/certs"})
 	testEnv = []Test{
