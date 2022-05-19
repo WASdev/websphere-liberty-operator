@@ -32,19 +32,19 @@ setup:
     // Update repo with Whitesource enabled
     GHE_TOKEN=$(get_env git-token)
     WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo | sed 's/https:\/\///')
-    REF="+refs/remotes/origin/$BRANCH:refs/heads/$BRANCH"
+    BRANCH_REFSPEC="+refs/remotes/origin/$BRANCH:refs/heads/$BRANCH"
 
     if [[ -n "$(git branch --list -r origin/$BRANCH)" ]]; then
       echo "Pushing branch $BRANCH to $WHITESOURCE_GHE_REPO"
     elif [[ -n "$(git tag --list $BRANCH)" ]]; then
       echo "The given 'branch' ($BRANCH) is a tag. Pushing only tags to $WHITESOURCE_GHE_REPO."
-      REF=""
+      BRANCH_REFSPEC=""
     else
       echo "Warning: Could not find a matching branch or tag named '$BRANCH'. Trying anyway!"
     fi
 
-    echo "git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $REF +refs/tags/*:refs/tags/*"
-    git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO "$REF" +refs/tags/*:refs/tags/*
+    echo "git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*"
+    git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO "$BRANCH_REFSPEC" +refs/tags/*:refs/tags/*
 
 test:
   dind: true
