@@ -44,7 +44,7 @@ setup:
     fi
 
     echo "git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*"
-    git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO "$BRANCH_REFSPEC" +refs/tags/*:refs/tags/*
+    git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
 
 test:
   dind: true
