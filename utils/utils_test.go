@@ -74,6 +74,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "message,accessLog,ffdc,audit"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "json"},
+		{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"},
 	}
 	// Always call CustomizePodSpec to populate Containers & simulate real behaviour
 	wl := createWebSphereLibertyApp(name, namespace, spec)
@@ -101,6 +102,7 @@ func TestCustomizeLibertyEnv(t *testing.T) {
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "error"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "trace,accessLog,ffdc"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "basic"},
+		{Name: "SEC_IMPORT_K8S_CERTS", Value: "false"},
 	}
 
 	spec = webspherelibertyv1.WebSphereLibertyApplicationSpec{

@@ -428,7 +428,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			oputils.CustomizePodSpec(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePersistence(statefulSet, instance)
 			if err := lutils.CustomizeLibertyEnv(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
-				reqLogger.Error(err, "Failed to reconcile Liberty env")
+				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
 			if err := oputils.CustomizePodWithSVCCertificate(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
@@ -476,7 +476,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			oputils.CustomizeDeployment(deploy, instance)
 			oputils.CustomizePodSpec(&deploy.Spec.Template, instance)
 			if err := lutils.CustomizeLibertyEnv(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
-				reqLogger.Error(err, "Failed to reconcile Liberty env")
+				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
 			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
