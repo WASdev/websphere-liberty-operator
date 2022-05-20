@@ -26,6 +26,7 @@ spec:
       containers:
         - env:
             - name: TLS_DIR
+            - name: SA_RESOURCE_VERSION
             - name: WLP_LOGGING_CONSOLE_LOGLEVEL
             - name: WLP_LOGGING_CONSOLE_SOURCE
             - name: WLP_LOGGING_CONSOLE_FORMAT
