@@ -220,21 +220,26 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Affinity
         path: affinity
-      - description: The directory inside the container where this persisted storage will be bound to.
-        displayName: Storage Mount Path
-        path: statefulSet.storage.mountPath
+      - description: A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
+        displayName: Storage Class Name
+        path: statefulSet.storage.className
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Security context for the application container.
         displayName: Security Context
         path: securityContext
+      - description: The directory inside the container where this persisted storage will be bound to.
+        displayName: Storage Mount Path
+        path: statefulSet.storage.mountPath
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Network Policy
+        path: networkPolicy
       - description: A YAML object that represents a volumeClaimTemplate component of a StatefulSet.
         displayName: Storage Volume Claim Template
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
-      - displayName: Network Policy
-        path: networkPolicy
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
