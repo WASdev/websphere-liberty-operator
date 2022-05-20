@@ -20,6 +20,7 @@ metadata:
 spec:
   containers:
   - env:
+    - name: SA_RESOURCE_VERSION
     - name: WLP_LOGGING_CONSOLE_LOGLEVEL
     - name: WLP_LOGGING_CONSOLE_SOURCE
     - name: WLP_LOGGING_CONSOLE_FORMAT
