@@ -240,8 +240,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if instance.Spec.ServiceAccountName == nil || *instance.Spec.ServiceAccountName == "" {
 		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(serviceAccount, instance, func() error {
-			oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
-			return nil
+			return oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile ServiceAccount")
