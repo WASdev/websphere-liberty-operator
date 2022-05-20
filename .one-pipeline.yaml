@@ -111,15 +111,15 @@ containerize:
 
     # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
-      if [ ! -f "/apt/sources.list.d/devel:kubic:libcontainers:stable.list" ]; then
-        sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-        wget --no-check-certificate -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key -O- | sudo apt-key add -
-        sudo apt-get update -qq
-      fi
-      sudo apt-get -y install skopeo
-    else
-      skopeo --version
+      PACKAGE_CACHE_URL=$(get_env package-cache-url)
+      wget "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      wget "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      wget http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i containers-common_1-22_all.deb
+      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
     fi
+    skopeo --version || exit 1
 
     #  Build images
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
