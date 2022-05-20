@@ -3349,7 +3349,8 @@ spec:
                     description: Path to be used for Route.
                     type: string
                   pathType:
-                    description: Path type to be used for Ingress.
+                    description: Path type to be used for Ingress. This does not apply
+                      to Route on OpenShift.
                     type: string
                   termination:
                     description: TLS termination policy. Can be one of edge, reencrypt
@@ -4794,7 +4795,7 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               sso:
-                description: Specifies the configuration for Single sign-on (SSO)
+                description: Specifies the configuration for Single Sign-On (SSO)
                   providers to authenticate with.
                 properties:
                   github:
