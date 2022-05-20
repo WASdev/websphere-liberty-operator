@@ -40,7 +40,6 @@ NOTE: Ensure that you replace  `<SPECIFY_OPERATOR_NAMESPACE_HERE>` and `<SPECIFY
 [source,sh]
 ----
     curl -L https://raw.githubusercontent.com/WASdev/websphere-liberty-operator/main/internal/deploy/kubectl/websphereliberty-app-rbac-watch-all.yaml \
-  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
       | sed -e "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${OPERATOR_NAMESPACE}/" \
       | kubectl apply -f -
 ----
