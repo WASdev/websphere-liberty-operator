@@ -1,3 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 60
+---
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
@@ -9,22 +13,22 @@ status:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    name: ClusterIPService
   name: service-types-lib
+  annotations:
+    name: NodePort
 spec:
   ports:
-    - name: 8080-tcp
+    - name: test-port
       protocol: TCP
       port: 8080
-      targetPort: 8080
+      targetPort: 8081
     - name: test-port1
       protocol: TCP
-      port: 8081
-      targetPort: 8081
-    - name: test-port2
-      protocol: TCP
       port: 8082
+      targetPort: 8082
+    - name: test-port2
+      port: 8083
+      protocol: TCP
       targetPort: 8083
   type: ClusterIP
 ---
@@ -42,23 +46,3 @@ status:
   replicas: 1
   readyReplicas: 1
   updatedReplicas: 1
----
-apiVersion: liberty.websphere.ibm.com/v1
-kind: WebSphereLibertyApplication
-metadata:
-  name: service-types-lib
-spec:
-  service:
-    bindable: true
-    port: 8080
-    ports:
-      - name: test-port1
-        port: 8081
-        protocol: TCP
-        targetPort: 8081
-      - name: test-port2
-        port: 8082
-        protocol: TCP
-        targetPort: 8083
-    annotations:
-      name: ClusterIPService
