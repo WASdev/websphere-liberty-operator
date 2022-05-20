@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	// github.com/application-stacks/runtime-component-operator v0.8.1-0.20220512181238-109d347fd508
-	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220520151143-aea6a777e569
+	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220520201747-a1fd7511d9f3
 	github.com/go-logr/logr v0.4.0
 	github.com/openshift/api v0.0.0-20211028023115-7224b732cc14 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220405121559-e304504b7d6f
