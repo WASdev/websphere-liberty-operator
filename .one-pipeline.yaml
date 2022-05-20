@@ -5,11 +5,11 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz"
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.17.linux-amd64.tar.gz"
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential
-    rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
+    rm -rf /usr/local/go && tar -C /usr/local -xf go1.17.linux-amd64.tar.gz
     go mod vendor
 
     ENABLE_BRANCH_PROTECTION=$(get_env enable-branch-protection)
@@ -54,8 +54,8 @@ test:
     #!/usr/bin/env bash
 
     ## Setup required tooling
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz" 
-    rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.17.linux-amd64.tar.gz" 
+    rm -rf /usr/local/go && tar -C /usr/local -xf go1.17.linux-amd64.tar.gz
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential
@@ -103,8 +103,8 @@ containerize:
     fi
 
     # Download and configure golang
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.17.linux-amd64.tar.gz"
+    rm -rf /usr/local/go && tar -C /usr/local -xf go1.17.linux-amd64.tar.gz
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -qq -y install build-essential software-properties-common uidmap
@@ -229,8 +229,8 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
     # Download and configure golang
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.16.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go1.16.linux-amd64.tar.gz
+    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go1.17.linux-amd64.tar.gz"
+    rm -rf /usr/local/go && tar -C /usr/local -xf go1.17.linux-amd64.tar.gz
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential
