@@ -142,6 +142,11 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 		)
 	}
 
+	// If manageTLS is true or not set, and SEC_IMPORT_K8S_CERTS is not set then default it to "true"
+	if la.GetManageTLS() == nil || *la.GetManageTLS() {
+		targetEnv = append(targetEnv, corev1.EnvVar{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"})
+	}
+
 	envList := pts.Spec.Containers[0].Env
 	for _, v := range targetEnv {
 		if _, found := findEnvVar(v.Name, envList); !found {
