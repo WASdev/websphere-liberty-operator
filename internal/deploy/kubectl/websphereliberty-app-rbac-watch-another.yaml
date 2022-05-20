@@ -4,7 +4,7 @@ kind: Role
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: wlm
+    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-watched-role
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
@@ -38,7 +38,7 @@ metadata:
   creationTimestamp: null
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: wlm
+    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-watched-role
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
@@ -224,7 +224,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: wlm
+    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-watched-rolebinding
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
@@ -242,7 +242,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: wlm
+    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-watched-rolebinding
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
