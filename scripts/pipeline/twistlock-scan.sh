@@ -9,6 +9,7 @@
     # Install 'tt' - Twistlock service cli
     wget --no-check-certificate https://w3twistlock.sos.ibm.com/download/tt_latest.zip && \
     unzip -l tt_latest.zip | grep linux_x86_64/tt | awk '{print $4}' | xargs unzip -j tt_latest.zip -d /usr/local/bin
+    chmod +x /usr/local/bin/tt
 }
 
 # Install Twistlock
