@@ -1,7 +1,7 @@
 # Documentation on available configuration
 # https://pages.github.ibm.com/one-pipeline/docs/custom-scripts.html
 
-version: '1'
+version: "1"
 
 setup:
   dind: true
@@ -105,6 +105,9 @@ sign-artifact:
   script: |
     #!/usr/bin/env bash
     echo "sign-artifact stage"
+    # image-signing
+    set_env IMAGE_SIGNING_TASK_NAME "build-sign-artifact"
+    set_env IMAGE_SIGNING_STEP_NAME "run-stage"
     "${COMMONS_PATH}"/ciso/sign_icr.sh
     gpg2 --armor --output wlo.gpg --export $(get_env signing-alias)
     save_file gpg_file wlo.gpg
