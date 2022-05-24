@@ -2225,7 +2225,7 @@ spec:
                     description: Path to be used for Route.
                     type: string
                   pathType:
-                    description: Path type to be used for Ingress.
+                    description: Path type to be used for Ingress. This does not apply to Route on OpenShift.
                     type: string
                   termination:
                     description: TLS termination policy. Can be one of edge, reencrypt and passthrough.
@@ -3154,7 +3154,7 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               sso:
-                description: Specifies the configuration for Single sign-on (SSO) providers to authenticate with.
+                description: Specifies the configuration for Single Sign-On (SSO) providers to authenticate with.
                 properties:
                   github:
                     description: Represents configuration for social login using GitHub.
@@ -3275,6 +3275,10 @@ spec:
                   storage:
                     description: Defines settings of persisted storage for StatefulSets.
                     properties:
+                      className:
+                        description: A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
+                        pattern: .+
+                        type: string
                       mountPath:
                         description: The directory inside the container where this persisted storage will be bound to.
                         type: string
