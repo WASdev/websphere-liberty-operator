@@ -1,0 +1,13 @@
+# Test the default values for edition, metric and productEntitlementSource annotations
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: license-wla
+  annotations:
+    test-step: license-00
+spec:
+  license:
+    accept: true
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
+  replicas: 1
+

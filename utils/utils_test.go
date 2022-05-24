@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
@@ -256,6 +257,123 @@ func TestCustomizeEnvSSO(t *testing.T) {
 	if err := verifyTests(tests); err != nil {
 		t.Fatalf("%v", err)
 	}
+}
+
+type licenseTestData struct {
+	// input from the spec
+	metric  webspherelibertyv1.LicenseMetric
+	edition webspherelibertyv1.LicenseEdition
+	pes     webspherelibertyv1.LicenseEntitlement
+	// whether CustomizeLicenseAnnotations is expected to return an err or not
+	pass bool
+}
+
+func TestCustomizeLicenseAnnotations(t *testing.T) {
+	t.Log("Starting license test")
+
+	td := []licenseTestData{}
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+
+	for _, s := range td {
+		t.Logf("Testing %#v\n", s)
+		spec := webspherelibertyv1.WebSphereLibertyApplicationSpec{}
+		spec.License.Metric = s.metric
+		spec.License.ProductEntitlementSource = s.pes
+		spec.License.Edition = s.edition
+		app := createWebSphereLibertyApp("myapp", "myns", spec)
+		pts := &corev1.PodTemplateSpec{}
+		pts.Annotations = make(map[string]string)
+
+		err := CustomizeLicenseAnnotations(pts, app)
+
+		// Metric should be PVU or VPC as per the spec, but must be compatible with the PES
+		// An error should be thrown if it isn't
+		if s.pass && err != nil || !s.pass && err == nil {
+			t.Logf("Testing failed for metric: %s edition: %s PES: %s and expected result was %s\n", s.metric, s.edition, s.pes, strconv.FormatBool(s.pass))
+			t.Error("Unexpected result", err)
+		} else {
+			t.Log("Result was as expected")
+		}
+		if err != nil {
+			t.Log("Skipping other checks due to error")
+			continue
+		}
+		// "productChargedContainers" should always be set to 'app'
+		if pts.Annotations["productChargedContainers"] != "app" {
+			t.Logf("productChargedContainers: expected 'app' but was %s\n", pts.Annotations["productChargedContainers"])
+			t.Error("pcc was wrong")
+		} else {
+			t.Log("pcc was correct")
+		}
+		// 'productMetric' defaults to VPC, otherwise PVU
+		if s.metric == "" || s.metric == webspherelibertyv1.LicenseMetricVPC {
+			if pts.Annotations["productMetric"] != "VIRTUAL_PROCESSOR_CORE" {
+				t.Errorf("product metric: expected 'VIRTUAL_PROCESSOR_CORE' but was %s\n", pts.Annotations["productMetric"])
+			}
+		} else if s.metric == webspherelibertyv1.LicenseMetricPVU {
+			if pts.Annotations["productMetric"] != "PROCESSOR_VALUE_UNIT" {
+				t.Errorf("product metric: expected 'PROCESSOR_VALUE_UNIT' but was %s\n", pts.Annotations["productMetric"])
+			}
+		} else {
+			t.Errorf("Unexpected test data for product metric %s\n", s.metric)
+		}
+		// 'productID' and 'productName' should always be direct mappings from spec.License.Edition
+		switch s.edition {
+		case webspherelibertyv1.LicenseEditionCore:
+			if pts.Annotations["productID"] != "87f3487c22f34742a799164f3f3ffa78" {
+				t.Errorf("Incorrect productID for edition core: %s\n", pts.Annotations["productID"])
+			}
+			if pts.Annotations["productName"] != "IBM WebSphere Application Server Liberty Core" {
+				t.Errorf("Incorrect productName for edition core: %s\n", pts.Annotations["productName"])
+			}
+		case "", webspherelibertyv1.LicenseEditionBase:
+			if pts.Annotations["productID"] != "e7daacc46bbe4e2dacd2af49145a4723" {
+				t.Errorf("Incorrect productID for edition base: %s\n", pts.Annotations["productID"])
+			}
+			if pts.Annotations["productName"] != "IBM WebSphere Application Server" {
+				t.Errorf("Incorrect productName for edition base: %s\n", pts.Annotations["productName"])
+			}
+		case webspherelibertyv1.LicenseEditionND:
+			if pts.Annotations["productID"] != "c6a988d93b0f4d1388200d40ddc84e5b" {
+				t.Errorf("Incorrect productID for edition ND: %s\n", pts.Annotations["productID"])
+			}
+			if pts.Annotations["productName"] != "IBM WebSphere Application Server Network Deployment" {
+				t.Errorf("Incorrect productName for edition ND: %s\n", pts.Annotations["productName"])
+			}
+		default:
+			t.Errorf("Unexpected test data for edition %s\n", s.edition)
+		}
+
+	}
+
 }
 
 // Helper Functions
