@@ -124,6 +124,7 @@ acceptance-test:
     fingerprint=$(gpg2 -k)
     fingerprint=${fingerprint#*"[SCEA]"}
     fingerprint=$(echo "$fingerprint"  | tail -2 | head -1 | xargs)
+    echo "fingerprint=$fingerprint"
     mkdir -p images
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
