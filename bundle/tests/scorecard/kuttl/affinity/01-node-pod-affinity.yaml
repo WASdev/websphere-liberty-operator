@@ -2,7 +2,7 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: affinity-rc
+  name: affinity-rc-labels
 spec:
   license:
     accept: true
@@ -30,7 +30,7 @@ spec:
               - key: app.kubernetes.io/instance
                 operator: In
                 values:
-                  - affinity-rc
+                  - affinity-rc-labels
           topologyKey: kubernetes.io/hostname
   statefulSet:
     storage:

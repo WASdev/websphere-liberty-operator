@@ -18,5 +18,5 @@ spec:
             - key: app.kubernetes.io/instance
               operator: In
               values:
-                - affinity-rc
+                - affinity-rc-labels
           topologyKey: kubernetes.io/hostname

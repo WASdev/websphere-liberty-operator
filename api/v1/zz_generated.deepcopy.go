@@ -712,6 +712,11 @@ func (in *WebSphereLibertyApplicationSpec) DeepCopyInto(out *WebSphereLibertyApp
 		*out = new(WebSphereLibertyApplicationRoute)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.NetworkPolicy != nil {
+		in, out := &in.NetworkPolicy, &out.NetworkPolicy
+		*out = new(WebSphereLibertyApplicationNetworkPolicy)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Serviceability != nil {
 		in, out := &in.Serviceability, &out.Serviceability
 		*out = new(WebSphereLibertyApplicationServiceability)
@@ -777,11 +782,6 @@ func (in *WebSphereLibertyApplicationSpec) DeepCopyInto(out *WebSphereLibertyApp
 	if in.SecurityContext != nil {
 		in, out := &in.SecurityContext, &out.SecurityContext
 		*out = new(corev1.SecurityContext)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.NetworkPolicy != nil {
-		in, out := &in.NetworkPolicy, &out.NetworkPolicy
-		*out = new(WebSphereLibertyApplicationNetworkPolicy)
 		(*in).DeepCopyInto(*out)
 	}
 }
