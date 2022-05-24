@@ -8,6 +8,11 @@ spec:
     accept: true
   applicationImage: 'k8s.gcr.io/pause:2.0'
   replicas: 1
+  deployment:
+    updateStrategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
   affinity:
     nodeAffinityLabels:
       kuttlTest: error
