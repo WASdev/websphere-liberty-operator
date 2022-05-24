@@ -3,7 +3,7 @@ kind: TestStep
 delete:
   - apiVersion: liberty.websphere.ibm.com/v1
     kind: WebSphereLibertyApplication
-    name: affinity-rc
+    name: affinity-rc-labels
   - apiVersion: liberty.websphere.ibm.com/v1
     kind: WebSphereLibertyApplication
     name: anti-affinity-rc
