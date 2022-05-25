@@ -1,7 +1,7 @@
 # Documentation on available configuration
 # https://pages.github.ibm.com/one-pipeline/docs/custom-scripts.html
 
-version: '1'
+version: "1"
 
 setup:
   dind: true
@@ -9,16 +9,17 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup stage"
+    # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
-      if [ ! -f "/apt/sources.list.d/devel:kubic:libcontainers:stable.list" ]; then
-        sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-        wget --no-check-certificate -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key -O- | sudo apt-key add -
-        sudo apt-get update -qq
-      fi
-      sudo apt-get -y install skopeo
-    else
-      skopeo --version
+      PACKAGE_CACHE_URL=$(get_env package-cache-url)
+      wget "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      wget "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      wget http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i containers-common_1-22_all.deb
+      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
     fi
+    skopeo --version || exit 1
     if [ -n "$(get_env commit_hash "")" ]; then
       ./scripts/pipeline/inventory.sh "$(get_env commit_hash)"
     fi
@@ -55,16 +56,17 @@ deploy:
       set -x
     fi
     echo "deploy stage"
+    # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
-      if [ ! -f "/apt/sources.list.d/devel:kubic:libcontainers:stable.list" ]; then
-        sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-        wget --no-check-certificate -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key -O- | sudo apt-key add -
-        sudo apt-get update -qq
-      fi
-      sudo apt-get -y install skopeo
-    else
-      skopeo --version
+      PACKAGE_CACHE_URL=$(get_env package-cache-url)
+      wget "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      wget "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      wget http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i containers-common_1-22_all.deb
+      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
     fi
+    skopeo --version || exit 1
     TARGET_ENVIRONMENT="$(get_env environment)"
     INVENTORY_PATH="$(get_env inventory-path)"
     INVENTORY_ENTRIES_PATH="$WORKSPACE/$(get_env INVENTORY_ENTRIES_PATH)"
@@ -95,8 +97,8 @@ deploy:
       echo "Image name: $IMAGE_NAME"
       PRODUCTION_IMAGE=$(get_env production-registry)/$(get_env production-namespace)/$IMAGE_NAME
       echo "Production image: $PRODUCTION_IMAGE"
-      echo "skopeo copy --all --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) --dest-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}"
-      skopeo copy --all --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key-staging) --dest-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}
+      echo "skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}"
+      skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}
       save_artifact $NAME type=image name="${PRODUCTION_IMAGE}" digest="$DIGEST" source="${REPO}#${COMMIT}"
     done
 
@@ -105,6 +107,9 @@ sign-artifact:
   script: |
     #!/usr/bin/env bash
     echo "sign-artifact stage"
+    # image-signing
+    set_env IMAGE_SIGNING_TASK_NAME "build-sign-artifact"
+    set_env IMAGE_SIGNING_STEP_NAME "run-stage"
     "${COMMONS_PATH}"/ciso/sign_icr.sh
     gpg2 --armor --output wlo.gpg --export $(get_env signing-alias)
     save_file gpg_file wlo.gpg
@@ -119,6 +124,7 @@ acceptance-test:
     fingerprint=$(gpg2 -k)
     fingerprint=${fingerprint#*"[SCEA]"}
     fingerprint=$(echo "$fingerprint"  | tail -2 | head -1 | xargs)
+    echo "fingerprint=$fingerprint"
     mkdir -p images
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
@@ -127,7 +133,7 @@ acceptance-test:
         base_tag="$(echo $tag | sed 's/-\(amd64\|s390x\|ppc64le\)$//')"
         if [[ $tag == $base_tag ]]; then
           echo "Verifying image ${image_name}"
-          skopeo copy --src-creds $(get_env ibmcloud-api-user):$(get_env ibmcloud-api-key) docker://${image_name} dir:./images
+          skopeo copy --src-creds $(get_env dest-user):$(get_env dest-key) docker://${image_name} dir:./images
           skopeo standalone-verify ./images/manifest.json ${image_name} ${fingerprint} ./images/signature-1
           if [[ $? != 0 ]]; then
             exit 1

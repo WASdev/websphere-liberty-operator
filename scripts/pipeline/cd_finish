@@ -35,9 +35,22 @@ set_env ibmcloud-api "cloud.ibm.com"
 
 . "${ONE_PIPELINE_PATH}"/internal/doi/publish_acceptance_test
 
-publish_acceptance_test "$(get_env ACCEPTANCE_TESTS_TASK_NAME)" "$(get_env ACCEPTANCE_TESTS_STEP_NAME)" "com.ibm.acceptance_tests"
+#publish_acceptance_test "$(get_env ACCEPTANCE_TESTS_TASK_NAME)" "$(get_env ACCEPTANCE_TESTS_STEP_NAME)" "com.ibm.acceptance_tests"
 
 # collector_cd
+echo "Processing 'build-image-signing' ..."
+. "${ONE_PIPELINE_PATH}"/internal/evidence/collector \
+  "$(get_env IMAGE_SIGNING_TASK_NAME)"               `# task_name` \
+  "$(get_env IMAGE_SIGNING_STEP_NAME)"               `# step_name` \
+  "sign-artifact"                                    `# stage` \
+  "success"                                          `# excepted_status` \
+  "$(get_env STAGE_SIGN_ARTIFACT_STATUS)"            `# actual_status` \
+  "image-signing"                                    `# evidence_name` \
+  "com.ibm.cloud.image_signing"                      `# evidence_type` \
+  "1.0.0"                                            `# evidence_type_version` \
+  "cd"                                               `# namespace` \
+  ""                                                 `# artifacts`
+
 echo "Processing 'acceptance-test' ..."
 . "${ONE_PIPELINE_PATH}"/internal/evidence/collector \
   "$(get_env ACCEPTANCE_TESTS_TASK_NAME)"            `# task_name` \
@@ -53,9 +66,9 @@ echo "Processing 'acceptance-test' ..."
 
 echo -e "\n"
 
-. "${ONE_PIPELINE_PATH}"/internal/evidence/create_summary "from-every-inventory-entry" "include_cd_evidence"
+#. "${ONE_PIPELINE_PATH}"/internal/evidence/create_summary "from-every-inventory-entry" "include_cd_evidence"
 
-. "${ONE_PIPELINE_PATH}"/internal/evidence/upload_summary
+#. "${ONE_PIPELINE_PATH}"/internal/evidence/upload_summary
 
 # collector_cd_final
 . "${ONE_PIPELINE_PATH}"/internal/evidence/upload_pipeline_data
