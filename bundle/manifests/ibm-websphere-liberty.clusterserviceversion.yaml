@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-05-20T16:28:40Z"
+    createdAt: "2022-05-26T17:38:56Z"
     description: Deploy and manage applications running on Liberty
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
@@ -761,11 +761,11 @@ spec:
                   timeoutSeconds: 10
                 resources:
                   limits:
-                    cpu: 200m
-                    memory: 256Mi
+                    cpu: 400m
+                    memory: 512Mi
                   requests:
-                    cpu: 100m
-                    memory: 64Mi
+                    cpu: 200m
+                    memory: 100Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:
