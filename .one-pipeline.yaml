@@ -298,6 +298,13 @@ release:
   script: |
     #!/usr/bin/env bash
 
+    RELEASE_FLAG=$(get_env release "false")
+
+    if [[ $RELEASE_FLAG != "true" ]]; then
+      echo "Skipping release stage; environment property 'release' is set to $RELEASE_FLAG"
+      exit 0
+    fi
+
     SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
     ./scripts/pipeline/evaluator.sh      
     if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
