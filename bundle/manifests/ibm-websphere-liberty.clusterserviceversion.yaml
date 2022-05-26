@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-05-26T18:12:02Z"
+    createdAt: "2022-05-26T18:16:57Z"
     description: Deploy and manage applications running on Liberty
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
@@ -607,7 +607,7 @@ spec:
     
     ## Supported platforms
     
-    Red Hat OpenShift Container Platform 4.8 or newer installed on one of the following platforms:
+    Kubernetes platform installed on the following platform:
     - Linux x86_64
     
     ## Prerequisites

@@ -12,7 +12,7 @@ The WebSphere Liberty Operator allows you to deploy and manage applications runn
 
 ## Supported platforms
 
-Red Hat OpenShift Container Platform 4.8 or newer installed on one of the following platforms:
+Kubernetes platform installed on the following platform:
 - Linux x86_64
 
 ## Prerequisites
