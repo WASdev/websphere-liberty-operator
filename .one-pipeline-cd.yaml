@@ -20,9 +20,6 @@ setup:
       sudo dpkg -i skopeo_1.2.2-2_amd64.deb
     fi
     skopeo --version || exit 1
-    if [ -n "$(get_env commit_hash "")" ]; then
-      ./scripts/pipeline/inventory.sh "$(get_env commit_hash)"
-    fi
     INVENTORY_PATH="$(get_env inventory-path)"
     INVENTORY_ENTRIES_PATH="$WORKSPACE/$(get_env INVENTORY_ENTRIES_PATH)"
     INVENTORY_ENTRIES=$(cat "${INVENTORY_ENTRIES_PATH}")
