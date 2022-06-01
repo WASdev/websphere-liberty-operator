@@ -74,6 +74,7 @@ for artifact_image in $(list_artifacts); do
   echo  "  --app-artifacts=${APP_ARTIFACTS}"
   echo  "  --signature=${SIGNATURE}"
   echo  "  --provenance=${IMAGE_ARTIFACT}"
+  echo  "  --environment=${PIPELINE_RUN_ID}"
   echo  "  --sha256=${DIGEST}"
   echo  "  --type=\"image\""
 
@@ -88,6 +89,7 @@ for artifact_image in $(list_artifacts); do
     --app-artifacts="${APP_ARTIFACTS}" \
     --signature="${SIGNATURE}" \
     --provenance="${IMAGE_ARTIFACT}" \
+    --environment="${PIPELINE_RUN_ID}" \
     --sha256="${DIGEST}" \
     --type="image"
 done

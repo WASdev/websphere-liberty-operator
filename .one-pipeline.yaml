@@ -298,6 +298,13 @@ release:
   script: |
     #!/usr/bin/env bash
 
+    RELEASE_FLAG=$(get_env release "false")
+
+    if [[ $RELEASE_FLAG != "true" ]]; then
+      echo "Skipping release stage; environment property 'release' is set to $RELEASE_FLAG"
+      exit 0
+    fi
+
     SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
     ./scripts/pipeline/evaluator.sh      
     if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
@@ -306,8 +313,7 @@ release:
       fi
       APP_REPO=$(pwd)
       echo "Application Repository: $APP_REPO"
-      # export GIT_AUTH_USER=${GIT_AUTH_USER}
-      INVENTORY_REPO=$(get_env inventory-repo)       
+      INVENTORY_REPO=$(get_env inventory-repo)
       echo "Cloning inventory repository: $INVENTORY_REPO"
       cd "$WORKSPACE"
       APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
@@ -315,8 +321,8 @@ release:
         "$INVENTORY_REPO" \
         "master"  \
         "" \
-        "$APP_TOKEN_PATH" 
-      REPO=${INVENTORY_REPO##*/} 
+        "$APP_TOKEN_PATH"
+      REPO=${INVENTORY_REPO##*/}
       NAME=${REPO%.*}
       echo "Inventory name: $NAME"
       cd $WORKSPACE/$NAME
@@ -328,7 +334,7 @@ release:
         git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
         git push origin master
       fi
-      cd $APP_REPO   
+      cd $APP_REPO
       ./scripts/pipeline/release.sh
     else
       echo "Errors found.  images will not be released"
