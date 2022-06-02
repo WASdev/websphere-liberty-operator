@@ -99,58 +99,58 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=16,type=spec,displayName="Route"
 	Route *WebSphereLibertyApplicationRoute `json:"route,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Serviceability"
+	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Network Policy"
+	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Serviceability"
 	Serviceability *WebSphereLibertyApplicationServiceability `json:"serviceability,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Single sign-on"
+	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Single Sign-On"
 	SSO *WebSphereLibertyApplicationSSO `json:"sso,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Monitoring"
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Monitoring"
 	Monitoring *WebSphereLibertyApplicationMonitoring `json:"monitoring,omitempty"`
 
 	// An array of environment variables for the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Environment Variables"
+	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Environment Variables"
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// List of sources to populate environment variables in the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Environment Variables from Sources"
+	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Environment Variables from Sources"
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Represents a volume with data that is accessible to the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Volumes"
+	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Volumes"
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// Represents where to mount the volumes into the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Volume Mounts"
+	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Volume Mounts"
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 
 	// List of containers to run before other containers in a pod.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Init Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Init Containers"
 	InitContainers []corev1.Container `json:"initContainers,omitempty"`
 
 	// List of sidecar containers. These are additional containers to be added to the pods.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Sidecar Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Sidecar Containers"
 	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Affinity"
+	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Affinity"
 	Affinity *WebSphereLibertyApplicationAffinity `json:"affinity,omitempty"`
 
 	// Security context for the application container.
-	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Security Context"
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
-
-	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Network Policy"
-	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 }
 
 // License information is required.
@@ -339,7 +339,7 @@ type WebSphereLibertyApplicationDeployment struct {
 // Defines the desired state and cycle of stateful applications.
 type WebSphereLibertyApplicationStatefulSet struct {
 	// Specifies the strategy to replace old StatefulSet pods with new pods.
-	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="StatefulSet Update Strategy",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="StatefulSet Update Strategy"
 	UpdateStrategy *appsv1.StatefulSetUpdateStrategy `json:"updateStrategy,omitempty"`
 
 	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Storage"
@@ -356,12 +356,17 @@ type WebSphereLibertyApplicationStorage struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Storage Size",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	Size string `json:"size,omitempty"`
 
+	// A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
+	// +kubebuilder:validation:Pattern=.+
+	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Storage Class Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	ClassName string `json:"className,omitempty"`
+
 	// The directory inside the container where this persisted storage will be bound to.
-	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Storage Mount Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Storage Mount Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	MountPath string `json:"mountPath,omitempty"`
 
 	// A YAML object that represents a volumeClaimTemplate component of a StatefulSet.
-	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Storage Volume Claim Template",xDescriptors="urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim"
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Storage Volume Claim Template",xDescriptors="urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim"
 	VolumeClaimTemplate *corev1.PersistentVolumeClaim `json:"volumeClaimTemplate,omitempty"`
 }
 
@@ -407,7 +412,8 @@ type WebSphereLibertyApplicationRoute struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=44,type=spec,displayName="Route Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	Path string `json:"path,omitempty"`
 
-	// Path type to be used for Ingress.
+	// Path type to be used for Ingress. This does not apply to Route on OpenShift.
+	// +operator-sdk:csv:customresourcedefinitions:order=44,type=spec,displayName="Path Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:Exact", "urn:alm:descriptor:com.tectonic.ui:select:Prefix", "urn:alm:descriptor:com.tectonic.ui:select:ImplementationSpecific"}
 	PathType networkingv1.PathType `json:"pathType,omitempty"`
 
 	// A name of a secret that already contains TLS key, certificate and CA to be used in the route. It can also contain destination CA certificate. The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt, and tls.key.
@@ -415,11 +421,11 @@ type WebSphereLibertyApplicationRoute struct {
 	CertificateSecretRef *string `json:"certificateSecretRef,omitempty"`
 
 	// TLS termination policy. Can be one of edge, reencrypt and passthrough.
-	// +operator-sdk:csv:customresourcedefinitions:order=46,type=spec,displayName="Termination",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=46,type=spec,displayName="Termination",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:edge", "urn:alm:descriptor:com.tectonic.ui:select:reencrypt", "urn:alm:descriptor:com.tectonic.ui:select:passthrough"}
 	Termination *routev1.TLSTerminationType `json:"termination,omitempty"`
 
 	// HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect and None.
-	// +operator-sdk:csv:customresourcedefinitions:order=47,type=spec,displayName="Insecure Edge Termination Policy",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +operator-sdk:csv:customresourcedefinitions:order=47,type=spec,displayName="Insecure Edge Termination Policy",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:Allow", "urn:alm:descriptor:com.tectonic.ui:select:Redirect", "urn:alm:descriptor:com.tectonic.ui:select:None"}
 	InsecureEdgeTerminationPolicy *routev1.InsecureEdgeTerminationPolicyType `json:"insecureEdgeTerminationPolicy,omitempty"`
 }
 
@@ -512,61 +518,77 @@ type WebSphereLibertyApplicationList struct {
 	Items           []WebSphereLibertyApplication `json:"items"`
 }
 
-// Specifies the configuration for Single sign-on (SSO) providers to authenticate with.
+// Specifies the configuration for Single Sign-On (SSO) providers to authenticate with.
 type WebSphereLibertyApplicationSSO struct {
 	// +listType=atomic
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="OIDC"
 	OIDC []OidcClient `json:"oidc,omitempty"`
 
 	// +listType=atomic
+	// +operator-sdk:csv:customresourcedefinitions:order=2,type=spec,displayName="OAuth2"
 	Oauth2 []OAuth2Client `json:"oauth2,omitempty"`
 
+	// +operator-sdk:csv:customresourcedefinitions:order=3,type=spec,displayName="GitHub"
 	Github *GithubLogin `json:"github,omitempty"`
 
 	// Common parameters for all SSO providers
 
 	// Specifies a callback protocol, host and port number.
+	// +operator-sdk:csv:customresourcedefinitions:order=4,type=spec,displayName="Redirect to RP Host and Port"
 	RedirectToRPHostAndPort string `json:"redirectToRPHostAndPort,omitempty"`
 
 	// Specifies whether to map a user identifier to a registry user. This parameter applies to all providers.
+	// +operator-sdk:csv:customresourcedefinitions:order=5,type=spec,displayName="Map to User Registry",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	MapToUserRegistry *bool `json:"mapToUserRegistry,omitempty"`
 }
 
 // Represents configuration for an OpenID Connect (OIDC) client.
 type OidcClient struct {
 	// The unique ID for the provider. Default value is oidc.
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="ID"
 	ID string `json:"id,omitempty"`
 
 	// Specifies a discovery endpoint URL for the OpenID Connect provider. Required field.
+	// +operator-sdk:csv:customresourcedefinitions:order=2,type=spec
 	DiscoveryEndpoint string `json:"discoveryEndpoint"`
 
 	// Specifies the name of the claim. Use its value as the user group membership.
+	// +operator-sdk:csv:customresourcedefinitions:order=3,type=spec
 	GroupNameAttribute string `json:"groupNameAttribute,omitempty"`
 
 	// Specifies the name of the claim. Use its value as the authenticated user principal.
+	// +operator-sdk:csv:customresourcedefinitions:order=4,type=spec
 	UserNameAttribute string `json:"userNameAttribute,omitempty"`
 
 	// The name of the social login configuration for display.
+	// +operator-sdk:csv:customresourcedefinitions:order=5,type=spec
 	DisplayName string `json:"displayName,omitempty"`
 
 	// Specifies whether the UserInfo endpoint is contacted.
+	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="User Info Endpoint Enabled",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	UserInfoEndpointEnabled *bool `json:"userInfoEndpointEnabled,omitempty"`
 
 	// Specifies the name of the claim. Use its value as the subject realm.
+	// +operator-sdk:csv:customresourcedefinitions:order=7,type=spec
 	RealmNameAttribute string `json:"realmNameAttribute,omitempty"`
 
 	// Specifies one or more scopes to request.
+	// +operator-sdk:csv:customresourcedefinitions:order=8,type=spec
 	Scope string `json:"scope,omitempty"`
 
 	// Specifies the required authentication method.
+	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec
 	TokenEndpointAuthMethod string `json:"tokenEndpointAuthMethod,omitempty"`
 
 	// Specifies whether to enable host name verification when the client contacts the provider.
+	// +operator-sdk:csv:customresourcedefinitions:order=10,type=spec,displayName="Host Name Verification Enabled",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	HostNameVerificationEnabled *bool `json:"hostNameVerificationEnabled,omitempty"`
 }
 
 // Represents configuration for an OAuth2 client.
 type OAuth2Client struct {
 	// Specifies the unique ID for the provider. The default value is oauth2.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ID"
 	ID string `json:"id,omitempty"`
 
 	// Specifies a token endpoint URL for the OAuth 2.0 provider. Required field.
@@ -600,15 +622,19 @@ type OAuth2Client struct {
 	AccessTokenHeaderName string `json:"accessTokenHeaderName,omitempty"`
 
 	// Determines whether the access token that is provided in the request is used for authentication.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	AccessTokenRequired *bool `json:"accessTokenRequired,omitempty"`
 
 	// Determines whether to support access token authentication if an access token is provided in the request.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	AccessTokenSupported *bool `json:"accessTokenSupported,omitempty"`
 
 	// Indicates which specification to use for the user API.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="User API Type"
 	UserApiType string `json:"userApiType,omitempty"`
 
 	// The URL for retrieving the user information.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="User API"
 	UserApi string `json:"userApi,omitempty"`
 }
 
@@ -899,6 +925,11 @@ func (a *WebSphereLibertyApplicationAutoScaling) GetTargetCPUUtilizationPercenta
 // GetSize returns pesistent volume size
 func (s *WebSphereLibertyApplicationStorage) GetSize() string {
 	return s.Size
+}
+
+// GetClassName returns persistent volume ClassName
+func (s *WebSphereLibertyApplicationStorage) GetClassName() string {
+	return s.ClassName
 }
 
 // GetMountPath returns mount path for persistent volume
@@ -1373,9 +1404,9 @@ func (s *WebSphereLibertyApplicationStatus) NewStatusEndpoint(endpointName strin
 
 // GetStatusEndpoint returns endpoint information with endpoint name
 func (s *WebSphereLibertyApplicationStatus) GetStatusEndpoint(endpointName string) common.StatusEndpoint {
-	for _, ep := range s.Endpoints {
-		if ep.GetEndpointName() == endpointName {
-			return &ep
+	for i := range s.Endpoints {
+		if s.Endpoints[i].GetEndpointName() == endpointName {
+			return &s.Endpoints[i]
 		}
 	}
 	return nil
@@ -1385,9 +1416,9 @@ func (s *WebSphereLibertyApplicationStatus) GetStatusEndpoint(endpointName strin
 func (s *WebSphereLibertyApplicationStatus) SetStatusEndpoint(c common.StatusEndpoint) {
 	endpoint := &StatusEndpoint{}
 	found := false
-	for _, ep := range s.Endpoints {
-		if ep.GetEndpointName() == c.GetEndpointName() {
-			endpoint = &ep
+	for i := range s.Endpoints {
+		if s.Endpoints[i].GetEndpointName() == c.GetEndpointName() {
+			endpoint = &s.Endpoints[i]
 			found = true
 			break
 		}

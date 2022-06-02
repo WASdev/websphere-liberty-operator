@@ -22,7 +22,7 @@ spec:
       labels:
         control-plane: controller-manager
       annotations:
-        productID: "87f3487c22f34742a799164f3f3ffa78"
+        productID: "e7daacc46bbe4e2dacd2af49145a4723"
         productName: "IBM WebSphere Application Server"
         productMetric: "FREE"
         productChargedContainers: "ALL"
@@ -80,11 +80,11 @@ spec:
               - ALL
         resources:
           limits:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 400m
+            memory: 512Mi
           requests:
-            cpu: 100m
-            memory: 64Mi
+            cpu: 200m
+            memory: 128Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       affinity:

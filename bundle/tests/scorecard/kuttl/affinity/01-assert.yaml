@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: affinity-rc
+  name: affinity-rc-labels
 spec:
   template:
     spec:
@@ -34,7 +34,7 @@ spec:
                   - key: app.kubernetes.io/instance
                     operator: In
                     values:
-                      - affinity-rc
+                      - affinity-rc-labels
               topologyKey: kubernetes.io/hostname
 status:
   replicas: 1

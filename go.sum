@@ -1,7 +1,7 @@
 cloud.google.com/go v0.84.0 h1:hVhK90DwCdOAYGME/FJd9vNIZye9HBR6Yy3fu4js3N8=
 cloud.google.com/go v0.84.0/go.mod h1:RazrYuxIK6Kb7YrzzhPoLmCVzl7Sup4NrbKPg8KHSUM=
-github.com/application-stacks/runtime-component-operator v0.8.1-0.20220512181238-109d347fd508 h1:FuXDsyZn02wey2JVdCul1QMPqqNSlnQPsIeQxp+Lmfk=
-github.com/application-stacks/runtime-component-operator v0.8.1-0.20220512181238-109d347fd508/go.mod h1:24Ta704BsAaUujWux37+m8iKiMi7o6ukPbtt43HLxQk=
+github.com/application-stacks/runtime-component-operator v0.8.1-0.20220520201747-a1fd7511d9f3 h1:G3+8KbUGZSzPCbQiGySAF22vcTIh9CDwIdzdEo8/i0w=
+github.com/application-stacks/runtime-component-operator v0.8.1-0.20220520201747-a1fd7511d9f3/go.mod h1:24Ta704BsAaUujWux37+m8iKiMi7o6ukPbtt43HLxQk=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=

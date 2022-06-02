@@ -2,12 +2,17 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: affinity-rc
+  name: affinity-rc-labels
 spec:
   license:
     accept: true
   applicationImage: 'k8s.gcr.io/pause:2.0'
   replicas: 1
+  deployment:
+    updateStrategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
   affinity:
     nodeAffinityLabels:
       kuttlTest: test1
@@ -30,7 +35,7 @@ spec:
               - key: app.kubernetes.io/instance
                 operator: In
                 values:
-                  - affinity-rc
+                  - affinity-rc-labels
           topologyKey: kubernetes.io/hostname
   statefulSet:
     storage:
