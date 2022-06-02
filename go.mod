@@ -74,7 +74,7 @@ require (
 	knative.dev/networking v0.0.0-20210914225408-69ad45454096 // indirect
 	knative.dev/pkg v0.0.0-20210919202233-5ae482141474 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
-	sigs.k8s.io/yaml v1.2.0 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
 replace (
@@ -92,6 +92,7 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.22.8
 	k8s.io/client-go => k8s.io/client-go v0.22.8
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.10.3
+	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.3.0
 
 )
 
