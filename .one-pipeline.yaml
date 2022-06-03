@@ -5,12 +5,17 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
-    GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -y install build-essential
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+
+    # Download Go
+    GO_VERSION=$(get_env go-version)
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+    export PATH=$PATH:/usr/local/go/bin
+
     go mod vendor
 
     ENABLE_BRANCH_PROTECTION=$(get_env enable-branch-protection)
@@ -55,10 +60,15 @@ test:
     #!/usr/bin/env bash
 
     ## Setup required tooling
+
+    # Download Go
     GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz" 
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
     export PATH=$PATH:/usr/local/go/bin
+
     apt-get update
     apt-get -y install build-essential
 
@@ -106,18 +116,21 @@ containerize:
 
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
     export PATH=$PATH:/usr/local/go/bin
+
     apt-get update
     apt-get -qq -y install build-essential software-properties-common uidmap
 
     # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
       PACKAGE_CACHE_URL=$(get_env package-cache-url)
-      wget "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
-      wget "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
-      wget http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      wget --no-verbose http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
       sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
       sudo dpkg -i containers-common_1-22_all.deb
       sudo dpkg -i skopeo_1.2.2-2_amd64.deb
@@ -231,13 +244,20 @@ acceptance-test:
   script: |
     #!/usr/bin/env bash
     echo "acceptance-test"
+
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-    apt-get update
-    apt-get -y install build-essential
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+
+    # Build e2e runner image
+    docker build -t e2e-runner:latest -f Dockerfile.e2e --build-arg GO_VERSION="${GO_VERSION}" . || {
+      echo "Error: Failed to build e2e runner"
+      exit 1
+    }
+
+    # OCP test
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
@@ -247,11 +267,77 @@ acceptance-test:
     export CLUSTER_URL=$(get_env test-cluster-url)
     export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
     export CLUSTER_TOKEN=$(get_env test-cluster-token)
-    export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
     export RELEASE_TARGET=$(get_env branch)
-    export CATALOG_IMAGE="$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$RELEASE_TARGET"
-    make setup
-    make test-pipeline-e2e
+    export DEBUG_FAILURE=$(get_env debug-failure)
+
+    docker run -d --name ocp-e2e-run \
+        --volume /var/run/docker.sock:/var/run/docker.sock \
+        --env PIPELINE_USERNAME="${PIPELINE_USERNAME}" \
+        --env PIPELINE_PASSWORD="${PIPELINE_PASSWORD}" \
+        --env PIPELINE_REGISTRY="${PIPELINE_REGISTRY}" \
+        --env PIPELINE_OPERATOR_IMAGE="${PIPELINE_OPERATOR_IMAGE}" \
+        --env DOCKER_USERNAME="${DOCKER_USERNAME}" \
+        --env DOCKER_PASSWORD="${DOCKER_PASSWORD}" \
+        --env CLUSTER_URL="${CLUSTER_URL}" \
+        --env CLUSTER_USER="${CLUSTER_USER}" \
+        --env CLUSTER_TOKEN="${CLUSTER_TOKEN}" \
+        --env TRAVIS_BUILD_NUMBER="${BUILD_NUMBER}" \
+        --env RELEASE_TARGET="${RELEASE_TARGET}" \
+        --env CATALOG_IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" \
+        --env DEBUG_FAILURE="${DEBUG_FAILURE}" \
+        e2e-runner:latest \
+        make test-pipeline-e2e
+
+    # Kind test
+    export SKIP_KIND_E2E_TEST=$(get_env SKIP_KIND_E2E_TEST)
+    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
+      export FYRE_USER=$(get_env fyre-user)
+      export FYRE_KEY=$(get_env fyre-key)
+      export FYRE_PASS=$(get_env fyre-pass)
+      export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
+
+      docker run -d --name kind-e2e-run \
+          --volume /var/run/docker.sock:/var/run/docker.sock \
+          --env FYRE_USER="${FYRE_USER}" \
+          --env FYRE_KEY="${FYRE_KEY}" \
+          --env FYRE_PASS="${FYRE_PASS}" \
+          --env FYRE_PRODUCT_GROUP_ID="${FYRE_PRODUCT_GROUP_ID}" \
+          --env TRAVIS_BUILD_NUMBER="${BUILD_NUMBER}" \
+          --env VM_SIZE="l" \
+          --env DEBUG_FAILURE="${DEBUG_FAILURE}" \
+          e2e-runner:latest \
+          make kind-e2e-test
+    else
+      echo "SKIP_KIND_E2E was set. Skipping kind e2e..."
+    fi
+
+    until docker ps --all --no-trunc --filter name='^/ocp-e2e-run$' --format='{{.Status}}' | grep -q Exited; do
+      sleep 60
+    done
+
+    echo "***** OCP e2e run *****"
+    docker logs ocp-e2e-run
+
+    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
+      until docker ps --all --no-trunc --filter name='^/kind-e2e-run$' --format='{{.Status}}' | grep -q Exited; do
+        sleep 60
+      done
+
+      echo "***** kind e2e run *****"
+      docker logs kind-e2e-run
+    fi
+
+    ocp_status="$(docker ps --all --no-trunc --filter name='^/ocp-e2e-run$' --format='{{.Status}}')"
+    echo "${ocp_status}" | grep -q "Exited (0)" || {
+      echo "OCP test exited with non-zero status: ${ocp_status}"
+    }
+
+    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
+      kind_status="$(docker ps --all --no-trunc --filter name='^/kind-e2e-run$' --format='{{.Status}}')"
+      echo "${kind_status}" | grep -q "Exited (0)" || {
+        echo "kind test exited with non-zero status: ${kind_status}"
+      }
+    fi
 
 scan-artifact:
   abort_on_failure: false
