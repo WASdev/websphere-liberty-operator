@@ -22,8 +22,8 @@ spec:
       labels:
         control-plane: controller-manager
       annotations:
-        productID: "e7daacc46bbe4e2dacd2af49145a4723"
-        productName: "IBM WebSphere Application Server"
+        productID: "cb1747ecb831410f88006195f024183f"
+        productName: "WebSphere Liberty Operator"
         productMetric: "FREE"
         productChargedContainers: "ALL"
     spec:

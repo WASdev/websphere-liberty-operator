@@ -16,8 +16,8 @@ spec:
       labels:
         control-plane: websphere-liberty-controller-manager
       annotations:
-        productID: "87f3487c22f34742a799164f3f3ffa78"
-        productName: "IBM WebSphere Application Server"
+        productID: "cb1747ecb831410f88006195f024183f"
+        productName: "WebSphere Liberty Operator"
         productMetric: "FREE"
         productChargedContainers: "ALL"
     spec:
@@ -33,7 +33,7 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - --enable-leader-election
-        image: cp.stg.icr.io/cp/websphere-liberty-operator:1.0.0-20220524-1800-amd64
+        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:b2b0f07db844e0b3970cfdf82f87a0ce330ee38f34df6926c09535b8ecbd2832
         name: manager
         livenessProbe:
           failureThreshold: 3
@@ -74,11 +74,11 @@ spec:
               - ALL
         resources:
           limits:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 400m
+            memory: 512Mi
           requests:
-            cpu: 100m
-            memory: 64Mi
+            cpu: 200m
+            memory: 128Mi
       serviceAccountName: websphere-liberty-controller-manager
       terminationGracePeriodSeconds: 10
       affinity:
