@@ -234,15 +234,14 @@ cleanup() {
 }
 
 trap_cleanup() {
-  if [[ "${SETUP_ONLY}" == true ]]; then
-      exit 0
+  # Preserve exit code
+  last_status=$?
+
+  if [[ "${SETUP_ONLY}" != true ]]; then
+    cleanup
   fi
 
-  last_status=$?
-  if [[ $last_status != 0 ]]; then
-    cleanup_env
-  fi
-  exit $last_status
+  exit ${last_status}
 }
 
 wait_for() {

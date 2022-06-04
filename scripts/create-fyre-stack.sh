@@ -145,7 +145,7 @@ parse_args() {
 
   if [[ -z "${VM_SIZE}" ]]; then
     readonly VM_SIZE="s"
-  elif [[ "${VM_SIZE}" -ne "s" ]] && [[ "${VM_SIZE}" -ne "m" ]] && [[ "${VM_SIZE}" -ne "l" ]] && [[ "${VM_SIZE}" -ne "x" ]]; then
+  elif [[ "${VM_SIZE}" != "s" ]] && [[ "${VM_SIZE}" != "m" ]] && [[ "${VM_SIZE}" != "l" ]] && [[ "${VM_SIZE}" != "x" ]]; then
     echo "Error: Expected size of 's', 'm', 'l', or 'x'; got '${VM_SIZE}'"
     usage
   fi

@@ -250,12 +250,7 @@ acceptance-test:
     if [[ -z "${GO_VERSION}" ]]; then
       GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
     fi
-
-    # Build e2e runner image
-    docker build -t e2e-runner:latest -f Dockerfile.e2e --build-arg GO_VERSION="${GO_VERSION}" . || {
-      echo "Error: Failed to build e2e runner"
-      exit 1
-    }
+    export GO_VERSION
 
     # OCP test
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
@@ -270,74 +265,14 @@ acceptance-test:
     export RELEASE_TARGET=$(get_env branch)
     export DEBUG_FAILURE=$(get_env debug-failure)
 
-    docker run -d --name ocp-e2e-run \
-        --volume /var/run/docker.sock:/var/run/docker.sock \
-        --env PIPELINE_USERNAME="${PIPELINE_USERNAME}" \
-        --env PIPELINE_PASSWORD="${PIPELINE_PASSWORD}" \
-        --env PIPELINE_REGISTRY="${PIPELINE_REGISTRY}" \
-        --env PIPELINE_OPERATOR_IMAGE="${PIPELINE_OPERATOR_IMAGE}" \
-        --env DOCKER_USERNAME="${DOCKER_USERNAME}" \
-        --env DOCKER_PASSWORD="${DOCKER_PASSWORD}" \
-        --env CLUSTER_URL="${CLUSTER_URL}" \
-        --env CLUSTER_USER="${CLUSTER_USER}" \
-        --env CLUSTER_TOKEN="${CLUSTER_TOKEN}" \
-        --env TRAVIS_BUILD_NUMBER="${BUILD_NUMBER}" \
-        --env RELEASE_TARGET="${RELEASE_TARGET}" \
-        --env CATALOG_IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" \
-        --env DEBUG_FAILURE="${DEBUG_FAILURE}" \
-        e2e-runner:latest \
-        make test-pipeline-e2e
-
     # Kind test
-    export SKIP_KIND_E2E_TEST=$(get_env SKIP_KIND_E2E_TEST)
-    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
-      export FYRE_USER=$(get_env fyre-user)
-      export FYRE_KEY=$(get_env fyre-key)
-      export FYRE_PASS=$(get_env fyre-pass)
-      export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
+    export FYRE_USER=$(get_env fyre-user)
+    export FYRE_KEY=$(get_env fyre-key)
+    export FYRE_PASS=$(get_env fyre-pass)
+    export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-      docker run -d --name kind-e2e-run \
-          --volume /var/run/docker.sock:/var/run/docker.sock \
-          --env FYRE_USER="${FYRE_USER}" \
-          --env FYRE_KEY="${FYRE_KEY}" \
-          --env FYRE_PASS="${FYRE_PASS}" \
-          --env FYRE_PRODUCT_GROUP_ID="${FYRE_PRODUCT_GROUP_ID}" \
-          --env TRAVIS_BUILD_NUMBER="${BUILD_NUMBER}" \
-          --env VM_SIZE="l" \
-          --env DEBUG_FAILURE="${DEBUG_FAILURE}" \
-          e2e-runner:latest \
-          make kind-e2e-test
-    else
-      echo "SKIP_KIND_E2E was set. Skipping kind e2e..."
-    fi
+    scripts/acceptance-test.sh
 
-    until docker ps --all --no-trunc --filter name='^/ocp-e2e-run$' --format='{{.Status}}' | grep -q Exited; do
-      sleep 60
-    done
-
-    echo "***** OCP e2e run *****"
-    docker logs ocp-e2e-run
-
-    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
-      until docker ps --all --no-trunc --filter name='^/kind-e2e-run$' --format='{{.Status}}' | grep -q Exited; do
-        sleep 60
-      done
-
-      echo "***** kind e2e run *****"
-      docker logs kind-e2e-run
-    fi
-
-    ocp_status="$(docker ps --all --no-trunc --filter name='^/ocp-e2e-run$' --format='{{.Status}}')"
-    echo "${ocp_status}" | grep -q "Exited (0)" || {
-      echo "OCP test exited with non-zero status: ${ocp_status}"
-    }
-
-    if [[ "${SKIP_KIND_E2E_TEST}" != "true" ]]; then
-      kind_status="$(docker ps --all --no-trunc --filter name='^/kind-e2e-run$' --format='{{.Status}}')"
-      echo "${kind_status}" | grep -q "Exited (0)" || {
-        echo "kind test exited with non-zero status: ${kind_status}"
-      }
-    fi
 
 scan-artifact:
   abort_on_failure: false
