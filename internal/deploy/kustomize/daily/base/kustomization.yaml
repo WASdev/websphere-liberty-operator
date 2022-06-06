@@ -5,11 +5,5 @@ namespace: default
 
 resources:
   - websphere-liberty-crd.yaml
-  - websphere-liberty-traces-crd.yaml
-  - websphere-liberty-dumps-crd.yaml
-  - websphere-liberty-service-account.yaml
-  - websphere-liberty-role.yaml
-  - websphere-liberty-role-binding.yaml
-  - websphere-liberty-leader-election-role.yaml
-  - websphere-liberty-leader-election-role-binding.yaml
   - websphere-liberty-deployment.yaml
+  - websphere-liberty-roles.yaml
