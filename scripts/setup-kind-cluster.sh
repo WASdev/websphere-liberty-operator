@@ -137,6 +137,11 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
   fi
+
+  readonly test_namespace="wlo-test"
+  echo "****** Creating test namespace: ${test_namespace}"
+  kubectl create namespace "${test_namespace}"
+  kubectl config set-context kind-e2e-cluster --namespace="${test_namespace}"
 }
 
 install_rook_ceph() {

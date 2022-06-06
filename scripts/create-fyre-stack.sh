@@ -38,6 +38,8 @@ main() {
   if [[ -z "${BUILD_REQUEST_STATUS}" ]]; then
     # Build the single-VM cluster
     echo "Sending build request to Fyre..."
+    echo "${BUILD_DATA}"
+    echo
     BUILD_REQUEST_URL="$(curl ${CURL_OPTS} -X POST 'https://api.fyre.ibm.com/rest/v1/?operation=build' --data "${BUILD_DATA}" | jq '.details' | sed 's/"//g')"
     BUILD_REQUEST_INFO="$(curl ${CURL_OPTS} ${BUILD_REQUEST_URL})"
     BUILD_REQUEST_STATUS="$(echo ${BUILD_REQUEST_INFO} | jq -r '.request[0].status')"

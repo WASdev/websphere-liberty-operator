@@ -71,11 +71,6 @@ setup_env() {
     mkdir -p ${HOME}/.kube
     sshpass -p "${FYRE_PASS}" scp -o LogLevel=ERROR -o StrictHostKeyChecking=no root@${REMOTE_CLUSTER}:/root/.kube/config ${HOME}/.kube/config
 
-    if [[ -z "$(kubectl get ns | grep ${TEST_NAMESPACE})" ]]; then
-      echo "****** Creating test namespace: ${TEST_NAMESPACE}"
-      kubectl create namespace "${TEST_NAMESPACE}" --context "${KUBE_CLUSTER_NAME}"
-    fi
-
     kubectl config set-context ${KUBE_CLUSTER_NAME} --namespace="${TEST_NAMESPACE}" || {
       echo "Error: Failed to set kube context"
       exit 1
@@ -207,7 +202,7 @@ parse_args() {
         exit 1
     fi
 
-    readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
+    readonly TEST_NAMESPACE="wlo-test"
     readonly REMOTE_CLUSTER_NAME="wlo-test-${TEST_TAG}-cluster"
     readonly REMOTE_CLUSTER="${REMOTE_CLUSTER_NAME}1.fyre.ibm.com"
     readonly LOCAL_REGISTRY="localhost:5000"
