@@ -1,26 +1,20 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    control-plane: controller-manager
-  name: system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
-  namespace: system
+  name: websphere-liberty-controller-manager
   labels:
-    control-plane: controller-manager
+    control-plane: websphere-liberty-controller-manager
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: websphere-liberty-controller-manager
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: websphere-liberty-controller-manager
       annotations:
         productID: "cb1747ecb831410f88006195f024183f"
         productName: "WebSphere Liberty Operator"
@@ -39,7 +33,7 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - --enable-leader-election
-        image: controller:latest
+        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:b2b0f07db844e0b3970cfdf82f87a0ce330ee38f34df6926c09535b8ecbd2832
         name: manager
         livenessProbe:
           failureThreshold: 3
@@ -69,7 +63,7 @@ spec:
           - name: WATCH_NAMESPACE
             valueFrom:
               fieldRef:
-                fieldPath: metadata.annotations['olm.targetNamespaces']
+                fieldPath: metadata.namespace
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false
@@ -85,7 +79,7 @@ spec:
           requests:
             cpu: 200m
             memory: 128Mi
-      serviceAccountName: controller-manager
+      serviceAccountName: websphere-liberty-controller-manager
       terminationGracePeriodSeconds: 10
       affinity:
         nodeAffinity:

@@ -283,8 +283,8 @@ spec:
         app.kubernetes.io/name: websphere-liberty-operator
         control-plane: controller-manager
       annotations:
-        productID: "e7daacc46bbe4e2dacd2af49145a4723"
-        productName: "IBM WebSphere Application Server"
+        productID: "cb1747ecb831410f88006195f024183f"
+        productName: "WebSphere Liberty Operator"
         productMetric: "FREE"
         productChargedContainers: "ALL"
     spec:
@@ -339,11 +339,11 @@ spec:
               - ALL
         resources:
           limits:
-            cpu: 200m
-            memory: 256Mi
+            cpu: 400m
+            memory: 512Mi
           requests:
-            cpu: 100m
-            memory: 64Mi
+            cpu: 200m
+            memory: 128Mi
       serviceAccountName: wlo-controller-manager
       terminationGracePeriodSeconds: 10
       affinity:

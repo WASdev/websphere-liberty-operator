@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-05-26T18:16:57Z"
+    createdAt: "2022-06-03T09:54:30Z"
     description: Deploy and manage applications running on Liberty
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
@@ -708,9 +708,9 @@ spec:
             metadata:
               annotations:
                 productChargedContainers: ALL
-                productID: e7daacc46bbe4e2dacd2af49145a4723
+                productID: cb1747ecb831410f88006195f024183f
                 productMetric: FREE
-                productName: IBM WebSphere Application Server
+                productName: WebSphere Liberty Operator
               labels:
                 app.kubernetes.io/instance: websphere-liberty-operator
                 app.kubernetes.io/managed-by: olm
