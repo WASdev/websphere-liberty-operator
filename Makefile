@@ -126,7 +126,13 @@ build: generate fmt vet ## Build manager binary.
 
 build-pipeline-releases:
 	./scripts/build-releases.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
-	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_REGISTRY}" --image "${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
+
+build-artifactory-releases:
+	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --image "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}"	--target "${RELEASE_TARGET}"
+
+build-all-releases:
+	build-pipeline-releases
+	build-artifactory-releases
 
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
