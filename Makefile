@@ -127,8 +127,9 @@ build: generate fmt vet ## Build manager binary.
 build-pipeline-releases:
 	./scripts/build-releases.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
+# TODO: Update registry value, image value
 build-artifactory-releases:
-	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --image "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}"	--target "${RELEASE_TARGET}"
+	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --image "${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
 build-all-releases:
 	build-pipeline-releases
@@ -278,8 +279,9 @@ minikube-test-e2e:
 build-pipeline-manifest: setup-manifest
 	./scripts/build-manifest.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
+# TODO: Update registry value, image value
 build-artifactory-manifest: setup-manifest
-	./scripts/build-manifest.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --image "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}"	--target "${RELEASE_TARGET}"
+	./scripts/build-manifest.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --image "${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
 build-all-manifest:
 	build-pipeline-manifest
@@ -288,8 +290,9 @@ build-all-manifest:
 bundle-pipeline:
 	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
+# TODO: Update registry value, image value
 bundle-artifactory:
-	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --prod-image "${ARTIFACTORY_INSTANCE_ID}" --image "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}" --release "${RELEASE_TARGET}"
+	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${ARTIFACTORY_HOST_URL}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
 bundle-all:
 	bundle-pipeline
@@ -298,8 +301,9 @@ bundle-all:
 catalog-pipeline-build: opm ## Build a catalog image.
 	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
 
+# TODO: Update registry value, image value
 catalog-artifactory-build: opm ## Build a catalog image.
-	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}-bundle:${RELEASE_TARGET}" -p "${ARTIFACTORY_INSTANCE_ID}-bundle" -a "${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
+	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
 
 catalog-all-build: opm ## Build a catalog image
 	catalog-pipeline-build
@@ -308,8 +312,9 @@ catalog-all-build: opm ## Build a catalog image
 catalog-pipeline-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
 
+# TODO: Update registry value, image value
 catalog-artifactory-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG="${ARTIFACTORY_HOST_URL}/${ARTIFACTORY_INSTANCE_ID}-catalog:${RELEASE_TARGET}"
+	$(MAKE) docker-push IMG="${ARTIFACTORY_HOST_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
 
 catalog-all-push: ## Push a catalog image.
 	catalog-pipeline-push

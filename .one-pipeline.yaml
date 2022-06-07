@@ -166,6 +166,7 @@ containerize:
       # Push to the staging registry and artifactory
 
       # scan for open liberty and websphere liberty submodules?
+      # TODO: Update these values
       read -r ARTIFACTORY_HOST_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
       read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_login')"
       ARTIFACTORY_INSTANCE_ID_VALUE=$(get_env artifactorybackup | jq -r '.instance_id')
@@ -177,14 +178,14 @@ containerize:
       export ARTIFACTORY_INSTANCE_ID=$ARTIFACTORY_INSTANCE_ID_VALUE
 
       # Build amd64 image
-      build-all-releases
+      make build-all-releases
 
       # Build ppc64le and s390x images
       # Disabled for Liberty Operator builds for now
       #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
       # Build manifest
-      build-all-manifest
+      make build-all-manifest
 
       # Build bundle image
       make setup
@@ -192,6 +193,7 @@ containerize:
 
       # Build catalog image
       echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      # TODO: Update registry value for artifactory
       echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
       echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
       make catalog-all-build
