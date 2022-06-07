@@ -145,33 +145,58 @@ containerize:
     ARTIFACTORY_INSTANCE_ID_VALUE=$(get_env artifactorybackup | jq -r '.instance_id')
     read -r ARTIFACTORY_PASSWORD_VALUE <<< "$(jq -r --arg artifactory_instance "$ARTIFACTORY_INSTANCE_ID" '[.services[] | select(."service_id"=="artifactorybackup")][] | select(."instance_id"==$artifactory_instance) | .parameters.user_password' /toolchain/toolchain.json)"
 
-    if [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]]; then
+    if [[ $DISABLE_ARTIFACTORY ]]; then
+      # Only push to the staging registry
+
+      # Build amd64 image
+      make build-pipeline-releases
+
+      # Build ppc64le and s390x images
+      # Disabled for Liberty Operator builds for now
+      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+
+      # Build manifest
+      make build-pipeline-manifest
+
+      # Build bundle image
+      make setup
+      make bundle-pipeline
+
+      # Build catalog image
+      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+      make catalog-pipeline-build
+      make catalog-pipeline-push
+
+    else
+      # Push to the staging registry and artifactory
+
       export ARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME_VALUE
       export ARTIFACTORY_PASSWORD=$ARTIFACTORY_PASSWORD_VALUE
       export ARTIFACTORY_HOST_URL=$ARTIFACTORY_HOST_URL_VALUE
       export ARTIFACTORY_INSTANCE_ID=$ARTIFACTORY_INSTANCE_ID_VALUE
+
+      # Build amd64 image
+      build-all-releases
+
+      # Build ppc64le and s390x images
+      # Disabled for Liberty Operator builds for now
+      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+
+      # Build manifest
+      build-all-manifest
+
+      # Build bundle image
+      make setup
+      make bundle-all
+
+      # Build catalog image
+      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
+      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+      make catalog-all-build
+      make catalog-all-push
     fi
-
-    # Build amd64 image
-    [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && make build-all-releases || make build-pipeline-releases
-
-    # Build ppc64le and s390x images
-    # Disabled for Liberty Operator builds for now
-    #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
-
-    # Build manifest
-    [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && make build-all-manifest || make build-pipeline-manifest
-
-    # Build bundle image
-    make setup
-    [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && make bundle-all || make bundle-pipeline
-
-    # Build catalog image
-    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-    [ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
-    echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-    [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && make catalog-all-build || make catalog-pipeline-build
-    [[ -z $DISABLE_ARTIFACTORY || $DISABLE_ARTIFACTORY = 0 ]] && make catalog-all-push ||  make catalog-pipeline-push
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
