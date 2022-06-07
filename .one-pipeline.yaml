@@ -139,6 +139,17 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
 
+    # scan for open liberty and websphere liberty submodules?
+    read -r ARTIFACTORY_HOST_URL <<< "$(get_env artifactorybackup | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    read -r ARTIFACTORY_USERNAME <<< "$(get_env artifactorybackup | jq -r '.parameters.user_login')"
+    ARTIFACTORY_INSTANCE_ID=$(get_env artifactorybackup | jq -r '.instance_id')
+    read -r ARTIFACTORY_PASSWORD <<< "$(jq -r --arg artifactory_instance "$ARTIFACTORY_INSTANCE_ID" '[.services[] | select(."service_id"=="artifactorybackup")][] | select(."instance_id"==$artifactory_instance) | .parameters.user_password' /toolchain/toolchain.json)"
+
+    export $ARTIFACTORY_USERNAME
+    export $ARTIFACTORY_PASSWORD
+    export $ARTIFACTORY_HOST_URL
+    export $ARTIFACTORY_INSTANCE_ID
+
     # Build amd64 image
     make build-pipeline-releases
 
@@ -155,6 +166,7 @@ containerize:
 
     # Build catalog image
     echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+    echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
     echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
     make catalog-pipeline-build
     make catalog-pipeline-push
