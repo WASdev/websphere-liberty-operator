@@ -110,6 +110,8 @@ main() {
   elif [[ "$COMMAND" == "scorecard" ]]; then
      run_scorecard
   elif [[ "$COMMAND" == "deploy" ]]; then
+     deploy
+  else 
     echo
     echo "Command $COMMAND unrecognized."
     echo
