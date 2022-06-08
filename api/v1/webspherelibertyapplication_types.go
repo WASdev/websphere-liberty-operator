@@ -462,7 +462,9 @@ type StatusEndpoint struct {
 	Name  string              `json:"name,omitempty"`
 	Scope StatusEndpointScope `json:"scope,omitempty"`
 	Type  string              `json:"type,omitempty"`
-	URI   string              `json:"uri,omitempty"`
+	// Exposed URI of the application endpoint
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="URI",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	URI string `json:"uri,omitempty"`
 }
 
 // Defines the scope of endpoint information in status.
