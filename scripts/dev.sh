@@ -22,7 +22,7 @@
 #   catalog   - Apply CatalogSource (install operator into operator hub)
 #   subscribe - Apply OperatorGroup & Subscription (install operator onto cluster)
 #   login     - Login to registry
-#   depl0y    - Run make deploy
+#   deploy    - Run make deploy
 #   e2e       - Setup cluster for e2e scorecard tests
 #   scorecard - Run scorecard tests 
 
