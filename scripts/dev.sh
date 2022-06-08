@@ -24,7 +24,7 @@
 
 set -Eeo pipefail
 
-readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
+readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
 
 main() {
 
@@ -60,7 +60,7 @@ main() {
 
   # Set defaults unless overridden. 
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
-  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
+  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}  > /dev/null 2>&1 && true
   if [[ -z "${OCP_REGISTRY_URL}" ]]; then
      init_cluster
   fi
@@ -101,11 +101,14 @@ main() {
   elif [[ "$COMMAND" == "login" ]]; then
      login_registry
   elif [[ "$COMMAND" == "e2e" ]]; then
+     add_rbac
      install_rook
      install_serverless
      setup_knative_serving
      add_affinity_label_to_node
      create_image_content_source_policy
+  elif [[ "$COMMAND" == "scorecard" ]]; then
+     run_scorecard
   elif [[ "$COMMAND" == "deploy" ]]; then
     echo
     echo "Command $COMMAND unrecognized."
@@ -295,6 +298,14 @@ parse_args() {
 }
 
 
+add_rbac() {
+     oc apply -f $MAKEFILE_DIR/config/rbac/kuttl-rbac.yaml
+}
+
+run_scorecard() {
+     operator-sdk scorecard --verbose --selector=suite=kuttlsuite --namespace $NAMESPACE --service-account scorecard-kuttl --wait-time 60m $MAKEFILE_DIR/bundle
+}
+
 install_rook() {
     if ! oc get storageclass | grep rook-ceph >/dev/null; then
     echo "Installing Rook storage orchestrator..."
@@ -358,26 +369,27 @@ EOF
 
 setup_knative_serving() {
   if ! oc get knativeserving.operator.knative.dev/knative-serving -n knative-serving >/dev/null; then
-    if [[ $INSTALL_SERVERLESS ]]; then
-      echo "Waiting 30 seconds for Serverless operator to finish being set up..."
-      sleep 30
-    fi
+    echo "Waiting 30 seconds for Serverless operator to finish being set up..."
+    sleep 30
     wait_count=0
-    while [ $wait_count -le 20 ]
-    do
-      echo "Creating Knative Serving instance..."
-      cat <<EOF | oc apply -f -
+    KNS_FILE=/$TEMP_DIR/kns.yaml  
+    cat << EOF > $KNS_FILE
 apiVersion: operator.knative.dev/v1alpha1
 kind: KnativeServing
 metadata:
     name: knative-serving
     namespace: knative-serving
 EOF
+    while [ $wait_count -le 20 ]
+    do
+      echo "Creating Knative Serving instance..."
+      oc apply -f $KNS_FILE > /dev/null 2>&1 && true
       [[ $? == 0 ]] && break
       warn "Knative Serving configuration failed (probably because the Serverless operator isn't done being set up). Trying again in 15 seconds."
       ((wait_count++))
       sleep 15
     done
+    rm $KNS_FILE
     echo
   else
     echo "Knative Serving instance is already created."
