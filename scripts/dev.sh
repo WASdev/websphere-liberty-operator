@@ -16,11 +16,15 @@
 
 #   Available commands:
 
-#   all       - Run all targets
+#   all       - Run mininum setup/install targets (init, build, catalog, subscribe)
 #   init      - Initialize new OCP cluster by patching registry settings and logging in
 #   build     - Build and push all images
 #   catalog   - Apply CatalogSource (install operator into operator hub)
 #   subscribe - Apply OperatorGroup & Subscription (install operator onto cluster)
+#   login     - Login to registry
+#   depl0y    - Run make deploy
+#   e2e       - Setup cluster for e2e scorecard tests
+#   scorecard - Run scorecard tests 
 
 set -Eeo pipefail
 
