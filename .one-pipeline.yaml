@@ -154,10 +154,10 @@ containerize:
     echo "DEBUG: DISABLE_ARTIFACTORY: $DISABLE_ARTIFACTORY"
 
     if [[ -z $DISABLE_ARTIFACTORY ]]; then
-      echo "DEBUG: Setting DISABLE_ARTIFACTORY to false"
-      DISABLE_ARTIFACTORY=false
+      DISABLE_ARTIFACTORY="false"
+      echo "DEBUG: Set DISABLE_ARTIFACTORY to $DISABLE_ARTIFACTORY"
     fi
-    if [[ $DISABLE_ARTIFACTORY ]]; then
+    if [[ "$DISABLE_ARTIFACTORY" == "false" ]]; then
       # Only push to the staging registry
 
       echo "DEBUG: Running with artifactory disabled."
