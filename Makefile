@@ -131,9 +131,7 @@ build-pipeline-releases:
 build-artifactory-releases:
 	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
-build-all-releases:
-	build-pipeline-releases
-	build-artifactory-releases
+build-all-releases: build-pipeline-releases build-artifactory-releases
 
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
@@ -283,9 +281,7 @@ build-pipeline-manifest: setup-manifest
 build-artifactory-manifest: setup-manifest
 	./scripts/build-manifest.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
-build-all-manifest:
-	build-pipeline-manifest
-	build-artifactory-manifest
+build-all-manifest: build-pipeline-manifest build-artifactory-manifest
 
 bundle-pipeline:
 	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
@@ -294,9 +290,7 @@ bundle-pipeline:
 bundle-artifactory:
 	./scripts/bundle-release.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
-bundle-all:
-	bundle-pipeline
-	bundle-artifactory
+bundle-all: bundle-pipeline bundle-artifactory
 
 catalog-pipeline-build: opm ## Build a catalog image.
 	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
@@ -305,9 +299,7 @@ catalog-pipeline-build: opm ## Build a catalog image.
 catalog-artifactory-build: opm ## Build a catalog image.
 	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
 
-catalog-all-build: opm ## Build a catalog image
-	catalog-pipeline-build
-	catalog-artifactory-build
+catalog-all-build: opm catalog-pipeline-build catalog-artifactory-build ## Build a catalog image
 
 catalog-pipeline-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
@@ -316,9 +308,7 @@ catalog-pipeline-push: ## Push a catalog image.
 catalog-artifactory-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
 
-catalog-all-push: ## Push a catalog image.
-	catalog-pipeline-push
-	catalog-artifactory-push
+catalog-all-push: catalog-pipeline-push catalog-artifactory-push ## Push a catalog image.
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
