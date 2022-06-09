@@ -43,6 +43,7 @@ endif
 
 # Produce files under deploy/kustomize/daily with default namespace
 KUSTOMIZE_NAMESPACE = default
+KUSTOMIZE_IMG = cp.stg.icr.io/cp/websphere-liberty-operator:main
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for bundle and catalog images.
@@ -200,7 +201,7 @@ bundle: manifests setup kustomize ## Generate bundle manifests and metadata, the
 	$(KUSTOMIZE) build config/kustomize/crd -o internal/deploy/kustomize/daily/base/websphere-liberty-crd.yaml
 	cd config/kustomize/operator && $(KUSTOMIZE) edit set namespace $(KUSTOMIZE_NAMESPACE)
 	$(KUSTOMIZE) build config/kustomize/operator -o internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml
-	sed -i.bak "s,serviceAccountName: controller-manager,serviceAccountName: websphere-liberty-controller-manager,g" internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml
+	sed -i.bak "s,${IMG},${KUSTOMIZE_IMG},g;s,serviceAccountName: controller-manager,serviceAccountName: websphere-liberty-controller-manager,g" internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml
 	$(KUSTOMIZE) build config/kustomize/roles -o internal/deploy/kustomize/daily/base/websphere-liberty-roles.yaml
 
 	mv config/manifests/patches/csvAnnotations.yaml.bak config/manifests/patches/csvAnnotations.yaml

@@ -51,7 +51,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: icr.io/cpopen/websphere-liberty-operator:daily
+        image: cp.stg.icr.io/cp/websphere-liberty-operator:main
         livenessProbe:
           failureThreshold: 3
           httpGet:

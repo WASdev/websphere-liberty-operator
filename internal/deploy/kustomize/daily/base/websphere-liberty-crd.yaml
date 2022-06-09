@@ -5,7 +5,6 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.6.0
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: webspherelibertyapplications.liberty.websphere.ibm.com
 spec:
@@ -4531,7 +4530,6 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.6.0
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: webspherelibertydumps.liberty.websphere.ibm.com
 spec:
@@ -4678,7 +4676,6 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.6.0
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: webspherelibertytraces.liberty.websphere.ibm.com
 spec:
