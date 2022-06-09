@@ -14,16 +14,22 @@ setup:
     ARTIFACTORY_INSTANCE_ID_VALUE=$(get_env artifactorybackup | jq -r '.instance_id')
     read -r ARTIFACTORY_PASSWORD_VALUE <<< "$(jq -r --arg artifactory_instance "$ARTIFACTORY_INSTANCE_ID" '[.services[] | select(."service_id"=="artifactorybackup")][] | select(."instance_id"==$artifactory_instance) | .parameters.user_password' /toolchain/toolchain.json)"
 
+    read -r ARTIFACTORY_HOST_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
+
     export ARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME_VALUE
     export ARTIFACTORY_PASSWORD=$ARTIFACTORY_PASSWORD_VALUE
     export ARTIFACTORY_HOST_URL=$ARTIFACTORY_HOST_URL_VALUE
     export ARTIFACTORY_INSTANCE_ID=$ARTIFACTORY_INSTANCE_ID_VALUE
+
+    export ARTIFACTORY_REPO_URL=$ARTIFACTORY_REPO_URL_VALUE
 
     echo "ARTIFACTORY_USERNAME:     $ARTIFACTORY_USERNAME"
     echo "ARTIFACTORY_PASSWORD:     $ARTIFACTORY_PASSWORD"
     echo "ARTIFACTORY_HOST_URL:     $ARTIFACTORY_HOST_URL"
     echo "ARTIFACTORY_INSTANCE_ID:  $ARTIFACTORY_INSTANCE_ID"
     echo "artifactory_backup:       $(get_env artifactorybackup)"
+
+    echo "ARTIFACTORY_REPO_URL:     $ARTIFACTORY_REPO_URL"
 
     echo "artifactory_backup | jq:       $(get_env artifactorybackup | jq '.')"
 
@@ -34,7 +40,7 @@ setup:
     export DOCKER_PASSWORD=$(get_env docker-password)
 
     # Attempting to login to Docker...
-    echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
+    echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${DOCKER_USERNAME}" --password-stdin
 
     exit 2
 
