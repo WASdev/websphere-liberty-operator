@@ -5,6 +5,35 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
+
+    # ----- Testing -----
+
+    read -r ARTIFACTORY_HOST_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_login')"
+    ARTIFACTORY_INSTANCE_ID_VALUE=$(get_env artifactorybackup | jq -r '.instance_id')
+    read -r ARTIFACTORY_PASSWORD_VALUE <<< "$(jq -r --arg artifactory_instance "$ARTIFACTORY_INSTANCE_ID" '[.services[] | select(."service_id"=="artifactorybackup")][] | select(."instance_id"==$artifactory_instance) | .parameters.user_password' /toolchain/toolchain.json)"
+
+    export ARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME_VALUE
+    export ARTIFACTORY_PASSWORD=$ARTIFACTORY_PASSWORD_VALUE
+    export ARTIFACTORY_HOST_URL=$ARTIFACTORY_HOST_URL_VALUE
+    export ARTIFACTORY_INSTANCE_ID=$ARTIFACTORY_INSTANCE_ID_VALUE
+
+    echo "ARTIFACTORY_USERNAME:     $ARTIFACTORY_USERNAME"
+    echo "ARTIFACTORY_PASSWORD:     $ARTIFACTORY_PASSWORD"
+    echo "ARTIFACTORY_HOST_URL:     $ARTIFACTORY_HOST_URL"
+    echo "ARTIFACTORY_INSTANCE_ID:  $ARTIFACTORY_INSTANCE_ID"
+    echo "artifactory_backup:       $(get_env artifactorybackup)"
+
+    # Testing to make sure the artifactory variables are imported correctly.
+    # Remove this exit when testing is completed
+
+    # Attempting to login to Docker...
+    echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
+
+    exit 2
+
+    # ----- End Testing -----
+
     GO_VERSION=$(get_env go-version)
     wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
     export PATH=$PATH:/usr/local/go/bin
@@ -182,14 +211,6 @@ containerize:
       echo "ARTIFACTORY_HOST_URL:     $ARTIFACTORY_HOST_URL"
       echo "ARTIFACTORY_INSTANCE_ID:  $ARTIFACTORY_INSTANCE_ID"
       echo "artifactory_backup:       $(get_env artifactorybackup)"
-
-      # Testing to make sure the artifactory variables are imported correctly.
-      # Remove this exit when testing is completed
-
-      # Attempting to login to Docker...
-      echo "${DOCKER_PASSWORD}" | docker login "${ARTIFACTORY_HOST_URL}" -u "${DOCKER_USERNAME}" --password-stdin
-
-      exit 2
 
       # Build amd64 image
       make build-all-releases
