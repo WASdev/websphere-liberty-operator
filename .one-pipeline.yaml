@@ -149,8 +149,12 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
 
+    echo "DEBUG: export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)"
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    echo "DEBUG: DISABLE_ARTIFACTORY: $DISABLE_ARTIFACTORY"
+
     if [[ -z $DISABLE_ARTIFACTORY ]]; then
+      echo "DEBUG: Setting DISABLE_ARTIFACTORY to false"
       DISABLE_ARTIFACTORY=false
     fi
     if [[ $DISABLE_ARTIFACTORY ]]; then
