@@ -169,6 +169,8 @@ containerize:
     else
       # Push to the staging registry and artifactory
 
+      echo "Pushing to artifactory"
+
       read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
       read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
       read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
@@ -177,7 +179,12 @@ containerize:
       export ARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME_VALUE
       export ARTIFACTORY_TOKEN=$ARTIFACTORY_TOKEN_VALUE
 
+      echo "ARTIFACTORY_REPO_URL: $ARTIFACTORY_REPO_URL"
+      echo "ARTIFACTORY_USERNAME: $ARTIFACTORY_USERNAME"
+      echo "ARTIFACTORY_TOKEN:    $ARTIFACTORY_TOKEN"
+
       # Build amd64 image
+      echo "make build-all-releases"
       make build-all-releases
 
       # Build ppc64le and s390x images
@@ -185,18 +192,34 @@ containerize:
       #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
       # Build manifest
+      echo "make build-all-manifest"
       make build-all-manifest
 
       # Build bundle image
+      echo "make setup"
       make setup
+      echo "make bundle-all"
       make bundle-all
 
       # Build catalog image
+      echo "Connecting to docker..."
+
+      echo "${DOCKER_PASSWORD} | docker login ${PIPELINE_REGISTRY} -u ${DOCKER_USERNAME} --password-stdin"
       echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+
+      echo "${ARTIFACTORY_TOKEN} | docker login ${ARTIFACTORY_REPO_URL} -u ${ARTIFACTORY_USERNAME} --password-stdin"
       echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
+
+      echo "${REDHAT_PASSWORD} | docker login ${REDHAT_REGISTRY} -u ${REDHAT_USERNAME} --password-stdin"
       echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+
+      echo "make catalog-all-build"
       make catalog-all-build
+
+      echo "make catalog-all-push"
       make catalog-all-push
+
+      echo "Completed pushing to artifactory."
     fi
 
     # Save artifacts
