@@ -149,7 +149,11 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
 
-    if [[ get_env disable-artifactory ]]; then
+    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    if [[ -z $DISABLE_ARTIFACTORY ]]; then
+      DISABLE_ARTIFACTORY=false
+    fi
+    if [[ $DISABLE_ARTIFACTORY ]]; then
       # Only push to the staging registry
 
       echo "DEBUG: Running with artifactory disabled."
