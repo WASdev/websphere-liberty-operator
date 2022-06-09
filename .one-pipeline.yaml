@@ -24,6 +24,8 @@ setup:
     echo "ARTIFACTORY_INSTANCE_ID:  $ARTIFACTORY_INSTANCE_ID"
     echo "artifactory_backup:       $(get_env artifactorybackup)"
 
+    echo "artifactory_backup | jq:       $(get_env artifactorybackup | jq '.')"
+
     # Testing to make sure the artifactory variables are imported correctly.
     # Remove this exit when testing is completed
 
