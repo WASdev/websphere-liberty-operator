@@ -16,10 +16,27 @@ setup_env() {
     oc login "${CLUSTER_URL}" -u "${CLUSTER_USER:-kubeadmin}" -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
 
     # Set variables for rest of script to use
-    readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
-
-    echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
-    oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
+    if [[ "${INSTALL_MODE}" == "OwnNamespace" ]]; then
+      readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
+      readonly WATCHED_NAMESPACE="${TEST_NAMESPACE}"
+      echo "****** Creating test namespace: ${TEST_NAMESPACE} for install mode ${INSTALL_MODE} "
+      oc new-project "${TEST_NAMESPACE}"
+    elif [[ "${INSTALL_MODE}" == "SingleNamespace" ]]; then
+      readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
+      readonly WATCHED_NAMESPACE="wlo-watched-${TEST_TAG}"
+      echo "****** Creating test namespace: ${TEST_NAMESPACE} and ${WATCHED_NAMESPACE} for install mode ${INSTALL_MODE}"
+      oc new-project "${TEST_NAMESPACE}"
+      oc new-project "${WATCHED_NAMESPACE}"
+    elif [[ "${INSTALL_MODE}" == "AllNamespaces" ]]; then
+      readonly TEST_NAMESPACE="openshift-operators"
+      readonly WATCHED_NAMESPACE="wlo-watched-${TEST_TAG}"
+      echo "****** Creating test namespace: ${WATCHED_NAMESPACE} for install mode ${INSTALL_MODE}"
+      oc new-project "${WATCHED_NAMESPACE}"
+    else
+      echo "****** Install mode should be one of the following: OwnNamespace, SingleNamespace, AllNamespaces"
+      echo "${usage}"
+      exit 1
+    fi
 
     ## Create service account for Kuttl tests
     oc apply -f config/rbac/kuttl-rbac.yaml
@@ -27,7 +44,18 @@ setup_env() {
 
 ## cleanup_env : Delete generated resources that are not bound to a test TEST_NAMESPACE.
 cleanup_env() {
-  oc delete project "${TEST_NAMESPACE}"
+  echo "****** Deleting test namespace/s"
+  if [[ "${INSTALL_MODE}" != "AllNamespaces" ]]; then
+    oc delete project "${WATCHED_NAMESPACE}"
+    oc delete project "${TEST_NAMESPACE}"
+  else
+    oc delete project "${WATCHED_NAMESPACE}"
+    echo "****** Deleting the subscription, operator and catalog source as install mode is ${INSTALL_MODE}..."
+## This has to be done as when the install mode is AllNamespaces these resources gets created in the openshift-operators namespace
+    oc delete subscription websphere-liberty-operator-subscription -n openshift-operators
+    oc delete clusterserviceversion ibm-websphere-liberty.v1.0.0 -n openshift-operators
+    oc delete catalogsource websphere-liberty-catalog -n openshift-operators
+  fi
 }
 
 ## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
@@ -115,6 +143,11 @@ main() {
         exit 1
     fi
 
+    if [[ -z "${INSTALL_MODE}" ]]; then
+        echo "****** Missing install mode, setting it to OwnNamespace mode"
+        readonly INSTALL_MODE="OwnNamespace"
+    fi
+
     echo "****** Setting up test environment..."
     setup_env
 
@@ -152,15 +185,15 @@ main() {
     install_operator
 
     # Wait for operator deployment to be ready
-    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }' -n "${TEST_NAMESPACE}") -ne "1" ]]; do
         echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
         sleep 10
     done
 
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
 
-    echo "****** Starting scorecard tests..."
-    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
+    echo "****** Starting scorecard tests in the ${WATCHED_NAMESPACE}..."
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${WATCHED_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
        echo "****** Scorecard tests failed..."
        exit 1
     }
@@ -187,7 +220,7 @@ spec:
   displayName: WebSphere Liberty Catalog
   publisher: IBM
 EOF
-
+    if [[ "${INSTALL_MODE}" != "AllNamespaces" ]]; then
     echo "****** Applying the operator group..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
@@ -197,9 +230,9 @@ metadata:
   namespace: $TEST_NAMESPACE
 spec:
   targetNamespaces:
-    - $TEST_NAMESPACE
+    - $WATCHED_NAMESPACE
 EOF
-
+    fi
     echo "****** Applying the subscription..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
@@ -273,6 +306,10 @@ parse_args() {
     --channel)
       shift
       readonly CHANNEL="${1}"
+      ;;
+    --install-mode)
+      shift
+      readonly INSTALL_MODE="${1}"
       ;;
     *)
       echo "Error: Invalid argument - $1"
