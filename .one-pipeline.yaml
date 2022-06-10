@@ -191,9 +191,9 @@ containerize:
       read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
       read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
 
-      export ARTIFACTORY_REPO_URL=$ARTIFACTORY_REPO_URL_VALUE
-      export ARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME_VALUE
-      export ARTIFACTORY_TOKEN=$ARTIFACTORY_TOKEN_VALUE
+      export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
+      export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
+      export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
 
       echo "DEBUG: ARTIFACTORY_REPO_URL: $ARTIFACTORY_REPO_URL"
       echo "DEBUG: ARTIFACTORY_USERNAME: $ARTIFACTORY_USERNAME"
