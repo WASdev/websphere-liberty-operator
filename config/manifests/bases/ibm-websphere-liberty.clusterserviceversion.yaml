@@ -415,17 +415,17 @@ spec:
         displayName: User API Type
         path: sso.oauth2[0].userApiType
       statusDescriptors:
+      - description: Exposed URI of the application endpoint
+        displayName: Application
+        path: endpoints[0].uri
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
       - displayName: Service Binding
         path: binding
       - displayName: Status Conditions
         path: conditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Exposed URI of the application endpoint
-        displayName: URI
-        path: endpoints[0].uri
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
     - description: 'Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyDump
