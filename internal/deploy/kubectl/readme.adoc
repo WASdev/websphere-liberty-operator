@@ -65,6 +65,8 @@ NOTE: Ensure that you replace  `<SPECIFY_OPERATOR_NAMESPACE_HERE>` and `<SPECIFY
 
 == Uninstallation
 
+_Optional_: Remove any `WebsphereLibertyApplication` Custom Resource instances before uninstalling the operator.
+
 To uninstall the operator, run commands from Step 2c first and then Step 2b (if applicable), but after replacing `kubectl apply` with `kubectl delete`.
 
 To delete the CRD, run command from Step 1, but after replacing `kubectl apply` with `kubectl delete`.
