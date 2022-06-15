@@ -93,7 +93,7 @@ function add_historical_versions_to_db(){
     for imageTag in "${arrVersions[@]}"
     do
         local digest="$(docker pull $PROD_IMAGE:$imageTag | grep Digest | grep -o 'sha[^\"]*')"
-        local img_digest="${prod_img}@${digest}"
+        local img_digest="${PROD_IMAGE}@${digest}"
         echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
         "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
     done
