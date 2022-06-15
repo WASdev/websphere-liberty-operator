@@ -300,7 +300,6 @@ catalog-all-build: opm catalog-pipeline-build catalog-artifactory-build ## Build
 catalog-pipeline-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
 
-# TODO: Update registry value, image value
 catalog-artifactory-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG="${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
 
