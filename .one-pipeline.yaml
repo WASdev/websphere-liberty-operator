@@ -13,7 +13,6 @@ setup:
     rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
     go mod vendor
 
-    ### NOTE: Temporarily commenting out code below for faster testing
     ENABLE_BRANCH_PROTECTION=$(get_env enable-branch-protection)
     BRANCH=$(get_env branch)
 
@@ -55,7 +54,6 @@ test:
   script: |
     #!/usr/bin/env bash
 
-    ### NOTE: Temporarily commenting out code below for faster testing
     # ## Setup required tooling
     GO_VERSION=$(get_env go-version)
     wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz" 
@@ -73,7 +71,6 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
-    ### NOTE: Temporarily commenting out code below for faster testing
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
     SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
@@ -336,7 +333,7 @@ scan-artifact:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
   script: |
-    !/usr/bin/env bash
+    #!/usr/bin/env bash
     echo "twistlock-scan"
     ./scripts/pipeline/twistlock-scan.sh
     echo "VA scan"
@@ -375,7 +372,7 @@ release:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
-    !/usr/bin/env bash
+    #!/usr/bin/env bash
 
     RELEASE_FLAG=$(get_env release "false")
 
