@@ -105,8 +105,6 @@ containerize:
       set -x
     fi
 
-    echo "DEBUG: Downloading and Configuring golang..."
-
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
     wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
@@ -114,8 +112,6 @@ containerize:
     export PATH=$PATH:/usr/local/go/bin
     apt-get update
     apt-get -qq -y install build-essential software-properties-common uidmap
-
-    echo "DEBUG: Downloading and installing skopeo" 
 
     # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
@@ -128,8 +124,6 @@ containerize:
       sudo dpkg -i skopeo_1.2.2-2_amd64.deb
     fi
     skopeo --version || exit 1
-
-    echo "DEBUG: Building images..."
 
     #  Build images
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
