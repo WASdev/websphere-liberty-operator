@@ -103,6 +103,49 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
+	// Fetch the WebSphereLiberty instance
+	instance := &webspherelibertyv1.WebSphereLibertyApplication{}
+	var ba common.BaseComponent = instance
+	err = r.GetClient().Get(context.TODO(), request.NamespacedName, instance)
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return reconcile.Result{}, err
+	}
+
+	defaultMeta := metav1.ObjectMeta{
+		Name:      instance.Name,
+		Namespace: instance.Namespace,
+	}
+
+	// Check to see if the existing deployment or statefulsets are owned by us
+	// If they are not, display and error and do not requeue
+	deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
+	err = r.GetClient().Get(context.TODO(), request.NamespacedName, deploy)
+	if err == nil {
+		for _, element := range deploy.OwnerReferences {
+			if element.Kind != "WebSphereLibertyApplication" {
+				reqLogger.Error(err, "Existing Deployment for "+instance.Name+" is not managed by this operator. It is being managed by "+element.Kind)
+				return reconcile.Result{}, nil
+			}
+		}
+	}
+	statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
+	err = r.GetClient().Get(context.TODO(), request.NamespacedName, statefulSet)
+	if err == nil {
+		for _, element := range statefulSet.OwnerReferences {
+			if element.Kind != "WebSphereLibertyApplication" {
+				reqLogger.Error(err, "Existing StatefulSet for "+instance.Name+" is not managed by this operator. It is being managed by "+element.Kind)
+				return reconcile.Result{}, nil
+			}
+		}
+	}
+
 	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
 	if err != nil {
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
@@ -122,20 +165,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Info("Failed to create or update websphere-liberty-operator config map, error: " + err.Error())
 	}
 
-	// Fetch the WebSphereLiberty instance
-	instance := &webspherelibertyv1.WebSphereLibertyApplication{}
-	var ba common.BaseComponent = instance
-	err = r.GetClient().Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil {
-		if kerrors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
-	}
 	// Check if the WebSphereLibertyApplication instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	isInstanceMarkedToBeDeleted := instance.GetDeletionTimestamp() != nil
@@ -196,11 +225,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// if currentGen == 1 {
 	// 	return reconcile.Result{}, nil
 	// }
-
-	defaultMeta := metav1.ObjectMeta{
-		Name:      instance.Name,
-		Namespace: instance.Namespace,
-	}
 
 	imageReferenceOld := instance.Status.ImageReference
 	instance.Status.ImageReference = instance.Spec.ApplicationImage
@@ -463,7 +487,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 
-		// Delete StatefulSet if exists
+		// Delete service if exists
 		headlesssvc := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: instance.Name + "-headless", Namespace: instance.Namespace}}
 		err = r.DeleteResource(headlesssvc)
 
