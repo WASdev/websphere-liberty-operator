@@ -26,6 +26,7 @@ usage() {
     echo "  -c, --container-tool     Tool to build image [docker, podman] (default 'docker')"
     echo "  -o, --opm-tool           Name of the opm tool (default 'opm')"
     echo "  -h, --help               Display this help and exit"
+    echo "  -v, --current-version    Identifies the current version of this operator"
     exit 0
 }
 
