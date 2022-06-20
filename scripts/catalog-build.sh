@@ -78,6 +78,10 @@ function parse_arguments() {
             shift
             TMP_DIR=$1
             ;;
+        -v | --current-version)
+            shift
+            CURRENT_VERSION=$1
+            ;;
         esac
         shift
     done
@@ -118,6 +122,13 @@ function createExcludeVersionsArray() {
         excludeVersion="${temp#\"}"
         arrExcludeVersions[${#arrExcludeVersions[@]}]=$excludeVersion
     done
+
+    ## Add current version to excludes array as well.  We do this because it is possible the version
+    ## being built is already in production.  If we don't exclude the current version, the production
+    ## version will be added to the catalog prior to the current build's bundle.  That will exclude the
+    ## current build from being included into the catalog.  So, instead, we omit the production version
+    ## so that the current build is added to the catalog.
+    arrExcludeVersions[${#arrExcludeVersions[@]}]=$CURRENT_VERSION
 }
 
 function determineAndPullOlderBundles() {
