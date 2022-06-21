@@ -139,19 +139,15 @@ containerize:
     export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
-
-    echo "DEBUG: export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)"
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
-    echo "DEBUG: DISABLE_ARTIFACTORY: $DISABLE_ARTIFACTORY"
-
+    
     if [[ -z $DISABLE_ARTIFACTORY ]]; then
       DISABLE_ARTIFACTORY="false"
-      echo "DEBUG: Set DISABLE_ARTIFACTORY to $DISABLE_ARTIFACTORY"
     fi
     if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
       # Only push to the staging registry
 
-      echo "DEBUG: Running with artifactory disabled."
+      echo "Running with artifactory disabled."
 
       # Build amd64 image
       make build-pipeline-releases
@@ -176,7 +172,7 @@ containerize:
     else
       # Push to the staging registry and artifactory
 
-      echo "DEBUG: Running with artifactory enabled."
+      echo "Running with artifactory enabled."
 
       read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
       read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
@@ -186,12 +182,7 @@ containerize:
       export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
       export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
 
-      echo "DEBUG: ARTIFACTORY_REPO_URL: $ARTIFACTORY_REPO_URL"
-      echo "DEBUG: ARTIFACTORY_USERNAME: $ARTIFACTORY_USERNAME"
-      echo "DEBUG: ARTIFACTORY_TOKEN:    $ARTIFACTORY_TOKEN"
-
       # Build amd64 image
-      echo "DEBUG: make build-all-releases"
       make build-all-releases
 
       # Build ppc64le and s390x images
@@ -199,34 +190,23 @@ containerize:
       #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
       # Build manifest
-      echo "DEBUG: make build-all-manifest"
       make build-all-manifest
 
       # Build bundle image
-      echo "DEBUG: make setup"
       make setup
-      echo "DEBUG: make bundle-all"
       make bundle-all
 
       # Build catalog image
       echo "Connecting to docker..."
 
-      echo "DEBUG: ${DOCKER_PASSWORD} | docker login ${PIPELINE_REGISTRY} -u ${DOCKER_USERNAME} --password-stdin"
       echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-
-      echo "DEBUG: ${ARTIFACTORY_TOKEN} | docker login ${ARTIFACTORY_REPO_URL} -u ${ARTIFACTORY_USERNAME} --password-stdin"
       echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
-
-      echo "DEBUG: ${REDHAT_PASSWORD} | docker login ${REDHAT_REGISTRY} -u ${REDHAT_USERNAME} --password-stdin"
       echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
 
-      echo "DEBUG: make catalog-all-build"
       make catalog-all-build
-
-      echo "DEBUG: make catalog-all-push"
       make catalog-all-push
 
-      echo "DEBUG: Completed pushing to artifactory."
+      echo "Completed pushing to artifactory."
     fi
 
     # Save artifacts
