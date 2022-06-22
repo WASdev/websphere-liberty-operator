@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: service-with-cert-lib-app
 status:
-  observedGeneration: 3
   replicas: 1
   readyReplicas: 1
   updatedReplicas: 1
@@ -12,6 +11,7 @@ spec:
     spec:
       containers:
         - env:
+            - name: SA_RESOURCE_VERSION
             - name: WLP_LOGGING_CONSOLE_LOGLEVEL
             - name: WLP_LOGGING_CONSOLE_SOURCE
             - name: WLP_LOGGING_CONSOLE_FORMAT

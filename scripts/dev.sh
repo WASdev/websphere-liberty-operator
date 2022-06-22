@@ -28,6 +28,7 @@
 
 set -Eeo pipefail
 
+
 readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
 
 main() {
@@ -64,7 +65,9 @@ main() {
 
   # Set defaults unless overridden. 
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
+  
   OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}  > /dev/null 2>&1 && true
+
   if [[ -z "${OCP_REGISTRY_URL}" ]]; then
      init_cluster
   fi

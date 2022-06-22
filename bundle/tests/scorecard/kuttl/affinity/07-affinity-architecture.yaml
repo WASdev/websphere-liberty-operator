@@ -1,0 +1,11 @@
+# Check that if there is a matching node affinity lab a pod is created
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: affinity-rc
+spec:
+  license:
+    accept: true
+  affinity:
+    architecture:
+      - amd64

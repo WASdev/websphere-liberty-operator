@@ -13,7 +13,7 @@ setup_env() {
 
     # Start a cluster and login
     echo "****** Logging into remote cluster..."
-    oc login "${CLUSTER_URL}" -u kubeadmin -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
+    oc login "${CLUSTER_URL}" -u "${CLUSTER_USER:-kubeadmin}" -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
 
     # Set variables for rest of script to use
     readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
@@ -29,6 +29,36 @@ setup_env() {
 cleanup_env() {
   oc delete project "${TEST_NAMESPACE}"
 }
+
+## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
+trap_cleanup() {
+  last_status=$?
+  if [[ $last_status != 0 ]]; then
+    cleanup_env
+  fi
+  exit $last_status
+}
+
+#push_images() {
+#    echo "****** Logging into private registry..."
+#    oc sa get-token "${SERVICE_ACCOUNT}" -n default | docker login -u unused --password-stdin "${DEFAULT_REGISTRY}" || {
+#        echo "Failed to log into docker registry as ${SERVICE_ACCOUNT}, exiting..."
+#        exit 1
+#    }
+
+#    echo "****** Creating pull secret using Docker config..."
+#    oc create secret generic regcred --from-file=.dockerconfigjson="${HOME}/.docker/config.json" --type=kubernetes.io/dockerconfigjson
+
+#    docker push "${BUILD_IMAGE}" || {
+#        echo "Failed to push ref: ${BUILD_IMAGE} to docker registry, exiting..."
+#        exit 1
+#    }
+
+#    docker push "${BUNDLE_IMAGE}" || {
+#        echo "Failed to push ref: ${BUNDLE_IMAGE} to docker registry, exiting..."
+#        exit 1
+#    }
+#}
 
 main() {
     parse_args "$@"
@@ -87,6 +117,17 @@ main() {
 
     echo "****** Setting up test environment..."
     setup_env
+
+    if [[ -z "${DEBUG_FAILURE}" ]]; then
+        trap trap_cleanup EXIT
+    else
+        echo "#####################################################################################"
+        echo "WARNING: --debug-failure is set. If e2e tests fail, any created resources will remain"
+        echo "on the cluster for debugging/troubleshooting. YOU MUST DELETE THESE RESOURCES when"
+        echo "you're done, or else they will cause future tests to fail. To cleanup manually, just"
+        echo "delete the namespace \"${TEST_NAMESPACE}\": oc delete project \"${TEST_NAMESPACE}\" "
+        echo "#####################################################################################"
+    fi
 
     # login to docker to avoid rate limiting during build
     echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
@@ -154,6 +195,9 @@ kind: OperatorGroup
 metadata:
   name: websphere-operator-group
   namespace: $TEST_NAMESPACE
+spec:
+  targetNamespaces:
+    - $TEST_NAMESPACE
 EOF
 
     echo "****** Applying the subscription..."
@@ -187,6 +231,10 @@ parse_args() {
       shift
       readonly CLUSTER_URL="${1}"
       ;;
+    --cluster-user)
+      shift
+      readonly CLUSTER_USER="${1}"
+      ;;
     --cluster-token)
       shift
       readonly CLUSTER_TOKEN="${1}"
@@ -214,6 +262,9 @@ parse_args() {
     --test-tag)
       shift
       readonly TEST_TAG="${1}"
+      ;;
+    --debug-failure)
+      readonly DEBUG_FAILURE=true
       ;;
     --catalog-image)
       shift

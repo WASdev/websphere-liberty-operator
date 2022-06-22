@@ -1,0 +1,18 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: probes-wsliberty
+spec:
+  license:
+    accept: true
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
+  service:
+    port: 9443
+  replicas: 1
+  probes:
+    startup:
+      failureThreshold: 5
+    readiness:
+      failureThreshold: 5
+    liveness:
+      failureThreshold: 5

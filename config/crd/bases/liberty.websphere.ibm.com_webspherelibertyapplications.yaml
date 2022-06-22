@@ -2341,8 +2341,12 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before the Liberty application
-                      can be deployed. License information is available at https://ibm.biz/was-license
+                    description: I represent that the software in the above-referenced
+                      application container includes the IBM Program referenced below
+                      and I accept the terms of the license agreement corresponding
+                      to the version of IBM Program in the application container by
+                      setting this value to true. See https://ibm.biz/was-license
+                      for the license agreements applicable to this IBM Program
                     enum:
                     - true
                     type: boolean
@@ -2862,10 +2866,20 @@ spec:
               networkPolicy:
                 description: Defines the network policy
                 properties:
+                  disable:
+                    description: Disable the creation of the network policy. Defaults
+                      to false.
+                    type: boolean
                   fromLabels:
                     additionalProperties:
                       type: string
                     description: Specify the labels of pod(s) that incoming traffic
+                      is allowed from.
+                    type: object
+                  namespaceLabels:
+                    additionalProperties:
+                      type: string
+                    description: Specify the labels of namespaces that incoming traffic
                       is allowed from.
                     type: object
                 type: object
@@ -3280,8 +3294,8 @@ spec:
                   a global image pull secret.
                 type: string
               replicas:
-                description: Number of pods to create. Not applicable when .spec.autoscaling
-                  or .spec.createKnativeService is specified.
+                description: Number of pods to create. Defaults to 1. Not applicable
+                  when .spec.autoscaling or .spec.createKnativeService is specified.
                 format: int32
                 type: integer
               resources:
@@ -3335,7 +3349,8 @@ spec:
                     description: Path to be used for Route.
                     type: string
                   pathType:
-                    description: Path type to be used for Ingress.
+                    description: Path type to be used for Ingress. This does not apply
+                      to Route on OpenShift.
                     type: string
                   termination:
                     description: TLS termination policy. Can be one of edge, reencrypt
@@ -3511,8 +3526,8 @@ spec:
                   nodePort:
                     description: Node proxies this port into your service.
                     format: int32
-                    maximum: 65535
-                    minimum: 0
+                    maximum: 32767
+                    minimum: 30000
                     type: integer
                   port:
                     description: The port exposed by the container.
@@ -4780,7 +4795,7 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               sso:
-                description: Specifies the configuration for Single sign-on (SSO)
+                description: Specifies the configuration for Single Sign-On (SSO)
                   providers to authenticate with.
                 properties:
                   github:
@@ -4924,6 +4939,12 @@ spec:
                   storage:
                     description: Defines settings of persisted storage for StatefulSets.
                     properties:
+                      className:
+                        description: A convenient field to request the storage class
+                          of the persisted storage. The name can not be specified
+                          or updated after the storage is created.
+                        pattern: .+
+                        type: string
                       mountPath:
                         description: The directory inside the container where this
                           persisted storage will be bound to.

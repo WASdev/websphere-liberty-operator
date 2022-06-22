@@ -3,9 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.17
 
 require (
-	// github.com/application-stacks/runtime-component-operator v0.8.1-0.20220408223952-8135353c6a87
-
-	github.com/application-stacks/runtime-component-operator v0.8.1-0.20220504014006-8309b7fb8978
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850
 	github.com/go-logr/logr v0.4.0
 	github.com/openshift/api v0.0.0-20211028023115-7224b732cc14 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220405121559-e304504b7d6f

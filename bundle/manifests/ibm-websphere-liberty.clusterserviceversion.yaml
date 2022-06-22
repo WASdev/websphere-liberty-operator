@@ -11,13 +11,14 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "registry.connect.redhat.com/ibm/open-liberty-samples:springPetClinic",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
               "metric": "Virtual Processor Core (VPC)",
               "productEntitlementSource": "Standalone"
-            }
+            },
+            "manageTLS": true
           }
         },
         {
@@ -56,10 +57,10 @@ metadata:
       ]
     capabilities: Auto Pilot
     categories: Application Runtime
-    certified: "true"
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-04-10T13:05:46Z"
-    description: Deploy and manage applications running on Liberty
+    createdAt: "2022-06-06T14:15:01Z"
+    description: Deploy and manage containerized Liberty applications
+    operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
@@ -117,6 +118,11 @@ spec:
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: OIDC
+        path: sso.oidc
+      - description: The unique ID for the provider. Default value is oidc.
+        displayName: ID
+        path: sso.oidc[0].id
       - description: Name of the application. Defaults to the name of this custom resource.
         displayName: Application Name
         path: applicationName
@@ -127,6 +133,11 @@ spec:
         path: autoscaling.minReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: OAuth2
+        path: sso.oauth2
+      - description: Specifies a discovery endpoint URL for the OpenID Connect provider. Required field.
+        displayName: Discovery Endpoint
+        path: sso.oidc[0].discoveryEndpoint
       - description: Version of the application.
         displayName: Application Version
         path: applicationVersion
@@ -137,26 +148,53 @@ spec:
         path: autoscaling.targetCPUUtilizationPercentage
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: GitHub
+        path: sso.github
+      - description: Specifies the name of the claim. Use its value as the user group membership.
+        displayName: Group Name Attribute
+        path: sso.oidc[0].groupNameAttribute
       - description: Policy for pulling container images. Defaults to IfNotPresent.
         displayName: Pull Policy
         path: pullPolicy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:imagePullPolicy
+      - description: Specifies the name of the claim. Use its value as the authenticated user principal.
+        displayName: User Name Attribute
+        path: sso.oidc[0].userNameAttribute
+      - description: Specifies a callback protocol, host and port number.
+        displayName: Redirect to RP Host and Port
+        path: sso.redirectToRPHostAndPort
       - description: Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.
         displayName: Pull Secret
         path: pullSecret
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
+      - description: Specifies whether to map a user identifier to a registry user. This parameter applies to all providers.
+        displayName: Map to User Registry
+        path: sso.mapToUserRegistry
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: The name of the social login configuration for display.
+        displayName: Display Name
+        path: sso.oidc[0].displayName
       - description: Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.
         displayName: Service Account Name
         path: serviceAccountName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Specifies whether the UserInfo endpoint is contacted.
+        displayName: User Info Endpoint Enabled
+        path: sso.oidc[0].userInfoEndpointEnabled
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Create Knative resources and use Knative serving.
         displayName: Create Knative Service
         path: createKnativeService
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specifies the name of the claim. Use its value as the subject realm.
+        displayName: Realm Name Attribute
+        path: sso.oidc[0].realmNameAttribute
       - description: Expose the application externally via a Route, a Knative Route or an Ingress resource.
         displayName: Expose
         path: expose
@@ -167,7 +205,10 @@ spec:
         path: manageTLS
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Number of pods to create. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+      - description: Specifies one or more scopes to request.
+        displayName: Scope
+        path: sso.oidc[0].scope
+      - description: Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
         displayName: Replicas
         path: replicas
         x-descriptors:
@@ -177,12 +218,20 @@ spec:
         path: service.port
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Specifies the required authentication method.
+        displayName: Token Endpoint Auth Method
+        path: sso.oidc[0].tokenEndpointAuthMethod
       - displayName: Auto Scaling
         path: autoscaling
       - displayName: Service Type
         path: service.type
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Specifies whether to enable host name verification when the client contacts the provider.
+        displayName: Host Name Verification Enabled
+        path: sso.oidc[0].hostNameVerificationEnabled
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Resource requests and limits for the application container.
         displayName: Resource Requirements
         path: resources
@@ -226,6 +275,8 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
+      - displayName: Network Policy
+        path: networkPolicy
       - description: Expose the application as a bindable service. Defaults to false.
         displayName: Bindable
         path: service.bindable
@@ -233,43 +284,46 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - displayName: Serviceability
         path: serviceability
-      - displayName: Single sign-on
+      - displayName: Single Sign-On
         path: sso
       - displayName: Monitoring
         path: monitoring
-      - description: An array of environment variables for the application container.
-        displayName: Environment Variables
-        path: env
       - description: Specifies the strategy to replace old deployment pods with new pods.
         displayName: Deployment Update Strategy
         path: deployment.updateStrategy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
+      - description: An array of environment variables for the application container.
+        displayName: Environment Variables
+        path: env
       - description: List of sources to populate environment variables in the application container.
         displayName: Environment Variables from Sources
         path: envFrom
-      - description: Represents a volume with data that is accessible to the application container.
-        displayName: Volumes
-        path: volumes
       - description: Specifies the strategy to replace old StatefulSet pods with new pods.
         displayName: StatefulSet Update Strategy
         path: statefulSet.updateStrategy
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Represents a volume with data that is accessible to the application container.
+        displayName: Volumes
+        path: volumes
+      - displayName: Storage
+        path: statefulSet.storage
       - description: Represents where to mount the volumes into the application container.
         displayName: Volume Mounts
         path: volumeMounts
       - description: List of containers to run before other containers in a pod.
         displayName: Init Containers
         path: initContainers
-      - displayName: Storage
-        path: statefulSet.storage
-      - description: List of sidecar containers. These are additional containers to be added to the pods.
-        displayName: Sidecar Containers
-        path: sidecarContainers
       - description: A convenient field to set the size of the persisted storage.
         displayName: Storage Size
         path: statefulSet.storage.size
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: List of sidecar containers. These are additional containers to be added to the pods.
+        displayName: Sidecar Containers
+        path: sidecarContainers
+      - description: A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
+        displayName: Storage Class Name
+        path: statefulSet.storage.className
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Affinity
@@ -287,8 +341,6 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
-      - displayName: Network Policy
-        path: networkPolicy
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -334,6 +386,13 @@ spec:
         path: route.path
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Path type to be used for Ingress. This does not apply to Route on OpenShift.
+        displayName: Path Type
+        path: route.pathType
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:Exact
+        - urn:alm:descriptor:com.tectonic.ui:select:Prefix
+        - urn:alm:descriptor:com.tectonic.ui:select:ImplementationSpecific
       - description: 'A name of a secret that already contains TLS key, certificate and CA to be used in the route. It can also contain destination CA certificate. The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt, and tls.key.'
         displayName: Certificate Secret Reference
         path: route.certificateSecretRef
@@ -343,12 +402,16 @@ spec:
         displayName: Termination
         path: route.termination
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:select:edge
+        - urn:alm:descriptor:com.tectonic.ui:select:reencrypt
+        - urn:alm:descriptor:com.tectonic.ui:select:passthrough
       - description: HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect and None.
         displayName: Insecure Edge Termination Policy
         path: route.insecureEdgeTerminationPolicy
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:select:Allow
+        - urn:alm:descriptor:com.tectonic.ui:select:Redirect
+        - urn:alm:descriptor:com.tectonic.ui:select:None
       - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
         displayName: Liveness Probe
         path: probes.liveness
@@ -358,25 +421,125 @@ spec:
       - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
+      - description: Disable the creation of the network policy. Defaults to false.
+        displayName: Disable
+        path: networkPolicy.disable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specify the labels of namespaces that incoming traffic is allowed from.
+        displayName: Namespace Labels
+        path: networkPolicy.namespaceLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before the Liberty application can be deployed. License information is available at https://ibm.biz/was-license
+      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+        displayName: Edition
+        path: license.edition
+      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+        displayName: Product Entitlement Source
+        path: license.productEntitlementSource
+      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+        displayName: Metric
+        path: license.metric
+      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
-      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
-        displayName: Edition
-        path: license.edition
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
-        displayName: Metric
-        path: license.metric
-      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
-        displayName: Product Entitlement Source
-        path: license.productEntitlementSource
+      - description: Determines whether the access token that is provided in the request is used for authentication.
+        displayName: Access Token Required
+        path: sso.oauth2[0].accessTokenRequired
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Determines whether to support access token authentication if an access token is provided in the request.
+        displayName: Access Token Supported
+        path: sso.oauth2[0].accessTokenSupported
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specifies the unique ID for the provider. The default value is oauth2.
+        displayName: ID
+        path: sso.oauth2[0].id
+      - description: The URL for retrieving the user information.
+        displayName: User API
+        path: sso.oauth2[0].userApi
+      - description: Indicates which specification to use for the user API.
+        displayName: User API Type
+        path: sso.oauth2[0].userApiType
+      - description: Hide liveness probe's Exec field
+        displayName: Livness Probe's Exec
+        path: probes.liveness.exec
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Hide liveness probe's TCP Socket field
+        displayName: Livness Probe's Exec
+        path: probes.liveness.tcpSocket
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Hide readiness probe's Exec field
+        displayName: Readiness Probe's Exec
+        path: probes.readiness.exec
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Hide readiness probe's TCP Socket field
+        displayName: Readiness Probe's TCP Socket
+        path: probes.readiness.tcpSocket
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Hide startup probe's Exec field
+        displayName: Startup Probe's Exec
+        path: probes.startup.exec
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Hide startup probe's TCP Socket field
+        displayName: Startup Probe's Exec
+        path: probes.startup.tcpSocket
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - displayName: Type
+        path: securityContext.seccompProfile.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:RuntimeDefault
+        - urn:alm:descriptor:com.tectonic.ui:select:Localhost
+        - urn:alm:descriptor:com.tectonic.ui:select:Unconfined
+      - displayName: Localhost Profile
+        path: securityContext.seccompProfile.localhostProfile
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:fieldDependency:securityContext.seccompProfile.type:Localhost
+      - displayName: Read-Only Root Filesystem
+        path: securityContext.readOnlyRootFilesystem
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Run as Non-Root
+        path: securityContext.runAsNonRoot
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Privileged
+        path: securityContext.privileged
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Allow Privilege Escalation
+        path: securityContext.allowPrivilegeEscalation
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: GMSA Credential Spec Name
+        path: securityContext.windowsOptions.gmsaCredentialSpecName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: GMSA Credential Spec
+        path: securityContext.windowsOptions.gmsaCredentialSpec
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Host Process
+        path: securityContext.windowsOptions.hostProcess
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: SE Linux Options
+        path: securityContext.seLinuxOptions
       statusDescriptors:
       - displayName: Service Binding
         path: binding
@@ -438,9 +601,60 @@ spec:
     
     IBM WebSphere Liberty is a modern Java EE, Jakarta EE, MicroProfile runtime, ideal for building new cloud-native applications and modernizing existing applications. Liberty is highly efficient and optimized for modern cloud technologies and practices, making it an ideal choice for container and Kubernetes-based deployments.
     
+    The WebSphere Liberty Operator allows you to deploy and manage containerized Liberty applications securely and easily on Red Hat OpenShift as well as other Kubernetes-based platforms in a consistent way. You can also perform Day-2 operations such as gathering traces and memory dumps easily using the operator.
+    
     ## Details 
     
-    The WebSphere Liberty Operator allows you to deploy and manage applications running on WebSphere Liberty into Kubernetes-based platforms, such as Red Hat OpenShift. You can also perform Day-2 operations such as gathering traces and dumps using the operator.
+    Key features provided by the operator:
+    
+    ### Application Lifecycle
+    You can deploy your Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the operator will watch for any updates and will re-deploy the modified image.
+    
+    ### Custom RBAC
+    This Operator is capable of using a custom Kubernetes service account from the caller, allowing it to follow RBAC restrictions. By default, it creates a service account if one is not specified, which can also be bound with specific roles.
+    
+    ### Environment Configuration
+    You can configure a variety of artifacts with your deployment, such as labels, annotations, and environment variables from a ConfigMap, a Secret, or a value.
+    
+    ### Routing
+    Expose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Renewed certificates are automatically made available to the Liberty server.
+    
+    ### High Availability via Horizontal Pod Autoscaling
+    Run multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto-scaling to create (and delete) instances based on resource consumption.
+    
+    ### Persistence and advanced storage
+    Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and we will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where you can specify a built-in PersistentVolumeClaim, allowing you to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use single storage for serviceability-related day-2 operations, such as gathering server traces and dumps.
+    
+    ### Service Binding
+    Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating Kubernetes secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to their required services without any intervention or interruption.
+    
+    ### Single Sign-On (SSO)
+    Liberty runtime provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows you to easily configure and manage the single sign-on information for your applications.
+    
+    ### Exposing metrics to Prometheus
+    Expose the Liberty application's metrics via the Prometheus Operator.
+    You can pick between a basic mode, where you simply specify the label that Prometheus is watching to scrape the metrics from the container, or you can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `.spec.monitoring` field to control configurations such as poll interval and security credentials.
+    
+    ### Easily mount logs and transaction directories
+    Do you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster)? Simply add the following configuration (to specify the volume size and the location to persist) to your WebSphereLibertyApplication CR:
+    ``` storage: size: 2Gi mountPath: "/logs" ```
+    
+    ### Integration with Certificate Managers
+    The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates for the application. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods as well as routes and they are automatically refreshed when the certificates are updated.
+    
+    ### Control network communication
+    Network policies are created for each application by default to limit incoming traffic to pods in the same namespace that are part of the same application. Only the ports configured by the service are allowed. The network policy can be configured to allow either namespaces and/or pods with certain labels. On OpenShift, the operator automatically configures network policy to allow traffic from ingress, when the application is exposed, and from the monitoring stack.
+    
+    ### Integration with OpenShift Serverless
+    Deploy your serverless runtime component using a single toggle. The operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing application to automatically scale to 0 when it is idle.
+    
+    ### Integration with OpenShift's Topology UI
+    We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and services and how they are connected.
+    
+    ## Supported platforms
+    
+    Kubernetes platform installed on the following platform:
+    - Linux x86_64
     
     ## Prerequisites
     
@@ -448,78 +662,31 @@ spec:
     
     ## Resources Required
     
-    Review the [resource requirements](https://ibm.biz/wlo-reqs) before you plan to install IBM WebSphere Liberty operator.
+    Review the [resource requirements](https://ibm.biz/wlo-reqs) before you plan to install IBM WebSphere Liberty Operator.
     
     ## Storage
     
     Please see the [storage requirements](https://ibm.biz/wlo-reqs) for details.
     
-    ## Limitations 
+    ## SecurityContextConstraints Requirements
     
-    IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional information.
-    
-    ## Supported platforms
-    
-    Red Hat OpenShift Container Platform 4.8 or newer installed on one of the following platforms:
-    - Linux x86_64
+    The IBM WebSphere Liberty Operator runs in the `restricted` security context constraints on OpenShift.
     
     ## Documentation
     
     See [IBM WebSphere Liberty documentation](https://ibm.biz/wlo-docs).
     
-    ## SecurityContextConstraints Requirements
-    
-    The IBM WebSphere Liberty operator runs in the `restricted` security context constraints.
-    
     ## Installing
     
-    Install the IBM WebSphere Liberty operator to the desired namespace and create an instance of the [WebSphereLibertyApplication custom resource](https://ibm.biz/wlo-crs).
+    Install the IBM WebSphere Liberty Operator to the desired namespace and create an instance of the [WebSphereLibertyApplication custom resource](https://ibm.biz/wlo-crs).
     
     ## Configuration
     
-    The WebSphere Liberty operator provides various customization options to configure the application deployments. Please see [custom resource](https://ibm.biz/wlo-crs) for details.
+    The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) for details.
     
-    ## Key Features
+    ## Limitations 
     
-    ### Application Lifecyle
-    You can deploy your WebSphere Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the Operator will watch for any updates and will re-deploy the modified image.
-    
-    ### Custom RBAC
-    This Operator is capable of using a custom ServiceAccount from the caller, allowing it to follow RBAC restrictions. By default it creates a ServiceAccount if one is not specified, which can also be bound with specific roles.
-    
-    ### Environment Configuration
-    You can configured a variety of artifacts with your deployment, such as: labels, annotations, and environment variables from a ConfigMap, a Secret or a value.
-    
-    ### Routing
-    Expose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Expiring Route certificates are re-issued.
-    
-    ### High Availability via Horizontal Pod Autoscaling
-    Run multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto scaling to create (and delete) instances based on resource consumption.
-    
-    ### Persistence and advanced storage
-    Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and We will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where the user specifies a built-in PersistentVolumeClaim, allowing them to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use a single storage for serviceability related Day-2 operations, such as gatherig server traces and dumps.
-    
-    ### Service Binding
-    Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating kubernetes Secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to its required services without any intervention or interruption.
-    
-    ### Single Sign-On (SSO)
-    WebSphere Liberty provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows to easily configure and manage the single sign-on information for your applications.
-    
-    ### Exposing metrics to Prometheus
-    The WebSphere Liberty Operator exposes the runtime container's metrics via the [Prometheus Operator](https://operatorhub.io/operator/prometheus). Users can pick between a basic mode, where they simply specify the label that Prometheus is watching to scrape the metrics from the container, or they can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `spec.monitoring` key controlling things like the poll internal and security credentials.
-    
-    ### Easily mount logs and transaction directories
-    If you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster), simply add the following (customizing the folder location and size) to your WebSphereLibertyApplication CR: ``` storage: size: 2Gi mountPath: \"/logs\" ```
-    
-    ### Integration with Certificate Managers
-    The perator will automatically provision TLS certificates for pods as well as routes and it is automatically refreshed when the certificates are updated. The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods as well as routes and they are automatically refreshed when the certificates are updated.
-    
-    ### Integration with OpenShift Serverless
-    Deploy your serverless runtime component using a single toggle.  The Operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing your pod to automatically scale to 0 when it is idle.
-    
-    ### Integration with OpenShift's Topology UI
-    We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and how they are connected.
-    
+    IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional information.
   icon:
   - base64data: PHN2ZyBpZD0iV2Vic3BoZXJlTGliZXJ0eSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMzIgMzIiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0ia2MxZXdoeGhoYSIgeDE9IjE2IiB5MT0iMjkiIHgyPSIxNiIgeTI9IjMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmYiIHN0b3Atb3BhY2l0eT0iMCIvPjxzdG9wIG9mZnNldD0iLjI2IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9InNsMGYxYWJudGIiIHgxPSIyIiB5MT0iMjIuNSIgeDI9IjMwIiB5Mj0iMjIuNSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjZmZmIi8+PHN0b3Agb2Zmc2V0PSIuNyIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJhd3JyY2JjcXJjIiB4MT0iMi40NSIgeTE9IjEyLjgzOSIgeDI9IjE2IiB5Mj0iMTIuODM5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9IjAiLz48c3RvcCBvZmZzZXQ9Ii44IiBzdG9wLWNvbG9yPSIjZmZmIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9IndvcGp4c3V4NGUiIHkxPSIzMiIgeDI9IjMyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIuMSIgc3RvcC1jb2xvcj0iI2E1NmVmZiIvPjxzdG9wIG9mZnNldD0iLjkiIHN0b3AtY29sb3I9IiMwZjYyZmUiLz48L2xpbmVhckdyYWRpZW50PjxtYXNrIGlkPSI2a3kxMnd4eDlkIiB4PSIwIiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIHN0eWxlPSJmaWxsOnVybCgja2MxZXdoeGhoYSkiIGQ9Ik0xNSAzaDJ2MjZoLTJ6Ii8+PHBhdGggZD0iTTE2IDMwQTE0LjAxNSAxNC4wMTUgMCAwIDEgMiAxNmwxLTEgMSAxYTEyIDEyIDAgMCAwIDI0IDBoMmExNC4wMTUgMTQuMDE1IDAgMCAxLTE0IDE0eiIgc3R5bGU9ImZpbGw6dXJsKCNzbDBmMWFibnRiKSIvPjxwYXRoIGQ9Ik0xNiAyMmEyMi43NCAyMi43NCAwIDAgMS0xMy41NS00LjA4OGwxLjIxMi0xLjU5MUEyMC43MTYgMjAuNzE2IDAgMCAwIDE2IDIweiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjxwYXRoIGQ9Ik0zLjY2MiAxNS42NzkgMi40NSAxNC4wODhBMjIuNzM2IDIyLjczNiAwIDAgMSAxNiAxMHYyYTIwLjcxNiAyMC43MTYgMCAwIDAtMTIuMzM4IDMuNjc5eiIgc3R5bGU9ImZpbGw6dXJsKCNhd3JyY2JjcXJjKSIvPjxwYXRoIGQ9Ik00IDE2SDJBMTQuMDA2IDE0LjAwNiAwIDAgMSAyMS44NTUgMy4yOEwyMS4wMiA1LjFBMTIuMDA4IDEyLjAwOCAwIDAgMCA0IDE2eiIgc3R5bGU9ImZpbGw6I2ZmZiIvPjwvbWFzaz48L2RlZnM+PGcgc3R5bGU9Im1hc2s6dXJsKCM2a3kxMnd4eDlkKSI+PHBhdGggc3R5bGU9ImZpbGw6dXJsKCN3b3BqeHN1eDRlKSIgZD0iTTAgMGgzMnYzMkgweiIvPjwvZz48cGF0aCBkPSJNMjcgMTRhMy42MTUgMy42MTUgMCAwIDEgLjgzMi0xLjk0NUE1LjMzNCA1LjMzNCAwIDAgMCAyOSA5aC0yYTMuNjE1IDMuNjE1IDAgMCAxLS44MzIgMS45NDVBNS4zMzQgNS4zMzQgMCAwIDAgMjUgMTR6IiBzdHlsZT0iZmlsbDojMDAxZDZjIi8+PHBhdGggZD0iTTI1IDE5YTUuMDA2IDUuMDA2IDAgMCAwIDUtNWgtMmEzIDMgMCAwIDEtNiAwYzAtMS40ODguOC0yLjUyIDEuNzM2LTMuNzE2QTguMjMxIDguMjMxIDAgMCAwIDI2IDVWNGgtMnYxYzAgMS42OTEtLjg1NCAyLjc4Ny0xLjg0MiA0LjA1NUE3LjgxMSA3LjgxMSAwIDAgMCAyMCAxNGE1LjAwNiA1LjAwNiAwIDAgMCA1IDV6TTI4LjUgMjAuMDY0YTcuMTI2IDcuMTI2IDAgMCAxLTcgMGwtMSAxLjczMWE4Ljk0MyA4Ljk0MyAwIDAgMCAzLjUgMS4xMzlWMjhoMnYtNS4wNjZhOC45NDMgOC45NDMgMCAwIDAgMy41LTEuMTM0eiIgc3R5bGU9ImZpbGw6IzAwMWQ2YyIvPjwvc3ZnPg==
     mediatype: image/svg+xml
@@ -540,9 +707,9 @@ spec:
             metadata:
               annotations:
                 productChargedContainers: ALL
-                productID: 87f3487c22f34742a799164f3f3ffa78
+                productID: cb1747ecb831410f88006195f024183f
                 productMetric: FREE
-                productName: IBM WebSphere Application Server
+                productName: WebSphere Liberty Operator
               labels:
                 app.kubernetes.io/instance: websphere-liberty-operator
                 app.kubernetes.io/managed-by: olm
@@ -598,11 +765,11 @@ spec:
                   timeoutSeconds: 10
                 resources:
                   limits:
-                    cpu: 200m
-                    memory: 256Mi
+                    cpu: 400m
+                    memory: 512Mi
                   requests:
-                    cpu: 100m
-                    memory: 64Mi
+                    cpu: 200m
+                    memory: 128Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:
@@ -838,11 +1005,14 @@ spec:
   - WLO
   links:
   - name: Documentation
-    url: https://www.ibm.com/docs/en/was-liberty
+    url: https://ibm.biz/wlo-docs
   maintainers:
   - email: support@ibm.com
     name: IBM Support
   maturity: stable
   provider:
     name: IBM
+  relatedImages:
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+    name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 1.0.0
