@@ -3,8 +3,14 @@
 OPM_TOOL="opm"
 CONTAINER_TOOL="docker"
 
+## Variables used for determing which older versions to include in catalog
+declare -a arrVersions
+declare -a arrExcludeVersions
+excludeVersionsFile=catalogVersionExclude.json
+
 function main() {
     parse_arguments "$@"
+    determineAndPullOlderBundles
     build_catalog
 }
 
@@ -20,9 +26,9 @@ usage() {
     echo "  -c, --container-tool     Tool to build image [docker, podman] (default 'docker')"
     echo "  -o, --opm-tool           Name of the opm tool (default 'opm')"
     echo "  -h, --help               Display this help and exit"
+    echo "  -v, --current-version    Identifies the current version of this operator"
     exit 0
 }
-
 
 function parse_arguments() {
     if [[ "$#" == 0 ]]; then
@@ -73,6 +79,10 @@ function parse_arguments() {
             shift
             TMP_DIR=$1
             ;;
+        -v | --current-version)
+            shift
+            CURRENT_VERSION=$1
+            ;;
         esac
         shift
     done
@@ -84,7 +94,17 @@ function create_empty_db() {
     ${CONTAINER_TOOL} run --rm -v "${TMP_DIR}":/tmp --entrypoint "/bin/initializer" "${BASE_INDEX_IMG}:${OPM_VERSION}" -m /tmp/manifests -o /tmp/bundles.db
 }
 
-function add_to_db(){
+function add_historical_versions_to_db(){
+    for imageTag in "${arrVersions[@]}"
+    do
+        local digest="$(docker pull $PROD_IMAGE:$imageTag | grep Digest | grep -o 'sha[^\"]*')"
+        local img_digest="${PROD_IMAGE}@${digest}"
+        echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
+        "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
+    done
+}
+
+function add_current_version_to_db(){
     local stg_img=$1
     local prod_img=$2
     local digest="$(docker pull $stg_img | grep Digest | grep -o 'sha[^\"]*')"
@@ -92,6 +112,65 @@ function add_to_db(){
     echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
     "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
 }
+
+function createExcludeVersionsArray() {
+    excludeCount=$(jq '.ExcludeTags | length' $1)
+    for (( excludeIdx=0; excludeIdx<excludeCount; excludeIdx++ ));
+    do
+        jqQuery=".ExcludeTags[${excludeIdx}]"
+        temp=$(cat $1 | jq $jqQuery)
+        temp="${temp%\"}"
+        excludeVersion="${temp#\"}"
+        arrExcludeVersions[${#arrExcludeVersions[@]}]=$excludeVersion
+    done
+
+    ## Add current version to excludes array as well.  We do this because it is possible the version
+    ## being built is already in production.  If we don't exclude the current version, the production
+    ## version will be added to the catalog prior to the current build's bundle.  That will exclude the
+    ## current build from being included into the catalog.  So, instead, we omit the production version
+    ## so that the current build is added to the catalog.
+    arrExcludeVersions[${#arrExcludeVersions[@]}]=$CURRENT_VERSION
+}
+
+function determineAndPullOlderBundles() {
+    createExcludeVersionsArray $excludeVersionsFile
+    imageInspection=$(skopeo list-tags docker://$PROD_IMAGE)
+    echo "Image Inspection Results:"
+    echo $imageInspection
+
+    ## Count version tags in image inspection file
+    versionCount=$(echo $imageInspection | jq '.Tags | length')
+    echo "Found ${versionCount} image tags"
+
+    ## Iterate image tags
+    for (( versionIdx=0; versionIdx<versionCount; versionIdx++ ));
+    do
+        jqQuery=".Tags[${versionIdx}]"
+        temp=$(echo $imageInspection | jq $jqQuery)
+        temp="${temp%\"}"
+        version="${temp#\"}"
+
+        ## Check to see if we need to exclude this version
+        index=-1
+        for i in "${!arrExcludeVersions[@]}";
+        do
+            if [[ "${arrExcludeVersions[$i]}" = "${version}" ]];
+            then
+                index=$i
+                break
+            fi
+        done
+    
+        ## If version is not in excludes list, add it to the versions array
+        if [ $index -lt 0 ]; then
+            echo "Including tag '${version}'"
+            arrVersions[${#arrVersions[@]}]=$version
+        else
+            echo "Excluding tag '${version}'"
+        fi
+    done
+}
+
 
 function build_catalog() {
     echo "------------ Start of catalog-build ----------------"
@@ -111,8 +190,8 @@ function build_catalog() {
     echo "Building Catalog Index Database..."
 
     create_empty_db
-    ## for now, add the current build's image.  In future, we need to loop through all versions and add each releases bundle image
-    add_to_db "${BUNDLE_IMAGE}" "${PROD_IMAGE}"
+    add_historical_versions_to_db
+    add_current_version_to_db "${BUNDLE_IMAGE}" "${PROD_IMAGE}"
 
     # Copy bundles.db local prior to building the image
     cp "${TMP_DIR}/bundles.db" .
