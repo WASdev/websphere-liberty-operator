@@ -73,6 +73,7 @@ static-scan:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
     SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
@@ -141,26 +142,75 @@ containerize:
     export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
+    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    
+    if [[ -z $DISABLE_ARTIFACTORY ]]; then
+      DISABLE_ARTIFACTORY="false"
+    fi
+    if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
+      # Only push to the staging registry
 
-    # Build amd64 image
-    make build-pipeline-releases
+      echo "Running with artifactory disabled."
 
-    # Build ppc64le and s390x images
-    # Disabled for Liberty Operator builds for now
-    #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+      # Build amd64 image
+      make build-pipeline-releases
 
-    # Build manifest
-    make build-pipeline-manifest
+      # Build ppc64le and s390x images
+      # Disabled for Liberty Operator builds for now
+      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
-    # Build bundle image
-    make setup
-    make bundle-pipeline
+      # Build manifest
+      make build-pipeline-manifest
 
-    # Build catalog image
-    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-    echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-    make catalog-pipeline-build
-    make catalog-pipeline-push
+      # Build bundle image
+      make setup
+      make bundle-pipeline
+
+      # Build catalog image
+      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+      make catalog-pipeline-build
+      make catalog-pipeline-push
+
+    else
+      # Push to the staging registry and artifactory
+
+      echo "Running with artifactory enabled."
+
+      read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
+      read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
+      read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+
+      export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
+      export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
+      export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+
+      # Build amd64 image
+      make build-all-releases
+
+      # Build ppc64le and s390x images
+      # Disabled for Liberty Operator builds for now
+      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+
+      # Build manifest
+      make build-all-manifest
+
+      # Build bundle image
+      make setup
+      make bundle-all
+
+      # Build catalog image
+      echo "Connecting to docker..."
+
+      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
+      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+
+      make catalog-all-build
+      make catalog-all-push
+
+      echo "Completed pushing to artifactory."
+    fi
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
