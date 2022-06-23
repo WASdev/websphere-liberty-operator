@@ -221,9 +221,9 @@ containerize:
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
-      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
-      save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=$MANIFEST"
+      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
+      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST type=$TYPE"
+      save_artifact operator-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
     declare -a bundles=("${RELEASE_TARGET}")
@@ -233,8 +233,8 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST manifest=false"
-     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
+     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
+     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
     declare -a catalogs=("${RELEASE_TARGET}")
@@ -244,8 +244,8 @@ containerize:
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
      #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      ARCH=amd64
-     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST manifest=false"
-     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
+     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
+     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
 sign-artifact:
@@ -320,10 +320,9 @@ scan-artifact:
         image="$(load_artifact "$artifact" "name")"
         type="$(load_artifact "$artifact" "type")"
         digest="$(load_artifact "$artifact" "digest")"
-        manifest="$(load_artifact "$artifact" "manifest")"
         name="$(echo "$artifact" | awk '{print $1}')"
         if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* && "$manifest" == false ]]; then
+          if [[ "$image" == *"icr.io"* ]]; then
             echo "Starting VA scan for $image"
             start_va_scan "$name" "$image" "$digest"
           else
