@@ -4,7 +4,7 @@ The WebSphere Liberty Operator allows you to deploy and manage containerized Lib
 
 # Documentation
 
-For information on how to use the WebSphere Liberty Operator, see the link:++https://ibm.biz/wlo-docs++[documentation].
+For information on how to use the WebSphere Liberty Operator, see the [documentation](https://ibm.biz/wlo-docs).
 
 # Issues and Contributions
 
