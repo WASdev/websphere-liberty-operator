@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-06-06T14:15:01Z"
+    createdAt: "2022-06-13T09:25:25Z"
     description: Deploy and manage containerized Liberty applications
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
@@ -541,6 +541,11 @@ spec:
       - displayName: SE Linux Options
         path: securityContext.seLinuxOptions
       statusDescriptors:
+      - description: Exposed URI of the application endpoint
+        displayName: Application
+        path: endpoints[0].uri
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
       - displayName: Service Binding
         path: binding
       - displayName: Status Conditions

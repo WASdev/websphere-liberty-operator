@@ -415,6 +415,11 @@ spec:
         displayName: User API Type
         path: sso.oauth2[0].userApiType
       statusDescriptors:
+      - description: Exposed URI of the application endpoint
+        displayName: Application
+        path: endpoints[0].uri
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
       - displayName: Service Binding
         path: binding
       - displayName: Status Conditions

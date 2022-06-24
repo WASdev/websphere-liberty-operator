@@ -439,7 +439,7 @@ type WebSphereLibertyApplicationStatus struct {
 	ImageReference string            `json:"imageReference,omitempty"`
 	Versions       StatusVersions    `json:"versions,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Service Binding"
+	// +operator-sdk:csv:customresourcedefinitions:order=61,type=status,displayName="Service Binding"
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
 
 	References common.StatusReferences `json:"references,omitempty"`
@@ -462,7 +462,9 @@ type StatusEndpoint struct {
 	Name  string              `json:"name,omitempty"`
 	Scope StatusEndpointScope `json:"scope,omitempty"`
 	Type  string              `json:"type,omitempty"`
-	URI   string              `json:"uri,omitempty"`
+	// Exposed URI of the application endpoint
+	// +operator-sdk:csv:customresourcedefinitions:order=60,type=status,displayName="Application",xDescriptors={"urn:alm:descriptor:org.w3:link"}
+	URI string `json:"uri,omitempty"`
 }
 
 // Defines the scope of endpoint information in status.

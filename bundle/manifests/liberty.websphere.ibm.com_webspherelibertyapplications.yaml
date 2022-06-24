@@ -4495,6 +4495,7 @@ spec:
                     type:
                       type: string
                     uri:
+                      description: Exposed URI of the application endpoint
                       type: string
                   type: object
                 type: array
