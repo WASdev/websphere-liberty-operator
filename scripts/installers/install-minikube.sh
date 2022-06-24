@@ -7,7 +7,7 @@ export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_HOME=$HOME
 export KUBECONFIG=$HOME/.kube/config
 
-function main () {
+main () {
   install_minikube
 
   echo "****** Verifying installation..."
@@ -15,10 +15,9 @@ function main () {
   wait_for_kube
   
   echo "****** Minikube enabled job is running..."
-
 }
 
-function install_minikube() {
+install_minikube() {
   sudo apt-get update -y
   sudo apt-get -qq -y install conntrack
 
@@ -33,16 +32,17 @@ function install_minikube() {
   curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.21.0/minikube-linux-amd64 \
   && chmod +x minikube \
   && sudo mv minikube /usr/local/bin/
-  
+
   ## Download docker
   echo "****** Installing Docker..."
   if test -f "/usr/share/keyrings/docker-archive-keyring.gpg"; then
     rm /usr/share/keyrings/docker-archive-keyring.gpg
   fi
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  local release="$(cat /etc/os-release | grep UBUNTU_CODENAME | cut -d '=' -f 2)"
   echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    ${release} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
   sudo apt-get update  -y 
   sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
@@ -54,8 +54,7 @@ function install_minikube() {
   eval "$(minikube docker-env --profile=minikube)" && export DOCKER_CLI='docker'
 }
 
-
-function wait_for_kube() {
+wait_for_kube() {
   local json_path='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
   echo "****** Waiting for kube-controller-manager to be available..."
 

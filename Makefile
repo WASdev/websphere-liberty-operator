@@ -285,6 +285,9 @@ build-manifest: setup-manifest
 minikube-test-e2e:
 	./scripts/e2e-minikube.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
 
+kind-e2e-test:
+	./scripts/e2e-kind.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
+
 build-pipeline-manifest: setup-manifest
 	./scripts/build-manifest.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
 
