@@ -1,10 +1,11 @@
-apiVersion: rc.app.stacks/v1beta2
-kind: RuntimeComponent
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
 metadata:
-  name: security-context-rc
+  name: security-context-wsliberty
 spec:
-  applicationImage: k8s.gcr.io/pause:2.0
-  replicas: 1
+  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  license:
+    accept: true
   securityContext:
     allowPrivilegeEscalation: null
     capabilities: null
