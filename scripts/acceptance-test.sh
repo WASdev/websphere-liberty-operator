@@ -63,9 +63,15 @@ echo "****** Waiting for e2e tests to finish"
 for test in "${!E2E_TESTS[@]}"; do
 	test_name="${test}-${BUILD_NUMBER}"
 	until docker ps --all --no-trunc --filter name="^/${test_name}$" --format='{{.Status}}' | grep -q Exited; do
+		echo "Waiting for ${test_name} to finish..."
 		sleep 60
 	done
 	echo "${test_name} finished"
+done
+
+for test in "${!E2E_TESTS[@]}"; do
+	test_name="${test}-${BUILD_NUMBER}"
+	echo "****** Test logs for ${test_name}"
 	docker logs "${test_name}"
 done
 
