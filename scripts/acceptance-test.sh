@@ -5,7 +5,7 @@ set -e -o pipefail
 echo "acceptance-test"
 
 # Build e2e runner image
-docker build -t e2e-runner:latest -f Dockerfile.e2e --build-arg GO_VERSION="${GO_VERSION}" . || {
+docker build -t "e2e-runner:${BUILD_NUMBER}" -f Dockerfile.e2e --build-arg GO_VERSION="${GO_VERSION}" . || {
 	echo "Error: Failed to build e2e runner"
 	exit 1
 }
@@ -26,7 +26,7 @@ declare -A E2E_TESTS=(
 		--env RELEASE_TARGET=${RELEASE_TARGET} \
 		--env CATALOG_IMAGE=${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET} \
 		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
-		e2e-runner:latest \
+		e2e-runner:${BUILD_NUMBER} \
 		make test-pipeline-e2e
 		EOF
 	)
@@ -42,7 +42,7 @@ if [[ "${SKIP_KIND_E2E_TEST}" != true ]]; then
 		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
 		--env VM_SIZE=l \
 		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
-		e2e-runner:latest \
+		e2e-runner:${BUILD_NUMBER} \
 		make kind-e2e-test
 		EOF
 	)
@@ -52,30 +52,44 @@ fi
 
 echo "****** Starting e2e tests"
 for test in "${!E2E_TESTS[@]}"; do
-	docker run -d --name ${test} ${E2E_TESTS[${test}]} || {
-		echo "Error: Failed to start ${test}"
+	test_name="${test}-${BUILD_NUMBER}"
+	docker run -d --name "${test_name}" ${E2E_TESTS[${test}]} || {
+		echo "Error: Failed to start ${test}-${BUILD_NUMBER}"
 		exit 1
 	}
 done
 
 echo "****** Waiting for e2e tests to finish"
 for test in "${!E2E_TESTS[@]}"; do
-	until docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}' | grep -q Exited; do
+	test_name="${test}-${BUILD_NUMBER}"
+	until docker ps --all --no-trunc --filter name="^/${test_name}$" --format='{{.Status}}' | grep -q Exited; do
 		sleep 60
 	done
-	echo "${test} finished"
-	docker logs ${test}
+	echo "${test_name} finished"
+	docker logs "${test_name}"
 done
 
 echo "****** Test results"
 exit_code=0
 for test in "${!E2E_TESTS[@]}"; do
-	status="$(docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}')"
+	test_name="${test}-${BUILD_NUMBER}"
+	status="$(docker ps --all --no-trunc --filter name="^/${test_name}$" --format='{{.Status}}')"
 	if echo "${status}" | grep -q "Exited (0)"; then
-		echo "[PASSED] ${test}"
+		echo "[PASSED] ${test_name}"
 	else
-		echo "[FAILED] ${test}: ${status}"
+		echo "[FAILED] ${test_name}: ${status}"
 		exit_code=1
 	fi
 done
+
+echo "****** Cleaning up acceptance test images and containers"
+for test in "${!E2E_TESTS[@]}"; do
+	test_name="${test}-${BUILD_NUMBER}"
+	echo "Removing container for ${test_name}"
+	docker rm --force "${test_name}"
+done
+
+echo "Removing e2e-runner image"
+docker rmi "e2e-runner:${BUILD_NUMBER}"
+
 exit ${exit_code}
