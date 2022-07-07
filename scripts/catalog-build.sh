@@ -90,7 +90,7 @@ function add_to_db(){
     local digest="$(docker pull $stg_img | grep Digest | grep -o 'sha[^\"]*')"
     local img_digest="${prod_img}@${digest}"
     echo "------------ adding bundle image ${img_digest} to ${TMP_DIR}/bundles.db ------------"
-    "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --permissive
+    "${OPM_TOOL}" registry add -b "${img_digest}" -d "${TMP_DIR}/bundles.db" -c "${CONTAINER_TOOL}" --mode semver --permissive
 }
 
 function build_catalog() {
