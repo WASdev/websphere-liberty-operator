@@ -1,10 +1,6 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 delete:
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: manage-tls-wsliberty-svc-tls-cm
 - apiVersion: liberty.websphere.ibm.com/v1
   kind: WebSphereLibertyApplication
   metadata:
