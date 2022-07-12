@@ -84,7 +84,6 @@ cleanup() {
     mv bundle/tests/scorecard/kind-kuttl/routes bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/route-certificate bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/image-stream bundle/tests/scorecard/kuttl/
-    mv bundle/tests/scorecard/kind-kuttl/stream bundle/tests/scorecard/kuttl/
 
     git checkout bundle/tests/scorecard internal/deploy
 
