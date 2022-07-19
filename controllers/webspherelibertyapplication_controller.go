@@ -594,7 +594,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 			}
 
-			// if the BasicAuth Secret is specified but does not exist, do not create the ServiceMonitor
+			// if the BasicAuth Secret is specified but does not exist, do not create/update the ServiceMonitor
 			for _, sName := range secrets {
 				if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: sName, Namespace: ns}, &corev1.Secret{}); err != nil {
 					reqLogger.Error(err, "Failed to reconcile Secret")
