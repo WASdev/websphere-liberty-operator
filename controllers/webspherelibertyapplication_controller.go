@@ -595,6 +595,24 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	} else if ok {
 		if instance.Spec.Monitoring != nil && (instance.Spec.CreateKnativeService == nil || !*instance.Spec.CreateKnativeService) {
+			var basicAuth *prometheusv1.BasicAuth
+			basicAuth = instance.Spec.Monitoring.Endpoints[0].BasicAuth
+			var secrets []string
+			if basicAuth != nil {
+				secrets = append(secrets, basicAuth.Username.Name)
+				if basicAuth.Username.Name != basicAuth.Password.Name {
+					secrets = append(secrets, basicAuth.Password.Name)
+				}
+			}
+
+			// if the BasicAuth Secret is specified but does not exist, do not create the ServiceMonitor
+			for _, sName := range secrets {
+				if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: sName, Namespace: ns}, &corev1.Secret{}); err != nil {
+					reqLogger.Error(err, "Failed to reconcile Secret")
+					return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				}
+			}
+
 			sm := &prometheusv1.ServiceMonitor{ObjectMeta: defaultMeta}
 			err = r.CreateOrUpdate(sm, instance, func() error {
 				oputils.CustomizeServiceMonitor(sm, instance)
