@@ -113,3 +113,11 @@ rules:
     - get
     - list
     - delete
+- apiGroups:
+    - cert-manager.io
+  resources:
+    - issuers
+    - certificates
+  verbs:
+    - get
+    - list

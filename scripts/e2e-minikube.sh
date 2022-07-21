@@ -64,21 +64,25 @@ function setup_test() {
     ## Add tests for minikube
     mv bundle/tests/scorecard/minikube-kuttl/ingress bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/minikube-kuttl/ingress-certificate bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/minikube-kuttl/ingress-manage-tls bundle/tests/scorecard/kuttl/
     
     ## Remove tests that do not apply for minikube
     mv bundle/tests/scorecard/kuttl/routes bundle/tests/scorecard/minikube-kuttl/
     mv bundle/tests/scorecard/kuttl/route-certificate bundle/tests/scorecard/minikube-kuttl/
     mv bundle/tests/scorecard/kuttl/image-stream bundle/tests/scorecard/minikube-kuttl/
+    mv bundle/tests/scorecard/kuttl/manage-tls bundle/tests/scorecard/minikube-kuttl/
 }
 
 function cleanup_test() {
     ## Restore tests
     mv bundle/tests/scorecard/kuttl/ingress bundle/tests/scorecard/minikube-kuttl/
     mv bundle/tests/scorecard/kuttl/ingress-certificate bundle/tests/scorecard/minikube-kuttl/
+    mv bundle/tests/scorecard/kuttl/ingress-manage-tls bundle/tests/scorecard/minikube-kuttl/
     
     mv bundle/tests/scorecard/minikube-kuttl/routes bundle/tests/scorecard/kuttl/ 
     mv bundle/tests/scorecard/minikube-kuttl/route-certificate bundle/tests/scorecard/kuttl/ 
     mv bundle/tests/scorecard/minikube-kuttl/image-stream bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/minikube-kuttl/manage-tls bundle/tests/scorecard/kuttl/
 }
 
 main() {
