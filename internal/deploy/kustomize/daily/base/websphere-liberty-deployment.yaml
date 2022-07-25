@@ -33,7 +33,7 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - --enable-leader-election
-        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:b2b0f07db844e0b3970cfdf82f87a0ce330ee38f34df6926c09535b8ecbd2832
+        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:fa06905905c70888a000870f1156c453e350a20bd67acd8cbb8fa395a0345b67
         name: manager
         livenessProbe:
           failureThreshold: 3
