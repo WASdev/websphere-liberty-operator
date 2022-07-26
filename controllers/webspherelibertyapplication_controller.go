@@ -54,6 +54,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	OperatorName = "websphere-liberty-operator"
+)
+
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
 type ReconcileWebSphereLiberty struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -103,11 +107,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
-	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
+	configMap, err := r.GetOpConfigMap(OperatorName, ns)
 	if err != nil {
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		common.Config = common.DefaultOpConfig()
-		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: ns}}
+		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: OperatorName, Namespace: ns}}
 		configMap.Data = common.Config
 	} else {
 		common.Config.LoadFromConfigMap(configMap)
