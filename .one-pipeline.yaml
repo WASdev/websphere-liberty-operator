@@ -332,38 +332,105 @@ scan-artifact:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
   script: |
     #!/usr/bin/env bash
-    echo "twistlock-scan"
-    ./scripts/pipeline/twistlock-scan.sh
-    echo "VA scan"
-    . scripts/pipeline/va_scan
+
+    # ========== Previous Scans ==========
+    # echo "twistlock-scan"
+    # ./scripts/pipeline/twistlock-scan.sh
+    # echo "VA scan"
+    # . scripts/pipeline/va_scan
+    # if which list_artifacts >/dev/null; then
+    #   list_artifacts | while IFS= read -r artifact; do
+    #     image="$(load_artifact "$artifact" "name")"
+    #     type="$(load_artifact "$artifact" "type")"
+    #     digest="$(load_artifact "$artifact" "digest")"
+    #     name="$(echo "$artifact" | awk '{print $1}')"
+    #     if [[ "$type" == "image" ]]; then
+    #       if [[ "$image" == *"icr.io"* ]]; then
+    #         echo "Starting VA scan for $image"
+    #         start_va_scan "$name" "$image" "$digest"
+    #       else
+    #         echo "Skipping VA scan for $image"
+    #       fi
+    #     fi
+    #   done
+    # fi
+
+    # echo "aqua scan"
+    # # install docker
+    # curl -fsSL https://get.docker.com -o get-docker.sh
+    # sudo sh get-docker.sh
+    # # get aqua scan executables
+    # git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
+    # chmod -R +x cpp-pipelines
+    # # setup and execute aqua scan
+    # cd cpp-pipelines
+    # export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
+    # ./commons/aqua/aqua-local-scan
+
+    # ========== Security Scanner ==========
+
+    echo "Connecting to the Security Scan Toolchain"
+
+    # IMAGES_TO_SCAN is delimited by '\n' 
+    IMAGES_TO_SCAN=""
     if which list_artifacts >/dev/null; then
-      list_artifacts | while IFS= read -r artifact; do
-        image="$(load_artifact "$artifact" "name")"
-        type="$(load_artifact "$artifact" "type")"
-        digest="$(load_artifact "$artifact" "digest")"
-        name="$(echo "$artifact" | awk '{print $1}')"
-        if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* ]]; then
-            echo "Starting VA scan for $image"
-            start_va_scan "$name" "$image" "$digest"
-          else
-            echo "Skipping VA scan for $image"
-          fi
-        fi
+      for ARTIFACT_IMAGE in $(list_artifacts); do
+        IMAGE_NAME="$(load_artifact "$ARTIFACT_IMAGE" "name" 2>/dev/null)"
+        IMAGE_TYPE="$(load_artifact "$ARTIFACT_IMAGE" "type" 2>/dev/null)"
+        
+        if [[ -z "${IMAGE_NAME}" || "$(echo "$IMAGE_TYPE" | tr '[:upper:]' '[:lower:]')" == "manifest" ]]; then 
+          continue
+        else
+          IMAGES_TO_SCAN+="$IMAGE_NAME"
+          IMAGES_TO_SCAN+=$'\n'  
+        fi  
       done
     fi
 
-    echo "aqua scan"
-    # install docker
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    # get aqua scan executables
-    git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
-    chmod -R +x cpp-pipelines
-    # setup and execute aqua scan
-    cd cpp-pipelines
-    export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
-    ./commons/aqua/aqua-local-scan
+    echo -e "IMAGES_TO_SCAN:\n$IMAGES_TO_SCAN"
+
+    # This must be an IBM Cloud API key that has permission to run the toolchain 
+    IBMCLOUD_API_KEY="$(get_env ibmcloud-api-key)"
+    
+    # The IBM Cloud region that is hosting the security scanning pipeline
+    SECSCAN_TOOLCHAIN_REGION="us-south"
+
+    # Ensure ibmcloud is updated before logging in
+    ibmcloud --version
+    ibmcloud update -f
+    echo "ibmcloud login --apikey $IBMCLOUD_API_KEY -r $SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"  
+    ibmcloud login --apikey "$IBMCLOUD_API_KEY" -r "$SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"    
+
+    SCANNING_PIPELINE_ID=$(get_env security-scanning-pipeline-id)
+
+    TRIGGER_NAME=$(get_env security-scanning-pipeline-trigger)
+    if [[ -z "${TRIGGER_NAME}" ]]; then
+      TRIGGER_NAME="Security Scan Manual Trigger Multiscan"
+    fi
+
+    TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\"}"    
+
+    echo "RUN_DATA=(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)"
+    RUN_DATA=$(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)
+
+    RUN_ID=$(echo $RUN_DATA | jq -r '.id')
+    echo "Security Scanning Pipeline Run ID=$RUN_ID"
+    MAX_TRIES=600
+    COMPLETE=0
+    for (( TRIES=0; TRIES<=$MAX_TRIES; TRIES++ ))
+    do
+      RESULT=$(ibmcloud dev tekton-pipelinerun $SCANNING_PIPELINE_ID --run-id ${RUN_ID} --output json | jq -r '.status.state')
+      if [[ $RESULT != "passed" && $RESULT != "failed" && $RESULT != "cancelled" && $RESULT != "succeeded" ]];then
+          sleep 10
+      else
+          COMPLETE=1
+          break
+      fi
+    done
+    echo "Security Scanning Pipeline returned $RESULT"     
+    echo "Security Scanning Pipeline URL: https://cloud.ibm.com/devops/pipelines/tekton/${SCANNING_PIPELINE_ID}/runs/${RUN_ID}/build-scan-artifact/run-stage?env_id=ibm:yp:us-south"
+
+    # TODO: Add code to fail the pipeline run if the Security Scanning Pipeline returns "failed"
 
 release:
   abort_on_failure: false
