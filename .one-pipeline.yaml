@@ -64,18 +64,18 @@ test:
 
     ## Setup required tooling
 
-    # Download Go
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
-    export PATH=$PATH:/usr/local/go/bin
+    # # Download Go
+    # GO_VERSION=$(get_env go-version)
+    # if [[ -z "${GO_VERSION}" ]]; then
+    #   GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    # fi
+    # rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+    # export PATH=$PATH:/usr/local/go/bin
 
-    apt-get update
-    apt-get -y install build-essential
+    # apt-get update
+    # apt-get -y install build-essential
 
-    make unit-test
+    # make unit-test
 
 static-scan:
   dind: true
@@ -84,27 +84,27 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
-    read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
-    read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
-    SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
-    read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
-    touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
-    cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    sonar.projectKey=websphere-liberty-operator
-    sonar.host.url=$SONAR_HOST_URL
-    sonar.sources=.
-    sonar.login=$SONAR_USER
-    sonar.password=$SONAR_PASS
-    sonar.c.file.suffixes=-
-    sonar.cpp.file.suffixes=-
-    sonar.objc.file.suffixes=-
-    EOF
-    chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    #echo "$SONAR_PASS" >> /tmp/sonarqube-token
-    "${COMMONS_PATH}"/static-scan/run.sh
+    # read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    # read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
+    # SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
+    # read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
+    # touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
+    # cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    # sonar.projectKey=websphere-liberty-operator
+    # sonar.host.url=$SONAR_HOST_URL
+    # sonar.sources=.
+    # sonar.login=$SONAR_USER
+    # sonar.password=$SONAR_PASS
+    # sonar.c.file.suffixes=-
+    # sonar.cpp.file.suffixes=-
+    # sonar.objc.file.suffixes=-
+    # EOF
+    # chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    # #echo "$SONAR_PASS" >> /tmp/sonarqube-token
+    # "${COMMONS_PATH}"/static-scan/run.sh
 
-    ## Perform static lint
-    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
+    # ## Perform static lint
+    # ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
 
 containerize:
   dind: true
@@ -298,38 +298,38 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    export GO_VERSION
+    # # Download and configure golang
+    # GO_VERSION=$(get_env go-version)
+    # if [[ -z "${GO_VERSION}" ]]; then
+    #   GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    # fi
+    # export GO_VERSION
 
-    # OCP test
-    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
-    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
-    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
-    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
-    export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
-    export CLUSTER_TOKEN=$(get_env test-cluster-token)
-    export RELEASE_TARGET=$(get_env branch)
-    export DEBUG_FAILURE=$(get_env debug-failure)
+    # # OCP test
+    # export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
+    # export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
+    # export PIPELINE_REGISTRY=$(get_env pipeline-registry)
+    # export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+    # export DOCKER_USERNAME=$(get_env docker-username)
+    # export DOCKER_PASSWORD=$(get_env docker-password)
+    # export CLUSTER_URL=$(get_env test-cluster-url)
+    # export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
+    # export CLUSTER_TOKEN=$(get_env test-cluster-token)
+    # export RELEASE_TARGET=$(get_env branch)
+    # export DEBUG_FAILURE=$(get_env debug-failure)
 
-    # Kind test
-    export FYRE_USER=$(get_env fyre-user)
-    export FYRE_KEY=$(get_env fyre-key)
-    export FYRE_PASS=$(get_env fyre-pass)
-    export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
+    # # Kind test
+    # export FYRE_USER=$(get_env fyre-user)
+    # export FYRE_KEY=$(get_env fyre-key)
+    # export FYRE_PASS=$(get_env fyre-pass)
+    # export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-    scripts/acceptance-test.sh
+    # scripts/acceptance-test.sh
 
 
 scan-artifact:
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
     #!/usr/bin/env bash
 
