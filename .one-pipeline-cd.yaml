@@ -97,6 +97,9 @@ deploy:
       echo "Production image: $PRODUCTION_IMAGE"
       echo "skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}"
       skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}
+      if [[ "$NAME" == "operator-1.0.1" ]]; then
+          TYPE="manifest"
+      fi    
       save_artifact $NAME type=$TYPE name="${PRODUCTION_IMAGE}" digest="$DIGEST" source="${REPO}#${COMMIT}"
     done
 
