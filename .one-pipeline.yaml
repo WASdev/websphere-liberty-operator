@@ -382,7 +382,7 @@ scan-artifact:
           continue
         else
           IMAGES_TO_SCAN+="$IMAGE_NAME"
-          IMAGES_TO_SCAN+=$'\n'  
+          IMAGES_TO_SCAN+="\n" 
         fi  
       done
     fi
