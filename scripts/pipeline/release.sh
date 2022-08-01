@@ -57,6 +57,7 @@ fi
 for artifact_image in $(list_artifacts); do
   IMAGE_ARTIFACT=$(load_artifact $artifact_image name)
   DIGEST=$(load_artifact $artifact_image digest)
+  TYPE=$(load_artifact $artifact_image type)
   ARCH=$(load_artifact $artifact_image arch)
   NAME="$(echo "$artifact_image" | awk '{print $1}')"
 
@@ -69,14 +70,14 @@ for artifact_image in $(list_artifacts); do
   echo  "  --commit-sha=${COMMIT_SHA}"
   echo  "  --build-number=${BUILD_NUMBER}"
   echo  "  --pipeline-run-id=${PIPELINE_RUN_ID}"
-  echo  "  --version=""$(cat /config/version)"
+  echo  "  --version=$(cat /config/version)"
   echo  "  --name=${NAME}"
   echo  "  --app-artifacts=${APP_ARTIFACTS}"
   echo  "  --signature=${SIGNATURE}"
   echo  "  --provenance=${IMAGE_ARTIFACT}"
   echo  "  --environment=${PIPELINE_RUN_ID}"
   echo  "  --sha256=${DIGEST}"
-  echo  "  --type=\"image\""
+  echo  "  --type=${TYPE}"
 
   cocoa inventory add \
     --artifact="${IMAGE_ARTIFACT}" \
@@ -91,5 +92,5 @@ for artifact_image in $(list_artifacts); do
     --provenance="${IMAGE_ARTIFACT}" \
     --environment="${PIPELINE_RUN_ID}" \
     --sha256="${DIGEST}" \
-    --type="image"
+    --type="${TYPE}"
 done

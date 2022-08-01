@@ -86,6 +86,7 @@ deploy:
       ARTIFACT=$(echo "${APP}" | jq -r '.artifact')
       NAME=$(echo "${APP}" | jq -r '.name')
       DIGEST=$(echo "${APP}" | jq -r '.sha256' )
+      TYPE=$(echo "${APP}" | jq -r '.type' )
       REPO=$(echo "${APP}" | jq -r '.repository_url' ).git
       COMMIT=$(echo "${APP}" | jq -r '.commit_sha' )
       echo "${ARTIFACT}"
@@ -96,7 +97,7 @@ deploy:
       echo "Production image: $PRODUCTION_IMAGE"
       echo "skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}"
       skopeo copy --all --src-creds $(get_env source-user):$(get_env source-key) --dest-creds $(get_env dest-user):$(get_env dest-key) docker://${ARTIFACT} docker://${PRODUCTION_IMAGE}
-      save_artifact $NAME type=image name="${PRODUCTION_IMAGE}" digest="$DIGEST" source="${REPO}#${COMMIT}"
+      save_artifact $NAME type=$TYPE name="${PRODUCTION_IMAGE}" digest="$DIGEST" source="${REPO}#${COMMIT}"
     done
 
 sign-artifact:
@@ -126,9 +127,8 @@ acceptance-test:
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
         image_name="$(load_artifact "$artifact" "name")"
-        tag="${image_name##*:}"
-        base_tag="$(echo $tag | sed 's/-\(amd64\|s390x\|ppc64le\)$//')"
-        if [[ $tag == $base_tag ]]; then
+        type="$(load_artifact "$artifact" "type")"
+        if [[ "$type" == "image" ]]; then
           echo "Verifying image ${image_name}"
           skopeo copy --src-creds $(get_env dest-user):$(get_env dest-key) docker://${image_name} dir:./images
           skopeo standalone-verify ./images/manifest.json ${image_name} ${fingerprint} ./images/signature-1
