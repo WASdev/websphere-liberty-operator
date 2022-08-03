@@ -62,6 +62,14 @@ test:
   script: |
     #!/usr/bin/env bash
 
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping unit-tests. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     ## Setup required tooling
 
     # Download Go
@@ -83,6 +91,14 @@ static-scan:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
@@ -268,10 +284,27 @@ sign-artifact:
     #!/usr/bin/env bash
     echo "sign-artifact"
 
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping sign-artifact. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
 deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping deploy. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     if [[ "$PIPELINE_DEBUG" == 1 ]]; then
       trap env EXIT
       env
@@ -285,6 +318,15 @@ dynamic-scan:
   script: |
     #!/usr/bin/env bash
     echo "dynamic-scan"
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     #export APP_URL=$(cat ../app-url)
     # feature preview this until evidence locker v2 usage is full feature ready
     # can be triggered, and owasp will run for preview purposes
@@ -297,6 +339,14 @@ acceptance-test:
   script: |
     #!/usr/bin/env bash
     echo "acceptance-test"
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
@@ -370,6 +420,14 @@ release:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     RELEASE_FLAG=$(get_env release "false")
 
