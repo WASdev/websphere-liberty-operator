@@ -89,15 +89,16 @@ setup:
     fi
 
     EVIDENCE_REPO=$(get_env evidence-repo)
+    INCIDENT_REPO=$(get_env incident-repo)
     if [[ -z $EVIDENCE_REPO ]]; then
       TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\"}" 
     else
       TRIGGER_PROPERTIES_JSON="{
         \"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\", 
         \"evidence-repo\": \"${EVIDENCE_REPO}\",
-        \"scan-results-upload-repo\": \"${EVIDENCE_REPO}\",
-        \"offering-name\": \"$test-offering-name\",
-        \"product-version\": \"$test-product-version\",
+        \"scan-results-upload-repo\": \"${INCIDENT_REPO}\",
+        \"offering-name\": \"test-offering-name\",
+        \"product-version\": \"test-product-version\",
         \"upload-scans-to-dashboard-repo\": \"true\"
       }"  # TODO: Change offering-name and product-version
     fi
