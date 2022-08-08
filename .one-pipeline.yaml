@@ -92,7 +92,14 @@ setup:
     if [[ -z $EVIDENCE_REPO ]]; then
       TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\"}" 
     else
-      TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\", \"evidence-repo\": \"${EVIDENCE_REPO}\"}" 
+      TRIGGER_PROPERTIES_JSON="{
+        \"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\", 
+        \"evidence-repo\": \"${EVIDENCE_REPO}\",
+        \"scan-results-upload-repo\": \"${EVIDENCE_REPO}\",
+        \"offering-name\": \"${PRODUCT}\",
+        \"product-version\": \"${VERSIONS}\",
+        \"upload-scans-to-dashboard-repo\": \"true\"
+      }" 
     fi
 
     echo "RUN_DATA=(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)"
