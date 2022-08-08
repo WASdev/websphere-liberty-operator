@@ -96,10 +96,10 @@ setup:
         \"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\", 
         \"evidence-repo\": \"${EVIDENCE_REPO}\",
         \"scan-results-upload-repo\": \"${EVIDENCE_REPO}\",
-        \"offering-name\": \"${PRODUCT}\",
-        \"product-version\": \"${VERSIONS}\",
+        \"offering-name\": \"$test-offering-name\",
+        \"product-version\": \"$test-product-version\",
         \"upload-scans-to-dashboard-repo\": \"true\"
-      }" 
+      }"  # TODO: Change offering-name and product-version
     fi
 
     echo "RUN_DATA=(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)"
