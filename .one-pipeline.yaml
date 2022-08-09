@@ -8,11 +8,11 @@ setup:
 
     # IMAGES_TO_SCAN is delimited by '\n' 
     IMAGES_TO_SCAN=""
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/twc/websphere-traditional:9.0.5.11-ubi8-amd64"
+    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-bundle:security-scanning"
     IMAGES_TO_SCAN+="\n"
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/twc/websphere-traditional:9.0.5.11-ubi8-ppc64le"
+    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-catalog:security-scanning"
     IMAGES_TO_SCAN+="\n"
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/twc/websphere-traditional:9.0.5.11-ubi8-s390x"
+    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator:security-scanning-amd64"
     IMAGES_TO_SCAN+="\n"
 
     ./scripts/pipeline/ci_to_secure_pipeline_scan2.sh "$IMAGES_TO_SCAN"
