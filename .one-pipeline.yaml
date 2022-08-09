@@ -5,18 +5,6 @@ setup:
   script: |
     #!/usr/bin/env bash
     echo "setup"
-
-    # IMAGES_TO_SCAN is delimited by '\n' 
-    IMAGES_TO_SCAN=""
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-bundle:security-scanning"
-    IMAGES_TO_SCAN+="\n"
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-catalog:security-scanning"
-    IMAGES_TO_SCAN+="\n"
-    IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator:security-scanning-amd64"
-    IMAGES_TO_SCAN+="\n"
-
-    ./scripts/pipeline/ci_to_secure_pipeline_scan2.sh "$IMAGES_TO_SCAN"
-
     apt-get update
     apt-get -y install build-essential
 
@@ -67,77 +55,6 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
-
-    # =========== Security Scanning Testing ==========
-    # echo "TEST: Connecting to the Security Scan Toolchain"
-
-    # # IMAGES_TO_SCAN is delimited by '\n' 
-    # IMAGES_TO_SCAN=""
-    # IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-bundle:security-scanning"
-    # IMAGES_TO_SCAN+="\n"
-    # IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator-catalog:security-scanning"
-    # IMAGES_TO_SCAN+="\n"
-    # IMAGES_TO_SCAN+="cp.stg.icr.io/cp/websphere-liberty-operator:security-scanning-amd64"
-    # IMAGES_TO_SCAN+="\n"
-    # echo -e "IMAGES_TO_SCAN:\n$IMAGES_TO_SCAN"
-
-    # # This must be an IBM Cloud API key that has permission to run the toolchain 
-    # IBMCLOUD_API_KEY="$(get_env ibmcloud-api-key)"
-    
-    # # The IBM Cloud region that is hosting the security scanning pipeline
-    # SECSCAN_TOOLCHAIN_REGION="us-south"
-
-    # # Ensure ibmcloud is updated before logging in
-    # ibmcloud --version
-    # ibmcloud update -f
-    # echo "ibmcloud login --apikey $IBMCLOUD_API_KEY -r $SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"  
-    # ibmcloud login --apikey "$IBMCLOUD_API_KEY" -r "$SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"    
-
-    # SCANNING_PIPELINE_ID=$(get_env security-scanning-pipeline-id)
-
-    # TRIGGER_NAME=$(get_env security-scanning-pipeline-trigger)
-    # if [[ -z "${TRIGGER_NAME}" ]]; then
-    #   TRIGGER_NAME="Security Scan Manual Trigger Multiscan"
-    # fi
-
-    # EVIDENCE_REPO=$(get_env evidence-repo)
-    # INCIDENT_REPO=$(get_env incident-repo)
-    # if [[ -z $EVIDENCE_REPO ]]; then
-    #   TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\"}" 
-    # else
-    #   TRIGGER_PROPERTIES_JSON="{
-    #     \"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\", 
-    #     \"evidence-repo\": \"${EVIDENCE_REPO}\",
-    #     \"scan-results-upload-repo\": \"${INCIDENT_REPO}\",
-    #     \"offering-name\": \"test-offering-name\",
-    #     \"product-version\": \"test-product-version\",
-    #     \"upload-scans-to-dashboard-repo\": \"true\"
-    #   }"  # TODO: Change offering-name and product-version
-    # fi
-
-    # echo "RUN_DATA=(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)"
-    # RUN_DATA=$(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)
-
-    # echo $RUN_DATA | jq
-
-    # RUN_ID=$(echo $RUN_DATA | jq -r '.id')
-    # echo "Security Scanning Pipeline Run ID=$RUN_ID"
-    # MAX_TRIES=600
-    # COMPLETE=0
-    # for (( TRIES=0; TRIES<=$MAX_TRIES; TRIES++ ))
-    # do
-    #   RESULT=$(ibmcloud dev tekton-pipelinerun $SCANNING_PIPELINE_ID --run-id ${RUN_ID} --output json | jq -r '.status.state')
-    #   if [[ $RESULT != "passed" && $RESULT != "failed" && $RESULT != "cancelled" && $RESULT != "succeeded" ]];then
-    #       sleep 10
-    #   else
-    #       COMPLETE=1
-    #       break
-    #   fi
-    # done
-    # echo "Security Scanning Pipeline returned $RESULT"     
-    # echo "Security Scanning Pipeline URL: https://cloud.ibm.com/devops/pipelines/tekton/${SCANNING_PIPELINE_ID}/runs/${RUN_ID}/build-scan-artifact/run-stage?env_id=ibm:yp:us-south"
-
-
 test:
   dind: true
   abort_on_failure: true
@@ -145,20 +62,20 @@ test:
   script: |
     #!/usr/bin/env bash
 
-    ## Setup required tooling
+    # Setup required tooling
 
-    # # Download Go
-    # GO_VERSION=$(get_env go-version)
-    # if [[ -z "${GO_VERSION}" ]]; then
-    #   GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    # fi
-    # rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
-    # export PATH=$PATH:/usr/local/go/bin
+    # Download Go
+    GO_VERSION=$(get_env go-version)
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+    export PATH=$PATH:/usr/local/go/bin
 
-    # apt-get update
-    # apt-get -y install build-essential
+    apt-get update
+    apt-get -y install build-essential
 
-    # make unit-test
+    make unit-test
 
 static-scan:
   dind: true
@@ -167,27 +84,27 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
-    # read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
-    # read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
-    # SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
-    # read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
-    # touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
-    # cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    # sonar.projectKey=websphere-liberty-operator
-    # sonar.host.url=$SONAR_HOST_URL
-    # sonar.sources=.
-    # sonar.login=$SONAR_USER
-    # sonar.password=$SONAR_PASS
-    # sonar.c.file.suffixes=-
-    # sonar.cpp.file.suffixes=-
-    # sonar.objc.file.suffixes=-
-    # EOF
-    # chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    # #echo "$SONAR_PASS" >> /tmp/sonarqube-token
-    # "${COMMONS_PATH}"/static-scan/run.sh
+    read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
+    SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
+    read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
+    touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
+    cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    sonar.projectKey=websphere-liberty-operator
+    sonar.host.url=$SONAR_HOST_URL
+    sonar.sources=.
+    sonar.login=$SONAR_USER
+    sonar.password=$SONAR_PASS
+    sonar.c.file.suffixes=-
+    sonar.cpp.file.suffixes=-
+    sonar.objc.file.suffixes=-
+    EOF
+    chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    #echo "$SONAR_PASS" >> /tmp/sonarqube-token
+    "${COMMONS_PATH}"/static-scan/run.sh
 
-    # ## Perform static lint
-    # ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
+    ## Perform static lint
+    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
 
 containerize:
   dind: true
@@ -381,33 +298,33 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
-    # # Download and configure golang
-    # GO_VERSION=$(get_env go-version)
-    # if [[ -z "${GO_VERSION}" ]]; then
-    #   GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    # fi
-    # export GO_VERSION
+    # Download and configure golang
+    GO_VERSION=$(get_env go-version)
+    if [[ -z "${GO_VERSION}" ]]; then
+      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+    fi
+    export GO_VERSION
 
-    # # OCP test
-    # export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
-    # export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
-    # export PIPELINE_REGISTRY=$(get_env pipeline-registry)
-    # export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    # export DOCKER_USERNAME=$(get_env docker-username)
-    # export DOCKER_PASSWORD=$(get_env docker-password)
-    # export CLUSTER_URL=$(get_env test-cluster-url)
-    # export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
-    # export CLUSTER_TOKEN=$(get_env test-cluster-token)
-    # export RELEASE_TARGET=$(get_env branch)
-    # export DEBUG_FAILURE=$(get_env debug-failure)
+    # OCP test
+    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
+    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
+    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
+    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+    export DOCKER_USERNAME=$(get_env docker-username)
+    export DOCKER_PASSWORD=$(get_env docker-password)
+    export CLUSTER_URL=$(get_env test-cluster-url)
+    export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
+    export CLUSTER_TOKEN=$(get_env test-cluster-token)
+    export RELEASE_TARGET=$(get_env branch)
+    export DEBUG_FAILURE=$(get_env debug-failure)
 
-    # # Kind test
-    # export FYRE_USER=$(get_env fyre-user)
-    # export FYRE_KEY=$(get_env fyre-key)
-    # export FYRE_PASS=$(get_env fyre-pass)
-    # export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
+    # Kind test
+    export FYRE_USER=$(get_env fyre-user)
+    export FYRE_KEY=$(get_env fyre-key)
+    export FYRE_PASS=$(get_env fyre-pass)
+    export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-    # scripts/acceptance-test.sh
+    scripts/acceptance-test.sh
 
 
 scan-artifact:
@@ -451,71 +368,7 @@ scan-artifact:
     # ./commons/aqua/aqua-local-scan
 
     # ========== Security Scanner ==========
-
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
-
-    # echo "Connecting to the Security Scan Toolchain"
-
-    # # IMAGES_TO_SCAN is delimited by '\n' 
-    # IMAGES_TO_SCAN=""
-    # if which list_artifacts >/dev/null; then
-    #   for ARTIFACT_IMAGE in $(list_artifacts); do
-    #     IMAGE_NAME="$(load_artifact "$ARTIFACT_IMAGE" "name" 2>/dev/null)"
-    #     IMAGE_TYPE="$(load_artifact "$ARTIFACT_IMAGE" "type" 2>/dev/null)"
-        
-    #     if [[ -z "${IMAGE_NAME}" || "$(echo "$IMAGE_TYPE" | tr '[:upper:]' '[:lower:]')" == "manifest" ]]; then 
-    #       continue
-    #     else
-    #       IMAGES_TO_SCAN+="$IMAGE_NAME"
-    #       IMAGES_TO_SCAN+="\n" 
-    #     fi  
-    #   done
-    # fi
-
-    # echo -e "IMAGES_TO_SCAN:\n$IMAGES_TO_SCAN"
-
-    # # This must be an IBM Cloud API key that has permission to run the toolchain 
-    # IBMCLOUD_API_KEY="$(get_env ibmcloud-api-key)"
-    
-    # # The IBM Cloud region that is hosting the security scanning pipeline
-    # SECSCAN_TOOLCHAIN_REGION="us-south"
-
-    # # Ensure ibmcloud is updated before logging in
-    # ibmcloud --version
-    # ibmcloud update -f
-    # echo "ibmcloud login --apikey $IBMCLOUD_API_KEY -r $SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"  
-    # ibmcloud login --apikey "$IBMCLOUD_API_KEY" -r "$SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"    
-
-    # SCANNING_PIPELINE_ID=$(get_env security-scanning-pipeline-id)
-
-    # TRIGGER_NAME=$(get_env security-scanning-pipeline-trigger)
-    # if [[ -z "${TRIGGER_NAME}" ]]; then
-    #   TRIGGER_NAME="Security Scan Manual Trigger Multiscan"
-    # fi
-
-    # TRIGGER_PROPERTIES_JSON="{\"images-to-scan\": \"$(echo ${IMAGES_TO_SCAN})\"}"    
-
-    # echo "RUN_DATA=(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)"
-    # RUN_DATA=$(ibmcloud dev tekton-trigger "$SCANNING_PIPELINE_ID" --trigger-name "$TRIGGER_NAME" --trigger-properties "$TRIGGER_PROPERTIES_JSON" --output json)
-
-    # RUN_ID=$(echo $RUN_DATA | jq -r '.id')
-    # echo "Security Scanning Pipeline Run ID=$RUN_ID"
-    # MAX_TRIES=600
-    # COMPLETE=0
-    # for (( TRIES=0; TRIES<=$MAX_TRIES; TRIES++ ))
-    # do
-    #   RESULT=$(ibmcloud dev tekton-pipelinerun $SCANNING_PIPELINE_ID --run-id ${RUN_ID} --output json | jq -r '.status.state')
-    #   if [[ $RESULT != "passed" && $RESULT != "failed" && $RESULT != "cancelled" && $RESULT != "succeeded" ]];then
-    #       sleep 10
-    #   else
-    #       COMPLETE=1
-    #       break
-    #   fi
-    # done
-    # echo "Security Scanning Pipeline returned $RESULT"     
-    # echo "Security Scanning Pipeline URL: https://cloud.ibm.com/devops/pipelines/tekton/${SCANNING_PIPELINE_ID}/runs/${RUN_ID}/build-scan-artifact/run-stage?env_id=ibm:yp:us-south"
-
-    # # TODO: Add code to fail the pipeline run if the Security Scanning Pipeline returns "failed"
 
 release:
   abort_on_failure: false

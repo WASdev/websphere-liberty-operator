@@ -34,7 +34,6 @@ SECSCAN_TOOLCHAIN_REGION="us-south"
 # Ensure ibmcloud is updated before logging in
 ibmcloud --version
 ibmcloud update -f
-echo "ibmcloud login --apikey $IBMCLOUD_API_KEY -r $SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"  
 ibmcloud login --apikey "$IBMCLOUD_API_KEY" -r "$SECSCAN_TOOLCHAIN_REGION" -a "https://cloud.ibm.com"    
 
 SCANNING_PIPELINE_ID=$(get_env security-scanning-pipeline-id)
