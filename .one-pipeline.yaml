@@ -62,7 +62,7 @@ test:
   script: |
     #!/usr/bin/env bash
 
-    # Setup required tooling
+    ## Setup required tooling
 
     # Download Go
     GO_VERSION=$(get_env go-version)
