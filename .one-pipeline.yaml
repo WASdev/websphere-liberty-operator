@@ -5,6 +5,8 @@ setup:
   script: |
     #!/usr/bin/env bash
 
+    bash --version
+
     set -x
 
     git tag --list
