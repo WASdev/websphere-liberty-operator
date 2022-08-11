@@ -9,10 +9,12 @@ setup:
 
     set -x
 
+    re='^\d*.\d*.\d*$'
+
     git tag --list
-    git tag --list | grep '^\d*.\d*.\d*$'
-    git tag --list | grep '^\d*.\d*.\d*$' | sort
-    git tag --list | grep '^\d*.\d*.\d*$' | sort | tail -n1
+    git tag --list | grep $re
+    git tag --list | grep $re | sort
+    git tag --list | grep $re | sort | tail -n1
 
     set +x
 
