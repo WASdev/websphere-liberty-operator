@@ -16,6 +16,8 @@ setup:
     git tag --list | grep $re | sort
     git tag --list | grep $re | sort | tail -n1
 
+    curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name
+
     set +x
 
     echo "setup"
