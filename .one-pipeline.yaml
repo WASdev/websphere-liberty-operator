@@ -55,8 +55,8 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
-    echo "git tag --list"
-    echo "$(git tag --list)"
+    echo "git tag --list | grep '^\d*.\d*.\d*$' | sort | tail -n1"
+    git tag --list | grep '^\d*.\d*.\d*$' | sort | tail -n1
 
 test:
   dind: true
