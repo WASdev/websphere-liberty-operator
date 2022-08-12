@@ -4,22 +4,6 @@ setup:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
-
-    bash --version
-
-    set -x
-
-    re='^\d*.\d*.\d*$'
-
-    git tag --list
-    git tag --list | grep $re
-    git tag --list | grep $re | sort
-    git tag --list | grep $re | sort | tail -n1
-
-    curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name
-
-    set +x
-
     echo "setup"
     apt-get update
     apt-get -y install build-essential
