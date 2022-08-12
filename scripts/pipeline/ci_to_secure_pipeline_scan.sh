@@ -29,7 +29,10 @@ echo -e "IMAGES_TO_SCAN:\n$IMAGES_TO_SCAN"
 IBMCLOUD_API_KEY="$(get_env ibmcloud-api-key)"
 
 # The IBM Cloud region that is hosting the security scanning pipeline
-SECSCAN_TOOLCHAIN_REGION="us-south"
+SECSCAN_TOOLCHAIN_REGION=$(get_env sescan-toolchain-region)
+if [[ -z "${SECSCAN_TOOLCHAIN_REGION}" ]]; then
+    SECSCAN_TOOLCHAIN_REGION="us-south"
+fi
 
 # Ensure ibmcloud is updated before logging in
 ibmcloud --version
