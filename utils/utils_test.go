@@ -334,7 +334,7 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 			t.Log("pcc was correct")
 		}
 		// 'productMetric' defaults to VPC, otherwise PVU
-		if s.metric == "" || s.metric == webspherelibertyv1.LicenseMetricVPC {
+		if s.metric == webspherelibertyv1.LicenseMetricVPC {
 			if pts.Annotations["productMetric"] != "VIRTUAL_PROCESSOR_CORE" {
 				t.Errorf("product metric: expected 'VIRTUAL_PROCESSOR_CORE' but was %s\n", pts.Annotations["productMetric"])
 			}
@@ -354,7 +354,7 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 			if pts.Annotations["productName"] != "IBM WebSphere Application Server Liberty Core" {
 				t.Errorf("Incorrect productName for edition core: %s\n", pts.Annotations["productName"])
 			}
-		case "", webspherelibertyv1.LicenseEditionBase:
+		case webspherelibertyv1.LicenseEditionBase:
 			if pts.Annotations["productID"] != "e7daacc46bbe4e2dacd2af49145a4723" {
 				t.Errorf("Incorrect productID for edition base: %s\n", pts.Annotations["productID"])
 			}
@@ -371,9 +371,62 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 		default:
 			t.Errorf("Unexpected test data for edition %s\n", s.edition)
 		}
+		// 'cloudPak*' annotations should _not_ be present if the entitlement is standalone
+		if s.pes == webspherelibertyv1.LicenseEntitlementStandalone {
+			if _, exists := pts.Annotations["productCloudpakRatio"]; exists {
+				t.Errorf("productCloudpakRatio should not exist but was %s\n", pts.Annotations["productCloudpakRatio"])
+			}
+			if _, exists := pts.Annotations["cloudpakName"]; exists {
+				t.Errorf("cloudpakName should not exist but was %s\n", pts.Annotations["cloudpakName"])
+			}
+			if _, exists := pts.Annotations["cloudpakId"]; exists {
+				t.Errorf("cloudpakId should not exist but was %s\n", pts.Annotations["cloudpakId"])
+			}
+		} else {
+			if !checkRatio(pts.Annotations["productCloudpakRatio"], s.edition) {
+				t.Errorf("Unexpected productCloudpakRatio %s for edition %s\n", pts.Annotations["productCloudpakRatio"], s.edition)
+			}
+			if !checkID(pts.Annotations["cloudpakId"], s.pes) {
+				t.Errorf("Unexpected cloudpakId %s for entitlement %s\n", pts.Annotations["cloudpakId"], s.pes)
+			}
+			if !checkName(pts.Annotations["cloudpakName"], s.pes) {
+				t.Errorf("Unexpected cloudpakName %s for entitlement %s\n", pts.Annotations["cloudpakName"], s.pes)
+			}
+		}
 
 	}
 
+}
+
+func checkRatio(ratio string, edition webspherelibertyv1.LicenseEdition) bool {
+	if ratio == "4:1" && edition == webspherelibertyv1.LicenseEditionBase {
+		return true
+	}
+	if ratio == "8:1" && edition == webspherelibertyv1.LicenseEditionCore {
+		return true
+	}
+	if ratio == "1:1" && edition == webspherelibertyv1.LicenseEditionND {
+		return true
+	}
+	return false
+}
+func checkID(id string, pes webspherelibertyv1.LicenseEntitlement) bool {
+	if id == "4df52d2cdc374ba09f631a650ad2b5bf" && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
+		return true
+	}
+	if id == "be8ae84b3dd04d81b90af0d846849182" && pes == webspherelibertyv1.LicenseEntitlementFamilyEdition {
+		return true
+	}
+	if id == "6358611af04743f99f42dadcd6e39d52" && pes == webspherelibertyv1.LicenseEntitlementWSHE {
+		return true
+	}
+	return false
+}
+func checkName(name string, pes webspherelibertyv1.LicenseEntitlement) bool {
+	if name == string(pes) {
+		return true
+	}
+	return false
 }
 
 // Helper Functions

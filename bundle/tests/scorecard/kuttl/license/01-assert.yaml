@@ -22,3 +22,6 @@ metadata:
     productID: 87f3487c22f34742a799164f3f3ffa78
     productName: IBM WebSphere Application Server Liberty Core
     productMetric: PROCESSOR_VALUE_UNIT
+    productCloudpakRatio: 8:1
+    cloudpakId: be8ae84b3dd04d81b90af0d846849182
+    cloudpakName: IBM WebSphere Application Server Family Edition
