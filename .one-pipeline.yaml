@@ -84,6 +84,7 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
+    BRANCH=$(get_env branch)      
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
     SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
@@ -93,6 +94,7 @@ static-scan:
     sonar.projectKey=websphere-liberty-operator
     sonar.host.url=$SONAR_HOST_URL
     sonar.sources=.
+    sonar.branch.name=$BRANCH
     sonar.login=$SONAR_USER
     sonar.password=$SONAR_PASS
     sonar.c.file.suffixes=-
