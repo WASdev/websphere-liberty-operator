@@ -128,6 +128,66 @@ containerize:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
+    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    #  Build images
+    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
+    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
+    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
+    export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
+    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+    export DOCKER_USERNAME=$(get_env docker-username)
+    export DOCKER_PASSWORD=$(get_env docker-password)
+    export REDHAT_USERNAME=$(get_env redhat-user-id)
+    export REDHAT_PASSWORD=$(get_env redhat-password)
+    export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
+    export REDHAT_REGISTRY=$(get_env redhat-registry)
+    export OPM_VERSION=$(get_env opm-version)
+    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+
+    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+      echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
+      RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
+      # Save artifacts
+      ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
+      # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+      echo "**** Saving Artifacts ****"
+      declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+      
+      for i in "${tags[@]}"
+      do
+        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
+        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+        { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
+        echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST type=$TYPE"
+        save_artifact operator-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+      done
+
+      declare -a bundles=("${RELEASE_TARGET}")
+      for i in "${bundles[@]}"
+      do
+        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
+        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+        #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+        ARCH=amd64
+        echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
+        save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+      done
+
+      declare -a catalogs=("${RELEASE_TARGET}")
+      for i in "${catalogs[@]}"
+      do
+        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
+        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+        #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+        ARCH=amd64
+        echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
+        save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+        done
+      exit 0
+    fi
+
     if [[ "$PIPELINE_DEBUG" == 1 ]]; then
       trap env EXIT
       env
@@ -158,20 +218,9 @@ containerize:
     skopeo --version || exit 1
 
     #  Build images
-    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
-    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
-    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
-    export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
-    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+    
     export RELEASE_TARGET=$(get_env branch)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
-    export REDHAT_USERNAME=$(get_env redhat-user-id)
-    export REDHAT_PASSWORD=$(get_env redhat-password)
-    export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
-    export REDHAT_REGISTRY=$(get_env redhat-registry)
-    export OPM_VERSION=$(get_env opm-version)
-    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    
     
     if [[ -z $DISABLE_ARTIFACTORY ]]; then
       DISABLE_ARTIFACTORY="false"
