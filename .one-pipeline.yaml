@@ -146,6 +146,18 @@ containerize:
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
 
+     # Download and install skopeo
+    if ! command -v skopeo &> /dev/null; then
+      PACKAGE_CACHE_URL=$(get_env package-cache-url)
+      wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      wget --no-verbose http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
+      sudo dpkg -i containers-common_1-22_all.deb
+      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
+    fi
+    skopeo --version || exit 1
+
     if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
       echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
       RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
@@ -205,17 +217,7 @@ containerize:
     apt-get update
     apt-get -qq -y install build-essential software-properties-common uidmap
 
-    # Download and install skopeo
-    if ! command -v skopeo &> /dev/null; then
-      PACKAGE_CACHE_URL=$(get_env package-cache-url)
-      wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
-      wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
-      wget --no-verbose http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
-      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
-      sudo dpkg -i containers-common_1-22_all.deb
-      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
-    fi
-    skopeo --version || exit 1
+   
 
     #  Build images
     
