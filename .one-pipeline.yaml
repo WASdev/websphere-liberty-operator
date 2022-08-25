@@ -36,7 +36,7 @@ setup:
     fi
 
     # Only sync-up main branch and actual releases (i.e. 1.0.0 tag)
-    if [[ "$BRANCH" == "main" || "$BRANCH" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
+    if [[ "$BRANCH" == "main" || "$BRANCH" == "release" || "$BRANCH" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
       # Update repo with Whitesource enabled
       GHE_TOKEN=$(get_env git-token)
       WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo | sed 's/https:\/\///')
@@ -110,6 +110,7 @@ static-scan:
     sonar.projectKey=websphere-liberty-operator
     sonar.host.url=$SONAR_HOST_URL
     sonar.sources=.
+    sonar.branch.name=$BRANCH
     sonar.login=$SONAR_USER
     sonar.password=$SONAR_PASS
     sonar.c.file.suffixes=-
