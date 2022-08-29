@@ -60,6 +60,30 @@ push_images() {
     }
 }
 
+install_bundle_and_run_scorecard_tests() {
+  echo "****** Installing bundle in $1 mode..."
+  operator-sdk run bundle --install-mode $1 --pull-secret-name regcred "${BUNDLE_IMAGE}" --timeout 5m || {
+      echo "****** Installing bundle failed..."
+      exit 1
+  }
+
+  # Wait for operator deployment to be ready
+  while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+      echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
+      sleep 10
+  done
+
+  echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
+
+  echo "****** Starting scorecard tests..."
+  operator-sdk scorecard --verbose --selector=suite=kuttlsuite --namespace "${TEST_NAMESPACE}" --service-account scorecard-kuttl --wait-time 30m ./bundle || {
+      echo "****** Scorecard tests failed..."
+      exit 1
+  }
+  result=$?
+  exit result
+}
+
 main() {
     parse_args "$@"
 
@@ -106,27 +130,20 @@ main() {
     echo "****** Pushing operator and operator bundle images into registry..."
     push_images
 
-    echo "****** Installing bundle..."
-    operator-sdk run bundle --install-mode OwnNamespace --pull-secret-name regcred "${BUNDLE_IMAGE}" --timeout 5m || {
-        echo "****** Installing bundle failed..."
-        exit 1
-    }
+    # Run scorecard tests in kuttl folder using OwnNamespace
+    install_bundle_and_run_scorecard_tests "OwnNamespace"
 
-    # Wait for operator deployment to be ready
-    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
-        echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
-        sleep 10
-    done
+    operator-sdk cleanup "${BUNDLE_IMAGE}"
 
-    echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
+    # Run scorecard tests in kuttl-all-namespaces folder using AllNamespaces
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp 
+    mv bundle/tests/scorecard/kuttl-all-namespaces bundle/tests/scorecard/kuttl
 
-    echo "****** Starting scorecard tests..."
-    operator-sdk scorecard --verbose --selector=suite=kuttlsuite --namespace "${TEST_NAMESPACE}" --service-account scorecard-kuttl --wait-time 30m ./bundle || {
-        echo "****** Scorecard tests failed..."
-        exit 1
-    }
-    result=$?
+    install_bundle_and_run_scorecard_tests "AllNamespaces"
 
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-all-namespaces
+    mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl 
+  
     echo "****** Cleaning up test environment..."
     cleanup_env
 
