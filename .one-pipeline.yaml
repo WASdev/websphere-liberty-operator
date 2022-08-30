@@ -199,7 +199,11 @@ containerize:
         ARCH=amd64
         echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
         save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
-        done
+      done
+      
+      echo "MEND unified agent scan"
+      chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+      source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
       exit 0
     fi
 
