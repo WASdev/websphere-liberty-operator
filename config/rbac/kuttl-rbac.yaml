@@ -38,6 +38,7 @@ rules:
   - namespaces
   - pods
   - routes
+  - configmaps
   verbs:
   - get
   - list

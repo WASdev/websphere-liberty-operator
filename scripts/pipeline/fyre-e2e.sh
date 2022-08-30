@@ -148,8 +148,36 @@ main() {
     echo "Updating global pull secret"
     oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
 
+    # Run scorecard tests in kuttl folder using OwnNamespace
+    install_operator_and_run_scorecard_tests "OwnNamespace"
+    result=$?
+    if [[ $result != 0 ]]; then
+        return $result
+    fi
+
+    uninstall_operator
+
+    # Run scorecard tests in kuttl-all-namespaces folder using AllNamespaces
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+    mv bundle/tests/scorecard/kuttl-all-namespaces bundle/tests/scorecard/kuttl
+    mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl
+
+    install_operator_and_run_scorecard_tests "AllNamespaces"
+    result=$?
+
+    mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-all-namespaces
+    mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+
+    echo "****** Cleaning up test environment..."
+    cleanup_env
+
+    return $result
+}
+
+install_operator_and_run_scorecard_tests() {
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
-    install_operator
+    install_operator $1
 
     # Wait for operator deployment to be ready
     while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
@@ -164,12 +192,6 @@ main() {
        echo "****** Scorecard tests failed..."
        exit 1
     }
-    result=$?
-
-    echo "****** Cleaning up test environment..."
-    cleanup_env
-
-    return $result
 }
 
 install_operator() {
@@ -188,8 +210,20 @@ spec:
   publisher: IBM
 EOF
 
-    echo "****** Applying the operator group..."
-    cat <<EOF | oc apply -f -
+    echo "****** Applying the operator group to $1..."
+    if [ "$1" == "AllNamespaces" ]; then
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: websphere-operator-group
+  namespace: $TEST_NAMESPACE
+spec:
+  targetNamespaces:
+    - ""
+EOF
+    else
+      cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -199,6 +233,7 @@ spec:
   targetNamespaces:
     - $TEST_NAMESPACE
 EOF
+    fi
 
     echo "****** Applying the subscription..."
     cat <<EOF | oc apply -f -
@@ -214,6 +249,14 @@ spec:
   sourceNamespace: $TEST_NAMESPACE
   installPlanApproval: Automatic
 EOF
+}
+
+uninstall_operator() {
+    currentCSV=$(oc get subscription websphere-liberty-operator-subscription -o yaml | grep currentCSV)
+    oc delete clusterserviceversion $currentCSV
+    oc delete catalogsource websphere-liberty-catalog
+    oc delete operatorgroup websphere-operator-group
+    oc delete subscription websphere-liberty-operator-subscription
 }
 
 parse_args() {
