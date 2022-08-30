@@ -272,9 +272,9 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	t.Log("Starting license test")
 
 	td := []licenseTestData{}
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
@@ -282,9 +282,9 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
@@ -292,9 +292,9 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
