@@ -23,11 +23,28 @@ setup_env() {
 
     ## Create service account for Kuttl tests
     oc apply -f config/rbac/kuttl-rbac.yaml
+    cp config/rbac/kuttl-rbac-all-namespaces.yaml ./
+    sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-all-namespaces.yaml 
+    oc apply -f kuttl-rbac-all-namespaces.yaml 
 }
 
 ## cleanup_env : Delete generated resources that are not bound to a test TEST_NAMESPACE.
 cleanup_env() {
   oc delete project "${TEST_NAMESPACE}"
+}
+
+restart_env() {
+  oc delete project "${TEST_NAMESPACE}"
+
+  # Wait for namespace to be deleted
+  while [[ $(oc get namespace ${TEST_NAMESPACE} -o name) == "namespace/${TEST_NAMESPACE}" ]]; do
+    echo "****** Waiting for ${TEST_NAMESPACE} to be deleted..."
+    sleep 5
+  done
+
+  oc project default
+  oc new-project "${TEST_NAMESPACE}"
+  oc project "${TEST_NAMESPACE}"
 }
 
 ## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
@@ -179,16 +196,24 @@ install_operator_and_run_scorecard_tests() {
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator $1
 
+    if [ "$1" == "AllNamespaces" ]; then
+        CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
+    else
+	CONTROLLER_MANAGER_NAMESPACE=${TEST_NAMESPACE}
+	SERVICE_ACCOUNT_NAME="scorecard-kuttl"
+    fi
+
     # Wait for operator deployment to be ready
-    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
-        echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
+    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -n ${CONTROLLER_MANAGER_NAMESPACE} -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+        echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} in namespace ${CONTROLLER_MANAGER_NAMESPACE} to be ready..."
         sleep 10
     done
 
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
 
     echo "****** Starting scorecard tests..."
-    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="${SERVICE_ACCOUNT_NAME}" --wait-time 30m ./bundle || {
        echo "****** Scorecard tests failed..."
        exit 1
     }
@@ -197,7 +222,21 @@ install_operator_and_run_scorecard_tests() {
 install_operator() {
     # Apply the catalog
     echo "****** Applying the catalog source..."
-    cat <<EOF | oc apply -f -
+    if [ "$1" == "AllNamespaces" ]; then
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: websphere-liberty-catalog
+  namespace: openshift-operators
+spec:
+  sourceType: grpc
+  image: $CATALOG_IMAGE
+  displayName: WebSphere Liberty Catalog
+  publisher: IBM
+EOF
+    else
+      cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
@@ -209,20 +248,10 @@ spec:
   displayName: WebSphere Liberty Catalog
   publisher: IBM
 EOF
+    fi
 
-    echo "****** Applying the operator group to $1..."
-    if [ "$1" == "AllNamespaces" ]; then
-      cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: websphere-operator-group
-  namespace: $TEST_NAMESPACE
-spec:
-  targetNamespaces:
-    - ""
-EOF
-    else
+    if [ "$1" != "AllNamespaces" ]; then
+      echo "****** Applying the operator group to $1..."
       cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
@@ -233,10 +262,27 @@ spec:
   targetNamespaces:
     - $TEST_NAMESPACE
 EOF
+    else
+      echo "****** Skipping operator group creation since AllNamespaces is selected..."
     fi
 
     echo "****** Applying the subscription..."
-    cat <<EOF | oc apply -f -
+    if [ "$1" == "AllNamespaces" ]; then
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: websphere-liberty-operator-subscription
+  namespace: openshift-operators
+spec:
+  channel: $DEFAULT_CHANNEL
+  name: ibm-websphere-liberty
+  source: websphere-liberty-catalog
+  sourceNamespace: openshift-operators
+  installPlanApproval: Automatic
+EOF
+    else
+      cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -249,14 +295,15 @@ spec:
   sourceNamespace: $TEST_NAMESPACE
   installPlanApproval: Automatic
 EOF
+    fi
 }
 
 uninstall_operator() {
-    currentCSV=$(oc get subscription websphere-liberty-operator-subscription -o yaml | grep currentCSV)
+    currentCSV=$(oc get clusterserviceversion | grep ibm-websphere-liberty | cut -d ' ' -f1 )
     oc delete clusterserviceversion $currentCSV
     oc delete catalogsource websphere-liberty-catalog
     oc delete operatorgroup websphere-operator-group
-    oc delete subscription websphere-liberty-operator-subscription
+    restart_env
 }
 
 parse_args() {
