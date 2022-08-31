@@ -22,10 +22,7 @@ setup_env() {
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
 
     ## Create service account for Kuttl tests
-    oc apply -f config/rbac/kuttl-rbac.yaml
-    cp config/rbac/kuttl-rbac-all-namespaces.yaml ./
-    sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-all-namespaces.yaml 
-    oc apply -f kuttl-rbac-all-namespaces.yaml 
+    oc apply -f config/rbac/kuttl-rbac.yaml -n ${TEST_NAMESPACE}
 }
 
 ## cleanup_env : Delete generated resources that are not bound to a test TEST_NAMESPACE.
@@ -179,11 +176,31 @@ main() {
     mv bundle/tests/scorecard/kuttl-all-namespaces bundle/tests/scorecard/kuttl
     mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl
 
+    cp config/rbac/kuttl-rbac-all-namespaces.yaml ./
+    sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-all-namespaces.yaml
+    oc apply -f kuttl-rbac-all-namespaces.yaml -n ${TEST_NAMESPACE}
+
     install_operator_and_run_scorecard_tests "AllNamespaces"
     result=$?
 
     mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
     mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-all-namespaces
+    mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+
+    uninstall_operator
+    
+    # Run scorecard tests in kuttl-single-namespace folder using SingleNamespace
+    oc apply -f config/rbac/kuttl-rbac.yaml -n ${TEST_NAMESPACE}
+
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+    mv bundle/tests/scorecard/kuttl-single-namespace bundle/tests/scorecard/kuttl
+    mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl
+
+    install_operator_and_run_scorecard_tests "SingleNamespace"
+    result=$?
+
+    mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-single-namespace
     mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
 
     echo "****** Cleaning up test environment..."
@@ -200,7 +217,7 @@ install_operator_and_run_scorecard_tests() {
         CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
         SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
     else
-	CONTROLLER_MANAGER_NAMESPACE=${TEST_NAMESPACE}
+	CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
 	SERVICE_ACCOUNT_NAME="scorecard-kuttl"
     fi
 
@@ -235,6 +252,19 @@ spec:
   displayName: WebSphere Liberty Catalog
   publisher: IBM
 EOF
+    elif [ "$1" == "SingleNamespace" ]; then
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: websphere-liberty-catalog
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: $CATALOG_IMAGE
+  displayName: WebSphere Liberty Catalog
+  publisher: IBM
+EOF
     else
       cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
@@ -250,7 +280,7 @@ spec:
 EOF
     fi
 
-    if [ "$1" != "AllNamespaces" ]; then
+    if [ "$1" == "OwnNamespace" || "$1" == "SingleNamespace" ]; then
       echo "****** Applying the operator group to $1..."
       cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
@@ -279,6 +309,20 @@ spec:
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: openshift-operators
+  installPlanApproval: Automatic
+EOF
+    elif [ "$1" == "SingleNamespace" ]; then
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: websphere-liberty-operator-subscription
+  namespace: $TEST_NAMESPACE
+spec:
+  channel: $DEFAULT_CHANNEL
+  name: ibm-websphere-liberty
+  source: websphere-liberty-catalog
+  sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic
 EOF
     else

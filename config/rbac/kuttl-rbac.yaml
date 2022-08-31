@@ -38,10 +38,17 @@ rules:
   - namespaces
   - pods
   - routes
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
   - configmaps
   verbs:
   - get
   - list
+  - delete
 - apiGroups:
     - ""
   resources:
