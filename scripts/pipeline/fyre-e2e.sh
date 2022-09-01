@@ -182,15 +182,20 @@ main() {
 
     install_operator_and_run_scorecard_tests "AllNamespaces"
     result=$?
+    if [[ $result != 0 ]]; then
+        return $result
+    fi
 
     mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
     mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-all-namespaces
     mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
 
     uninstall_operator
-    
+
     # Run scorecard tests in kuttl-single-namespace folder using SingleNamespace
-    oc apply -f config/rbac/kuttl-rbac.yaml -n ${TEST_NAMESPACE}
+    cp config/rbac/kuttl-rbac-all-namespaces.yaml ./
+    sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-all-namespaces.yaml
+    oc apply -f kuttl-rbac-all-namespaces.yaml -n ${TEST_NAMESPACE}
 
     mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
     mv bundle/tests/scorecard/kuttl-single-namespace bundle/tests/scorecard/kuttl
@@ -198,10 +203,15 @@ main() {
 
     install_operator_and_run_scorecard_tests "SingleNamespace"
     result=$?
+    if [[ $result != 0 ]]; then
+        return $result
+    fi
 
     mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
     mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-single-namespace
     mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+
+    uninstall_operator
 
     echo "****** Cleaning up test environment..."
     cleanup_env
@@ -210,11 +220,15 @@ main() {
 }
 
 install_operator_and_run_scorecard_tests() {
+    INSTALL_MODE=$1
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator $1
 
     if [ "$1" == "AllNamespaces" ]; then
         CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
+    elif [ "$1" == "SingleNamespace" ]; then
+        CONTROLLER_MANAGER_NAMESPACE="openshift-marketplace"
         SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
     else
 	CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
@@ -280,7 +294,7 @@ spec:
 EOF
     fi
 
-    if [ "$1" == "OwnNamespace" || "$1" == "SingleNamespace" ]; then
+    if [ "$1" == "OwnNamespace" ]; then
       echo "****** Applying the operator group to $1..."
       cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
@@ -288,6 +302,18 @@ kind: OperatorGroup
 metadata:
   name: websphere-operator-group
   namespace: $TEST_NAMESPACE
+spec:
+  targetNamespaces:
+    - $TEST_NAMESPACE
+EOF
+    elif [ "$1" == "SingleNamespace" ]; then
+      echo "****** Applying the operator group to $1..."
+      cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: websphere-operator-group
+  namespace: openshift-marketplace
 spec:
   targetNamespaces:
     - $TEST_NAMESPACE
@@ -317,7 +343,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: websphere-liberty-operator-subscription
-  namespace: $TEST_NAMESPACE
+  namespace: openshift-marketplace
 spec:
   channel: $DEFAULT_CHANNEL
   name: ibm-websphere-liberty
@@ -343,10 +369,27 @@ EOF
 }
 
 uninstall_operator() {
+    if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
+      CATALOG_SOURCE_NAMESPACE="${TEST_NAMESPACE}"
+      CSV_NAMESPACE="${TEST_NAMESPACE}"
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+      CATALOG_SOURCE_NAMESPACE="openshift-marketplace"
+      CSV_NAMESPACE="${TEST_NAMESPACE}"
+    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then
+      CATALOG_SOURCE_NAMESPACE="openshift-operators"
+      CSV_NAMESPACE="openshift-operators"
+    fi
+
+    oc delete subscription.operators.coreos.com websphere-liberty-operator-subscription -n ${CATALOG_SOURCE_NAMESPACE}
+    
     currentCSV=$(oc get clusterserviceversion | grep ibm-websphere-liberty | cut -d ' ' -f1 )
-    oc delete clusterserviceversion $currentCSV
-    oc delete catalogsource websphere-liberty-catalog
-    oc delete operatorgroup websphere-operator-group
+    oc delete clusterserviceversion $currentCSV -n ${CSV_NAMESPACE}
+
+    oc delete catalogsource websphere-liberty-catalog -n ${CATALOG_SOURCE_NAMESPACE} 
+    if [ "$INSTALL_MODE" != "AllNamespaces" ]; then
+        oc delete operatorgroup websphere-operator-group -n ${CATALOG_SOURCE_NAMESPACE}
+    fi
+    
     restart_env
 }
 

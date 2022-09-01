@@ -3,5 +3,4 @@ kind: TestStep
 commands:
   - command: kubectl delete webspherelibertyapplications --all
     namespaced: true
-  - command: kubectl delete configmap websphere-liberty-operator
-    namespaced: true
+  - command: kubectl delete configmap websphere-liberty-operator -n openshift-marketplace
