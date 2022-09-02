@@ -146,9 +146,9 @@ main() {
     oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
 
     # Run Kuttl scorecard tests
-    run_kuttl_tests "OwnNamespace"
-    run_kuttl_tests "AllNamespaces"
-    run_kuttl_tests "SingleNamespace"
+    run_scorecard "OwnNamespace"
+    run_scorecard "AllNamespaces"
+    run_scorecard "SingleNamespace"
 
     echo "****** Cleaning up test environment..."
     cleanup_env
@@ -156,24 +156,28 @@ main() {
     return $result
 }
 
-install_operator_and_run_scorecard_tests() {
+run_scorecard() {
+    INSTALL_MODE=$1
     if [ "$INSTALL_MODE" == "AllNamespaces" ]; then
-        CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
+        KUTTL_TEST_DIR="kuttl-all-namespaces"
+	CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
         SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
         OPERATOR_GROUP_TARGET_NAMESPACE="openshift-operators" # used for CSV cleanup
     elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+	KUTTL_TEST_DIR="kuttl-single-namespace"
         CONTROLLER_MANAGER_NAMESPACE="openshift-marketplace"
         SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
 	OPERATOR_GROUP_NAMESPACE="openshift-marketplace"
         OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
     elif [ "$INSTALL_MODE" == "OwnNamespace" ]; then
+	KUTTL_TEST_DIR="kuttl"
 	CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
 	SERVICE_ACCOUNT_NAME="scorecard-kuttl"
 	OPERATOR_GROUP_NAMESPACE="${TEST_NAMESPACE}"
         OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
     fi
 
-    # Delete subscriptions that may be blocking the install
+    # Delete a subscription that may be blocking the install
     oc delete subscription.operators.coreos.com websphere-liberty-operator-subscription -n ${CONTROLLER_MANAGER_NAMESPACE}
 
     install_operator
@@ -187,10 +191,20 @@ install_operator_and_run_scorecard_tests() {
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
  
     echo "****** Starting scorecard tests..."
+    set_rbac
+    set_kuttl_test_dir
+    TESTS_FAILED=false
     operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="${SERVICE_ACCOUNT_NAME}" --wait-time 30m ./bundle || {
        echo "****** Scorecard tests failed..."
-       exit 1
+       TESTS_FAILED=true
     }
+    echo "****** Starting cluster cleanup..."
+    unset_kuttl_test_dir
+    unset_rbac
+    uninstall_operator
+    if $TESTS_FAILED ; then 
+        exit 1 
+    fi
 }
 
 set_rbac() {
@@ -212,42 +226,20 @@ unset_rbac() {
     fi
 }
 
-run_kuttl_tests() {
-    INSTALL_MODE=$1
-    if [ "$INSTALL_MODE" == "SingleNamespace" ]; then
-        set_kuttl_test_dir "kuttl-single-namespace"
-    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then
-	set_kuttl_test_dir "kuttl-all-namespaces"
-    fi
-
-    set_rbac
-    install_operator_and_run_scorecard_tests
-    result=$?
-    if [[ $result != 0 ]]; then
-        return $result
-    fi
-
-    if [ "$INSTALL_MODE" == "SingleNamespace" ]; then
-	unset_kuttl_test_dir "kuttl-single-namespace"
-    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then
-        unset_kuttl_test_dir "kuttl-all-namespaces"
-    fi
-    unset_rbac
-    uninstall_operator	
-}
-
 set_kuttl_test_dir() {
-    TEST_DIR=$1
-    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
-    mv bundle/tests/scorecard/${TEST_DIR} bundle/tests/scorecard/kuttl
-    mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
+    if [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+        mv bundle/tests/scorecard/${KUTTL_TEST_DIR} bundle/tests/scorecard/kuttl
+        mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
+    fi
 }
 
 unset_kuttl_test_dir() {
-    TEST_DIR=$1
-    mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
-    mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/${TEST_DIR}
-    mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+    if [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+        mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/${KUTTL_TEST_DIR}
+        mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+    fi
 }
 
 install_operator() {
