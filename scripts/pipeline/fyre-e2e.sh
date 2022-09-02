@@ -158,6 +158,7 @@ main() {
 
 run_scorecard() {
     INSTALL_MODE=$1
+    echo "****** Provisioning the cluster to setup operator in ${INSTALL_MODE} mode..."
     if [ "$INSTALL_MODE" == "AllNamespaces" ]; then
         KUTTL_TEST_DIR="kuttl-all-namespaces"
 	CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
@@ -190,7 +191,7 @@ run_scorecard() {
 
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
  
-    echo "****** Starting scorecard tests..."
+    echo "****** Starting scorecard tests in the '${KUTTL_TEST_DIR}' directory..."
     set_rbac
     set_kuttl_test_dir
     TESTS_FAILED=false
@@ -259,8 +260,8 @@ spec:
   publisher: IBM
 EOF
 
-    if [ "$1" != "AllNamespaces" ]; then
-      echo "****** Applying the OperatorGroup supporting $1..."
+    if [ "$INSTALL_MODE" != "AllNamespaces" ]; then
+      echo "****** Applying the OperatorGroup supporting $INSTALL_MODE..."
       cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
