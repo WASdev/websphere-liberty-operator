@@ -159,11 +159,11 @@ main() {
 install_operator_and_run_scorecard_tests() {
     if [ "$INSTALL_MODE" == "AllNamespaces" ]; then
         CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
-        SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
         OPERATOR_GROUP_TARGET_NAMESPACE="openshift-operators" # used for CSV cleanup
     elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
         CONTROLLER_MANAGER_NAMESPACE="openshift-marketplace"
-        SERVICE_ACCOUNT_NAME="scorecard-kuttl-all-namespaces"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
 	OPERATOR_GROUP_NAMESPACE="openshift-marketplace"
         OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
     elif [ "$INSTALL_MODE" == "OwnNamespace" ]; then
@@ -195,20 +195,20 @@ install_operator_and_run_scorecard_tests() {
 
 set_rbac() {
     if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
-        oc apply -f config/rbac/kuttl-rbac.yaml -n ${TEST_NAMESPACE}
+        oc apply -f config/rbac/kuttl-rbac.yaml
     else 
-        cp config/rbac/kuttl-rbac-all-namespaces.yaml ./
-        sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-all-namespaces.yaml
-        oc apply -f kuttl-rbac-all-namespaces.yaml -n ${TEST_NAMESPACE}
+        cp config/rbac/kuttl-rbac-cluster-wide.yaml ./
+        sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-cluster-wide.yaml
+        oc apply -f kuttl-rbac-cluster-wide.yaml
     fi
 }
 
 unset_rbac() {
     if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
-        oc delete -f config/rbac/kuttl-rbac.yaml -n ${TEST_NAMESPACE}
+        oc delete -f config/rbac/kuttl-rbac.yaml
     else 
-        oc delete -f kuttl-rbac-all-namespaces.yaml -n ${TEST_NAMESPACE}
-	rm kuttl-rbac-all-namespaces.yaml
+        oc delete -f kuttl-rbac-cluster-wide.yaml
+	rm kuttl-rbac-cluster-wide.yaml
     fi
 }
 
