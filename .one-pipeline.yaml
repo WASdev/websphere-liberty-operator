@@ -303,6 +303,7 @@ containerize:
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
     # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
     echo "**** Saving Artifacts ****"
     declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
