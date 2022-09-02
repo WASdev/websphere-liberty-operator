@@ -62,10 +62,10 @@ test:
   script: |
     #!/usr/bin/env bash
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping unit-tests. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -92,10 +92,10 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -131,8 +131,8 @@ containerize:
   script: |
     #!/usr/bin/env bash
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
     #  Build images
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
@@ -160,143 +160,144 @@ containerize:
     fi
     skopeo --version || exit 1
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
       RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
-      # Save artifacts
-      ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-      # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
-      echo "**** Saving Artifacts ****"
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-      declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+      # # Save artifacts
+      # ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
+      # # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+      # echo "**** Saving Artifacts ****"
+      # echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+      # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
       
-      for i in "${tags[@]}"
-      do
-        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
-        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-        { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
-        echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST type=$TYPE"
-        save_artifact operator-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
-      done
+      # for i in "${tags[@]}"
+      # do
+      #   IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
+      #   DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+      #   { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
+      #   echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST type=$TYPE"
+      #   save_artifact operator-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+      # done
 
-      declare -a bundles=("${RELEASE_TARGET}")
-      for i in "${bundles[@]}"
-      do
-        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
-        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-        #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-        ARCH=amd64
-        echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
-        save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
-      done
+      # declare -a bundles=("${RELEASE_TARGET}")
+      # for i in "${bundles[@]}"
+      # do
+      #   IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
+      #   DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+      #   #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+      #   ARCH=amd64
+      #   echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
+      #   save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+      # done
 
-      declare -a catalogs=("${RELEASE_TARGET}")
-      for i in "${catalogs[@]}"
-      do
-        IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
-        DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-        #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-        ARCH=amd64
-        echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
-        save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
-      done
+      # declare -a catalogs=("${RELEASE_TARGET}")
+      # for i in "${catalogs[@]}"
+      # do
+      #   IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
+      #   DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+      #   #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+      #   ARCH=amd64
+      #   echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
+      #   save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
+      # done
       
-      echo "MEND unified agent scan"
-      chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
-      source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
-      exit 0
-    fi
-
-    if [[ "$PIPELINE_DEBUG" == 1 ]]; then
-      trap env EXIT
-      env
-      set -x
-    fi
-
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
-    export PATH=$PATH:/usr/local/go/bin
-
-    apt-get update
-    apt-get -qq -y install build-essential software-properties-common uidmap
-
-   
-
-    #  Build images
-    
-    export RELEASE_TARGET=$(get_env branch)
-    
-    
-    if [[ -z $DISABLE_ARTIFACTORY ]]; then
-      DISABLE_ARTIFACTORY="false"
-    fi
-    if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
-      # Only push to the staging registry
-
-      echo "Running with artifactory disabled."
-
-      # Build amd64 image
-      make build-pipeline-releases
-
-      # Build ppc64le and s390x images
-      # Disabled for Liberty Operator builds for now
-      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
-
-      # Build manifest
-      make build-pipeline-manifest
-
-      # Build bundle image
-      make setup
-      make bundle-pipeline
-
-      # Build catalog image
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-      make catalog-pipeline-build
-      make catalog-pipeline-push
-
+      # echo "MEND unified agent scan"
+      # chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+      # source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+      # exit 0
     else
-      # Push to the staging registry and artifactory
 
-      echo "Running with artifactory enabled."
+      if [[ "$PIPELINE_DEBUG" == 1 ]]; then
+        trap env EXIT
+        env
+        set -x
+      fi
 
-      read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
-      read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
-      read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+      # Download and configure golang
+      GO_VERSION=$(get_env go-version)
+      if [[ -z "${GO_VERSION}" ]]; then
+        GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+      fi
+      rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+      export PATH=$PATH:/usr/local/go/bin
 
-      export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
-      export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
-      export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+      apt-get update
+      apt-get -qq -y install build-essential software-properties-common uidmap
 
-      # Build amd64 image
-      make build-all-releases
+    
 
-      # Build ppc64le and s390x images
-      # Disabled for Liberty Operator builds for now
-      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+      #  Build images
+      
+      export RELEASE_TARGET=$(get_env branch)
+      
+      
+      if [[ -z $DISABLE_ARTIFACTORY ]]; then
+        DISABLE_ARTIFACTORY="false"
+      fi
+      if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
+        # Only push to the staging registry
 
-      # Build manifest
-      make build-all-manifest
+        echo "Running with artifactory disabled."
 
-      # Build bundle image
-      make setup
-      make bundle-all
+        # Build amd64 image
+        make build-pipeline-releases
 
-      # Build catalog image
-      echo "Connecting to docker..."
+        # Build ppc64le and s390x images
+        # Disabled for Liberty Operator builds for now
+        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-      echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
-      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+        # Build manifest
+        make build-pipeline-manifest
 
-      make catalog-all-build
-      make catalog-all-push
+        # Build bundle image
+        make setup
+        make bundle-pipeline
 
-      echo "Completed pushing to artifactory."
+        # Build catalog image
+        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+        make catalog-pipeline-build
+        make catalog-pipeline-push
+
+      else
+        # Push to the staging registry and artifactory
+
+        echo "Running with artifactory enabled."
+
+        read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
+        read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
+        read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+
+        export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
+        export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
+        export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+
+        # Build amd64 image
+        make build-all-releases
+
+        # Build ppc64le and s390x images
+        # Disabled for Liberty Operator builds for now
+        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+
+        # Build manifest
+        make build-all-manifest
+
+        # Build bundle image
+        make setup
+        make bundle-all
+
+        # Build catalog image
+        echo "Connecting to docker..."
+
+        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
+        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+
+        make catalog-all-build
+        make catalog-all-push
+
+        echo "Completed pushing to artifactory."
+      fi
     fi
 
     # Save artifacts
@@ -346,10 +347,10 @@ sign-artifact:
     #!/usr/bin/env bash
     echo "sign-artifact"
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping sign-artifact. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -359,10 +360,10 @@ deploy:
   script: |
     #!/usr/bin/env bash
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping deploy. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -381,10 +382,10 @@ dynamic-scan:
     #!/usr/bin/env bash
     echo "dynamic-scan"
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -402,10 +403,10 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
@@ -483,10 +484,10 @@ release:
   script: |
     #!/usr/bin/env bash
 
-    PERIODIC_TRIGGER_RUN=$(get_env periodic-trigger-run)
-    PERIODIC_TRIGGER_RUN="$(echo "$PERIODIC_TRIGGER_RUN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_TRIGGER_RUN" && "$PERIODIC_TRIGGER_RUN" != "false" && "$PERIODIC_TRIGGER_RUN" != "no"  ]]; then
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
       exit 0
     fi
