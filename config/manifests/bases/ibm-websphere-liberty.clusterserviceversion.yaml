@@ -7,7 +7,7 @@ metadata:
     categories: Application Runtime
     createdAt: "2021-11-25T14:00:00Z"
     description: Deploy and manage containerized Liberty applications
-    olm.skipRange: '>=1.0.0 <1.0.1'
+    olm.skipRange: '>=1.0.0 <1.0.2'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -502,5 +502,5 @@ spec:
   relatedImages:
   - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-  replaces: ibm-websphere-liberty.v1.0.0
+  replaces: ibm-websphere-liberty.v1.0.1
   version: 0.0.0
