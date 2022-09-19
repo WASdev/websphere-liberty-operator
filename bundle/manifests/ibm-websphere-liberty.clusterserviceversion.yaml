@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:22d8d29128bb497933990f3eaa5735c9ac702e4e93b77e91d7d1f24c46cc060b",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
@@ -1014,7 +1014,7 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@ha256:22d8d29128bb497933990f3eaa5735c9ac702e4e93b77e91d7d1f24c46cc060b
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   replaces: ibm-websphere-liberty.v1.0.1
   version: 1.0.2
