@@ -8,3 +8,27 @@ dependencies:
       group: operator.ibm.com
       kind: CommonService
       version: v3
+  - type: olm.package
+    value:
+      packageName: ibm-odlm
+      version: ">=1.18.0 <2.0.0"
+  - type: olm.gvk
+    value:
+      group: operator.ibm.com
+      kind: OperandBindInfo
+      version: v1alpha1
+  - type: olm.gvk
+    value:
+      group: operator.ibm.com
+      kind: OperandConfig
+      version: v1alpha1
+  - type: olm.gvk
+    value:
+      group: operator.ibm.com
+      kind: OperandRegistry
+      version: v1alpha1
+  - type: olm.gvk
+    value:
+      group: operator.ibm.com
+      kind: OperandRequest
+      version: v1alpha1
