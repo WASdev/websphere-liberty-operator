@@ -364,6 +364,13 @@ acceptance-test:
       exit 0
     fi
 
+    SKIP_KIND_E2E_TEST=$(get_env SKIP_KIND_E2E_TEST)
+    SKIP_KIND_E2E_TEST="$(echo "$SKIP_KIND_E2E_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_KIND_E2E_TEST" && "$SKIP_KIND_E2E_TEST" != "false" && "$SKIP_KIND_E2E_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_KIND_E2E_TEST=$SKIP_KIND_E2E_TEST"
+      exit 0
+    fi
+
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
     if [[ -z "${GO_VERSION}" ]]; then
