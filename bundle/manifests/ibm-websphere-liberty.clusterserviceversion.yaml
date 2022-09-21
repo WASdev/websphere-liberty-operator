@@ -15,7 +15,6 @@ metadata:
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
-              "metric": "Processor Value Unit (PVU)",
               "productEntitlementSource": "Standalone"
             },
             "manageTLS": true
@@ -58,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-08-30T10:30:16Z"
+    createdAt: "2022-09-21T09:06:29Z"
     description: Deploy and manage containerized Liberty applications
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git

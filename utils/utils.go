@@ -191,7 +191,7 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 }
 
 func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) error {
-	pid, metricValue := "", ""
+	pid := ""
 	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
 		pid = val
 	}
@@ -200,19 +200,10 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 
 	entitlement := la.Spec.License.ProductEntitlementSource
 
+	metricValue := "PROCESSOR_VALUE_UNIT"
 	if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
-		if la.Spec.License.Metric == wlv1.LicenseMetricPVU {
-			return fmt.Errorf("Invalid metric value '%v' is specified for product entitlement source '%v'", la.Spec.License.Metric, entitlement)
-		}
 		metricValue = "VIRTUAL_PROCESSOR_CORE"
-	} else if entitlement == wlv1.LicenseEntitlementStandalone || entitlement == wlv1.LicenseEntitlementFamilyEdition {
-		if la.Spec.License.Metric == wlv1.LicenseMetricVPC {
-			return fmt.Errorf("Invalid metric value '%v' is specified for product entitlement source '%v'", la.Spec.License.Metric, entitlement)
-		}
-		metricValue = "PROCESSOR_VALUE_UNIT"
-
 	}
-
 	pts.Annotations["productMetric"] = metricValue
 
 	ratio := ""

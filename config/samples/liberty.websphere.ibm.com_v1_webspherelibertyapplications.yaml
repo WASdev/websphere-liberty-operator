@@ -7,6 +7,5 @@ spec:
     accept: false
     edition: IBM WebSphere Application Server
     productEntitlementSource: Standalone
-    metric: Processor Value Unit (PVU)
   applicationImage: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
   manageTLS: true
