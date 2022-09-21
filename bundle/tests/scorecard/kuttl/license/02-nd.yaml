@@ -8,7 +8,6 @@ spec:
   license:
     accept: true
     edition: IBM WebSphere Application Server Network Deployment
-    metric: Virtual Processor Core (VPC)
     productEntitlementSource: IBM Cloud Pak for Applications
   applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
   replicas: 1

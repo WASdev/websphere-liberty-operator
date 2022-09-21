@@ -21,4 +21,4 @@ metadata:
     productChargedContainers: app
     productID: e7daacc46bbe4e2dacd2af49145a4723
     productName: IBM WebSphere Application Server
-    productMetric: VIRTUAL_PROCESSOR_CORE
+    productMetric: PROCESSOR_VALUE_UNIT

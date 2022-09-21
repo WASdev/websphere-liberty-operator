@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strconv"
 	"testing"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
@@ -272,35 +271,35 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	t.Log("Starting license test")
 
 	td := []licenseTestData{}
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricVPC, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: true})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementStandalone, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementCP4Apps, pass: false})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition, pass: true})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, metric: webspherelibertyv1.LicenseMetricPVU, pes: webspherelibertyv1.LicenseEntitlementWSHE, pass: false})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementStandalone})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
 	for _, s := range td {
 		t.Logf("Testing %#v\n", s)
@@ -312,20 +311,8 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 		pts := &corev1.PodTemplateSpec{}
 		pts.Annotations = make(map[string]string)
 
-		err := CustomizeLicenseAnnotations(pts, app)
+		CustomizeLicenseAnnotations(pts, app)
 
-		// Metric should be PVU or VPC as per the spec, but must be compatible with the PES
-		// An error should be thrown if it isn't
-		if s.pass && err != nil || !s.pass && err == nil {
-			t.Logf("Testing failed for metric: %s edition: %s PES: %s and expected result was %s\n", s.metric, s.edition, s.pes, strconv.FormatBool(s.pass))
-			t.Error("Unexpected result", err)
-		} else {
-			t.Log("Result was as expected")
-		}
-		if err != nil {
-			t.Log("Skipping other checks due to error")
-			continue
-		}
 		// "productChargedContainers" should always be set to 'app'
 		if pts.Annotations["productChargedContainers"] != "app" {
 			t.Logf("productChargedContainers: expected 'app' but was %s\n", pts.Annotations["productChargedContainers"])
@@ -333,17 +320,15 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 		} else {
 			t.Log("pcc was correct")
 		}
-		// 'productMetric' defaults to VPC, otherwise PVU
-		if s.metric == webspherelibertyv1.LicenseMetricVPC {
-			if pts.Annotations["productMetric"] != "VIRTUAL_PROCESSOR_CORE" {
-				t.Errorf("product metric: expected 'VIRTUAL_PROCESSOR_CORE' but was %s\n", pts.Annotations["productMetric"])
-			}
-		} else if s.metric == webspherelibertyv1.LicenseMetricPVU {
+		// 'productMetric' is PVU for Standalone and Family Edition. VPU otherwise.
+		if s.pes == webspherelibertyv1.LicenseEntitlementStandalone || s.pes == webspherelibertyv1.LicenseEntitlementFamilyEdition {
 			if pts.Annotations["productMetric"] != "PROCESSOR_VALUE_UNIT" {
 				t.Errorf("product metric: expected 'PROCESSOR_VALUE_UNIT' but was %s\n", pts.Annotations["productMetric"])
 			}
 		} else {
-			t.Errorf("Unexpected test data for product metric %s\n", s.metric)
+			if pts.Annotations["productMetric"] != "VIRTUAL_PROCESSOR_CORE" {
+				t.Errorf("product metric: expected 'VIRTUAL_PROCESSOR_CORE' but was %s\n", pts.Annotations["productMetric"])
+			}
 		}
 		// 'productID' and 'productName' should always be direct mappings from spec.License.Edition
 		switch s.edition {

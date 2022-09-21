@@ -190,7 +190,7 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	pts.Annotations = rcoutils.MergeMaps(pts.Annotations, libertyAnnotations)
 }
 
-func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) error {
+func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
 	pid := ""
 	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
 		pid = val
@@ -232,8 +232,6 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 		}
 		pts.Annotations["cloudpakId"] = cloudpakId
 	}
-
-	return nil
 }
 
 // findEnvVars checks if the environment variable is already present

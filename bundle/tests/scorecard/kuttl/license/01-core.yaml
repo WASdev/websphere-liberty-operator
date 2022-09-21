@@ -8,7 +8,6 @@ spec:
   license:
     accept: true
     edition: IBM WebSphere Application Server Liberty Core
-    metric: Processor Value Unit (PVU)
     productEntitlementSource: IBM WebSphere Application Server Family Edition
   applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
   replicas: 1
