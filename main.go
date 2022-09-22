@@ -17,22 +17,35 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"time"
 
+	odlmv1alpha1 "github.com/IBM/operand-deployment-lifecycle-manager/api/v1alpha1"
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/WASdev/websphere-liberty-operator/controllers"
+	lutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/application-stacks/runtime-component-operator/utils"
+	clientcfg "sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/application-stacks/runtime-component-operator/common"
+	oputils "github.com/application-stacks/runtime-component-operator/utils"
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -60,6 +73,8 @@ func init() {
 	utilruntime.Must(servingv1.AddToScheme(scheme))
 
 	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
+
+	utilruntime.Must(odlmv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -104,7 +119,7 @@ func main() {
 	}
 
 	if err = (&controllers.ReconcileWebSphereLiberty{
-		ReconcilerBase: utils.NewReconcilerBase(mgr.GetAPIReader(), mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), mgr.GetEventRecorderFor("websphere-liberty-operator")),
+		ReconcilerBase: oputils.NewReconcilerBase(mgr.GetAPIReader(), mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), mgr.GetEventRecorderFor("websphere-liberty-operator")),
 		Log:            ctrl.Log.WithName("controllers").WithName("WebSphereLibertyApplication"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "WebSphereLibertyApplication")
@@ -141,7 +156,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	utils.CreateConfigMap(controllers.OperatorName)
+	// The helper functions below are called before the manager is started, so the normal client isn't setup properly
+	client, clerr := client.New(clientcfg.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if clerr != nil {
+		setupLog.Error(clerr, "Couldn't create a new client")
+		return
+	}
+
+	operatorNamespace, _ := oputils.GetOperatorNamespace()
+	if operatorNamespace != "" {
+		configMapName := controllers.OperatorName
+		createWebSphereLibertyConfigMap(client, operatorNamespace, configMapName)
+		createOperandRequest(client, operatorNamespace, configMapName)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
@@ -162,4 +189,69 @@ func getWatchNamespace() (string, error) {
 		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
 	}
 	return ns, nil
+}
+
+func createWebSphereLibertyConfigMap(client client.Client, operatorNamespace string, mapName string) {
+	configMap := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: mapName, Namespace: operatorNamespace}, configMap)
+	if err != nil {
+		setupLog.Error(err, "The operator config map was not found. Attempting to create it")
+	} else {
+		setupLog.Info("Existing operator config map was found")
+		// Update the config map to support WL specific key-value pairs, if missing
+		lutils.LoadFromWebSphereLibertyConfigMap(&common.Config, configMap)
+		return
+	}
+
+	newConfigMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: mapName, Namespace: operatorNamespace}}
+	// The config map doesn't exist, so need to initialize the default config data, and then
+	// store it in a new map
+	common.Config = lutils.DefaultOpConfig()
+	_, cerr := controllerutil.CreateOrUpdate(context.TODO(), client, newConfigMap, func() error {
+		newConfigMap.Data = common.Config
+		return nil
+	})
+	if cerr != nil {
+		setupLog.Error(cerr, "Couldn't create config map in namespace "+operatorNamespace)
+	} else {
+		setupLog.Info("Operator config map created in namespace " + operatorNamespace)
+	}
+}
+
+func createOperandRequest(client client.Client, requestNamespace string, mapName string) {
+	var operands []odlmv1alpha1.Operand
+	operands = append(operands, odlmv1alpha1.Operand{Name: "ibm-licensing-operator"})
+
+	// Generate operand request instance
+	var requestInstance *odlmv1alpha1.OperandRequest
+	requestInstance = &odlmv1alpha1.OperandRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mapName,
+			Namespace: requestNamespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/instance":   "operand-deployment-lifecycle-manager",
+				"app.kubernetes.io/managed-by": "operand-deployment-lifecycle-manager",
+				"app.kubernetes.io/name":       "operand-deployment-lifecycle-manager",
+			},
+		},
+		Spec: odlmv1alpha1.OperandRequestSpec{
+			Requests: []odlmv1alpha1.Request{
+				{
+					Registry:          common.Config[lutils.OpConfigLicenseServiceRegistry],
+					RegistryNamespace: common.Config[lutils.OpConfigLicenseServiceRegistryNamespace],
+					Operands:          operands,
+				},
+			},
+		},
+	}
+
+	// Create operand request
+	_, cerr := controllerutil.CreateOrUpdate(context.TODO(), client, requestInstance, func() error {
+		return nil
+	})
+	if cerr != nil {
+		setupLog.Error(cerr, "Couldn't create operand request in namespace "+requestNamespace)
+	} else {
+		setupLog.Info("Operand request created in namespace " + requestNamespace)
+	}
 }
