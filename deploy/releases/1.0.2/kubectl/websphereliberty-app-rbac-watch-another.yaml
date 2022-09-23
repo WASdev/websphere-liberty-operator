@@ -1,10 +1,47 @@
+# permissions to do leader election.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-leader-election-watched-role
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+rules:
+  - apiGroups:
+      - ""
+      - coordination.k8s.io
+    resources:
+      - configmaps
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: manager-role
-  namespace: websphere-liberty-operator
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-watched-role
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
 rules:
 - apiGroups:
   - apps
@@ -181,3 +218,39 @@ rules:
   - list
   - update
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-watched-rolebinding
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: wlo-watched-role
+subjects:
+- kind: ServiceAccount
+  name: wlo-controller-manager
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-leader-election-watched-rolebinding
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: wlo-leader-election-watched-role
+subjects:
+- kind: ServiceAccount
+  name: wlo-controller-manager
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
