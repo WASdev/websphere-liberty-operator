@@ -28,7 +28,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/rest"
 
 	"github.com/WASdev/websphere-liberty-operator/controllers"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
@@ -167,7 +170,16 @@ func main() {
 	if operatorNamespace != "" {
 		configMapName := controllers.OperatorName
 		createWebSphereLibertyConfigMap(client, operatorNamespace, configMapName)
-		createOperandRequest(client, operatorNamespace, configMapName)
+
+		// Install OperandRequest if CRD exists
+		operandRequestErrorMessage := "Couldn't find the OperandRequest custom resource, verify that IBM Common Services is installed then reinstall the operator."
+		if ok, err := isGroupVersionSupported(mgr.GetConfig(), odlmv1alpha1.SchemeBuilder.GroupVersion.String(), "OperandRequest"); err != nil {
+			setupLog.Error(err, operandRequestErrorMessage)
+		} else if !ok {
+			setupLog.Info(operandRequestErrorMessage)
+		} else {
+			createOperandRequest(client, operatorNamespace, configMapName)
+		}
 	}
 
 	setupLog.Info("starting manager")
@@ -254,4 +266,27 @@ func createOperandRequest(client client.Client, requestNamespace string, mapName
 	} else {
 		setupLog.Info("Operand request created in namespace " + requestNamespace)
 	}
+}
+
+func isGroupVersionSupported(restConfig *rest.Config, groupVersion string, kind string) (bool, error) {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	if err != nil {
+		return false, err
+	}
+
+	res, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	for _, v := range res.APIResources {
+		if v.Kind == kind {
+			return true, nil
+		}
+	}
+	return false, nil
 }
