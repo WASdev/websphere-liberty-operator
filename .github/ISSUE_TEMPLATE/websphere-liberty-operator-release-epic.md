@@ -39,4 +39,5 @@ assignees: ''
 - [ ] Certification: create a new cert item in the tool as well as the GH repo, answer any questions
 - [ ] Work with ID to refresh upgrade instructions (use WebSphere Automation Operator docs)
 - [ ] Publish assessment (CASE will get published when this happens)
+- [ ] Update `release` branch with the newly released version (use the tag)
 - [ ] Are any patentable ideas delivered with this release?
