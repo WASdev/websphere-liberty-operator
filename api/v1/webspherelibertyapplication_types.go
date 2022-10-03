@@ -472,9 +472,11 @@ type StatusEndpointScope string
 
 const (
 	// Status Condition Types
-	StatusConditionTypeReconciled     StatusConditionType = "Reconciled"
-	StatusConditionTypeResourcesReady StatusConditionType = "ResourcesReady"
-	StatusConditionTypeReady          StatusConditionType = "Ready"
+	StatusConditionTypeReconciled                StatusConditionType = "Reconciled"
+	StatusConditionTypeResourcesReady            StatusConditionType = "ResourcesReady"
+	StatusConditionTypeReady                     StatusConditionType = "Ready"
+	StatusConditionTypeLicenseServiceReady       StatusConditionType = "LicenseServiceReady"
+	StatusConditionTypeLicenseServiceUnavailable StatusConditionType = "LicenseServiceUnavailable"
 
 	// Status Endpoint Scopes
 	StatusEndpointScopeExternal StatusEndpointScope = "External"
@@ -1320,6 +1322,10 @@ func convertToCommonStatusConditionType(c StatusConditionType) common.StatusCond
 		return common.StatusConditionTypeResourcesReady
 	case StatusConditionTypeReady:
 		return common.StatusConditionTypeReady
+	case StatusConditionTypeLicenseServiceReady:
+		return common.StatusConditionType(StatusConditionTypeLicenseServiceReady)
+	case StatusConditionTypeLicenseServiceUnavailable:
+		return common.StatusConditionType(StatusConditionTypeLicenseServiceUnavailable)
 	default:
 		panic(c)
 	}
@@ -1333,6 +1339,10 @@ func convertFromCommonStatusConditionType(c common.StatusConditionType) StatusCo
 		return StatusConditionTypeResourcesReady
 	case common.StatusConditionTypeReady:
 		return StatusConditionTypeReady
+	case common.StatusConditionType(StatusConditionTypeLicenseServiceReady):
+		return StatusConditionTypeLicenseServiceReady
+	case common.StatusConditionType(StatusConditionTypeLicenseServiceUnavailable):
+		return StatusConditionTypeLicenseServiceUnavailable
 	default:
 		panic(c)
 	}

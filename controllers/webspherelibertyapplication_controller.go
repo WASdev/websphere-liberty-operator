@@ -20,9 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	networkingv1 "k8s.io/api/networking/v1"
+
+	odlmv1alpha1 "github.com/IBM/operand-deployment-lifecycle-manager/api/v1alpha1"
 
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/go-logr/logr"
@@ -95,12 +98,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// When running the operator locally, `ns` will be empty string
 	if ns == "" {
 		// Since this method can be called directly from unit test, populate `watchNamespaces`.
-		if r.watchNamespaces == nil {
-			r.watchNamespaces, err = oputils.GetWatchNamespaces()
-			if err != nil {
-				reqLogger.Error(err, "Error getting watch namespace")
-				return reconcile.Result{}, err
-			}
+		if err = r.populateWatchNamespaces(); err != nil {
+			reqLogger.Error(err, "Error getting watch namespace")
+			return reconcile.Result{}, err
 		}
 		// If the operator is running locally, use the first namespace in the `watchNamespaces`
 		// `watchNamespaces` must have at least one item
@@ -110,11 +110,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	configMap, err := r.GetOpConfigMap(OperatorName, ns)
 	if err != nil {
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
-		common.Config = common.DefaultOpConfig()
+		common.Config = lutils.DefaultOpConfig()
 		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: OperatorName, Namespace: ns}}
 		configMap.Data = common.Config
 	} else {
-		common.Config.LoadFromConfigMap(configMap)
+		lutils.LoadFromWebSphereLibertyConfigMap(&common.Config, configMap)
 	}
 
 	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.GetClient(), configMap, func() error {
@@ -196,7 +196,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Error(err, "Error updating WebSphereLibertyApplication")
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
-
 	// if currentGen == 1 {
 	// 	return reconcile.Result{}, nil
 	// }
@@ -612,12 +611,138 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 
+	// For common services support on OpenShift, query the license service install state
+	if r.IsOpenShift() {
+		// Get/initialize the license service condition
+		s := instance.GetStatus()
+		statusCondition := s.GetCondition(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceUnavailable))
+		if statusCondition == nil {
+			statusCondition = s.GetCondition(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceReady))
+			if statusCondition == nil {
+				statusCondition = s.NewCondition(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceUnavailable))
+			}
+		}
+
+		// Update license service status
+		statusEndpointName := "LicenseService"
+		isOperandRequestSupported, _ := r.IsGroupVersionSupported(odlmv1alpha1.SchemeBuilder.GroupVersion.String(), "OperandRequest")
+		if !isOperandRequestSupported {
+			reqLogger.V(1).Info(fmt.Sprintf("%s is not supported on the cluster", odlmv1alpha1.SchemeBuilder.GroupVersion.String()))
+			statusCondition.SetConditionFields("IBM Common Services is not supported on the cluster.", "CommonServicesNotFound", "")
+			statusCondition.SetType(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceUnavailable))
+			s.RemoveStatusEndpoint(statusEndpointName)
+		} else {
+			// Set default status condition as not ready
+			statusCondition.SetConditionFields("IBM License Service is not ready.", "LicenseServiceNotReady", "")
+			statusCondition.SetType(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceUnavailable))
+
+			// Find OperandRequest and get license service status
+			var memberStatus *odlmv1alpha1.MemberStatus
+			operandRequest, reqerr := r.getOperandRequest(OperatorName, ns)
+			if reqerr == nil {
+				var operandRequestStatus *odlmv1alpha1.OperandRequestStatus
+				operandRequestStatus = &operandRequest.Status
+				for _, m := range operandRequestStatus.Members {
+					if m.Name == "ibm-licensing-operator" {
+						memberStatus = &m
+					}
+				}
+				// If license service is running, add the endpoint to the app
+				if memberStatus != nil && string(memberStatus.Phase.OperatorPhase) == "Running" && string(memberStatus.Phase.OperandPhase) == "Running" {
+					statusCondition.SetConditionFields("IBM License Service is installed and resources are ready.", "LicenseServiceInstanceRunning", "")
+					statusCondition.SetType(common.StatusConditionType(webspherelibertyv1.StatusConditionTypeLicenseServiceReady))
+
+					oldEndpoint := s.GetStatusEndpoint(statusEndpointName)
+					newEndpoint := s.NewStatusEndpoint(statusEndpointName)
+					endpointType := "Application"
+					var endpoint string
+					var endpointScope common.StatusEndpointScope
+
+					// If the internal config map is unintitialized or endpoint scope should be enlarged, search for the endpoint URI and update internal config map
+					if lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointURI] == "" ||
+						(instance.Spec.Expose != nil &&
+							(*instance.Spec.Expose && lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointScope] == string(common.StatusEndpointScopeInternal))) {
+						// Set default endpoint to internal URI
+						licenseServiceProtocol := "https"
+						licenseServiceName := "ibm-licensing-service-instance"
+						endpoint = fmt.Sprintf("%s.%s.svc.cluster.local", licenseServiceName, common.Config[lutils.OpConfigLicenseServiceRegistryNamespace])
+						endpointScope = common.StatusEndpointScopeInternal
+
+						// Initialize watchNamespaces if not defined
+						if err = r.populateWatchNamespaces(); err != nil {
+							reqLogger.Error(err, "Error getting watch namespace")
+							return reconcile.Result{}, err
+						}
+
+						// If the operator is installed to all namespaces, look up the License Service route/ingress
+						if oputils.IsClusterWide(r.watchNamespaces) {
+							route := &routev1.Route{ObjectMeta: metav1.ObjectMeta{
+								Name:      licenseServiceName,
+								Namespace: common.Config[lutils.OpConfigLicenseServiceRegistryNamespace],
+							}}
+							err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: licenseServiceName, Namespace: common.Config[lutils.OpConfigLicenseServiceRegistryNamespace]}, route)
+							if err == nil {
+								endpoint = fmt.Sprintf("%s://%s", licenseServiceProtocol, route.Spec.Host)
+								endpointScope = common.StatusEndpointScopeExternal
+							}
+						} else {
+							// Otherwise if the Liberty app is exposed, pattern match *.apps.* to find the external route to license service
+							route := &routev1.Route{ObjectMeta: metav1.ObjectMeta{
+								Name:      request.Name,
+								Namespace: request.Namespace,
+							}}
+							err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: request.Name, Namespace: request.Namespace}, route)
+							if err == nil {
+								r := regexp.MustCompile("^([a-z0-9-]+).apps.([a-z0-9-.]+)$")
+								domain := r.FindStringSubmatch(route.Spec.Host)
+								if domain != nil && len(domain) == 3 {
+									endpoint = fmt.Sprintf("%s://%s-%s.apps.%s", licenseServiceProtocol, licenseServiceName, common.Config[lutils.OpConfigLicenseServiceRegistryNamespace], domain[2])
+									endpointScope = common.StatusEndpointScopeExternal
+								}
+							}
+						}
+
+						// Update internal config map with new endpoint data
+						lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointScope] = string(endpointScope)
+						lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointURI] = endpoint
+						configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: OperatorName + "-internal", Namespace: ns}}
+						_, err = controllerutil.CreateOrUpdate(context.TODO(), r.GetClient(), configMap, func() error {
+							configMap.Data = lutils.InternalConfig
+							return nil
+						})
+						if err != nil {
+							reqLogger.Error(err, "Error saving internal config map")
+							return reconcile.Result{}, err
+						}
+					} else {
+						endpoint = lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointURI]
+						endpointScope = common.StatusEndpointScope(lutils.InternalConfig[lutils.InternalOpConfigLicenseServiceEndpointScope])
+					}
+
+					// If the endpoint has changed, set a new status
+					if oldEndpoint == nil || oldEndpoint.GetEndpointUri() != endpoint {
+						newEndpoint.SetStatusEndpointFields(endpointScope, endpointType, endpoint)
+						s.SetStatusEndpoint(newEndpoint)
+					}
+				} else {
+					// License service stopped running
+					statusCondition.SetReason("LicenseServiceOperatorNotFound")
+					s.RemoveStatusEndpoint(statusEndpointName)
+				}
+			} else {
+				// Operand request is missing
+				statusCondition.SetReason("OperandRequestNotFound")
+				s.RemoveStatusEndpoint(statusEndpointName)
+			}
+		}
+		s.SetCondition(statusCondition)
+	}
+
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
-
 	mgr.GetFieldIndexer().IndexField(context.Background(), &webspherelibertyv1.WebSphereLibertyApplication{}, indexFieldImageStreamName, func(obj client.Object) []string {
 		instance := obj.(*webspherelibertyv1.WebSphereLibertyApplication)
 		image, err := imageutil.ParseDockerImageReference(instance.Spec.ApplicationImage)
@@ -761,4 +886,27 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 			}
 		}
 	}
+}
+
+func (r *ReconcileWebSphereLiberty) getOperandRequest(operandRequestName string, operandRequestNamespace string) (*odlmv1alpha1.OperandRequest, error) {
+	operandRequest := &odlmv1alpha1.OperandRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      operandRequestName,
+			Namespace: operandRequestNamespace,
+		},
+	}
+	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: operandRequestName, Namespace: operandRequestNamespace}, operandRequest)
+	if err != nil {
+		return nil, err
+	}
+	return operandRequest, nil
+}
+
+func (r *ReconcileWebSphereLiberty) populateWatchNamespaces() error {
+	var err error
+	if r.watchNamespaces == nil {
+		r.watchNamespaces, err = oputils.GetWatchNamespaces()
+		return err
+	}
+	return nil
 }

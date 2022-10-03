@@ -25,6 +25,7 @@ import (
 
 	odlmv1alpha1 "github.com/IBM/operand-deployment-lifecycle-manager/api/v1alpha1"
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -159,26 +160,31 @@ func main() {
 		os.Exit(1)
 	}
 
-	// The helper functions below are called before the manager is started, so the normal client isn't setup properly
-	client, clerr := client.New(clientcfg.GetConfigOrDie(), client.Options{Scheme: scheme})
-	if clerr != nil {
-		setupLog.Error(clerr, "Couldn't create a new client")
-		return
-	}
-
 	operatorNamespace, _ := oputils.GetOperatorNamespace()
 	if operatorNamespace != "" {
-		configMapName := controllers.OperatorName
-		createWebSphereLibertyConfigMap(client, operatorNamespace, configMapName)
+		// The helper functions below are called before the manager is started, so the normal client isn't setup properly
+		client, clerr := client.New(clientcfg.GetConfigOrDie(), client.Options{Scheme: scheme})
+		if clerr != nil {
+			setupLog.Error(clerr, "Couldn't create a new client")
+			os.Exit(1)
+		}
 
-		// Install OperandRequest if CRD exists
-		operandRequestErrorMessage := "Couldn't find the OperandRequest custom resource, verify that IBM Common Services is installed then reinstall the operator."
-		if ok, err := isGroupVersionSupported(mgr.GetConfig(), odlmv1alpha1.SchemeBuilder.GroupVersion.String(), "OperandRequest"); err != nil {
-			setupLog.Error(err, operandRequestErrorMessage)
-		} else if !ok {
-			setupLog.Info(operandRequestErrorMessage)
-		} else {
-			createOperandRequest(client, operatorNamespace, configMapName)
+		configMapName := controllers.OperatorName
+		createWebSphereLibertyConfigMap(client, operatorNamespace, configMapName, false)
+
+		// For common services support on OpenShift, block the operator from starting until an OperandRequest can be created
+		if isOpenShift(mgr.GetConfig()) {
+			createWebSphereLibertyConfigMap(client, operatorNamespace, configMapName+"-internal", true)
+			operandRequestErrorMessage := "Couldn't find the OperandRequest custom resource, verify that IBM Common Services are installed in the " + common.Config[lutils.OpConfigLicenseServiceRegistryNamespace] + " namespace"
+			if ok, err := isGroupVersionSupported(mgr.GetConfig(), odlmv1alpha1.SchemeBuilder.GroupVersion.String(), "OperandRequest"); err != nil {
+				setupLog.Error(err, operandRequestErrorMessage)
+				os.Exit(1)
+			} else if !ok {
+				setupLog.Info(operandRequestErrorMessage)
+				os.Exit(1)
+			} else {
+				createOperandRequest(client, operatorNamespace, configMapName)
+			}
 		}
 	}
 
@@ -203,24 +209,33 @@ func getWatchNamespace() (string, error) {
 	return ns, nil
 }
 
-func createWebSphereLibertyConfigMap(client client.Client, operatorNamespace string, mapName string) {
+func createWebSphereLibertyConfigMap(client client.Client, operatorNamespace string, mapName string, isInternalConfig bool) {
 	configMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: mapName, Namespace: operatorNamespace}, configMap)
 	if err != nil {
 		setupLog.Error(err, "The operator config map was not found. Attempting to create it")
 	} else {
 		setupLog.Info("Existing operator config map was found")
-		// Update the config map to support WL specific key-value pairs, if missing
-		lutils.LoadFromWebSphereLibertyConfigMap(&common.Config, configMap)
-		return
+		if !isInternalConfig {
+			lutils.LoadFromWebSphereLibertyConfigMap(&common.Config, configMap)
+			return
+		}
 	}
 
 	newConfigMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: mapName, Namespace: operatorNamespace}}
-	// The config map doesn't exist, so need to initialize the default config data, and then
-	// store it in a new map
-	common.Config = lutils.DefaultOpConfig()
+	// The config map doesn't exist or should be overridden, so need to initialize the default config data,
+	// and then store it in a new map
+	if isInternalConfig {
+		lutils.InternalConfig = lutils.DefaultInternalOpConfig()
+	} else {
+		common.Config = lutils.DefaultOpConfig()
+	}
 	_, cerr := controllerutil.CreateOrUpdate(context.TODO(), client, newConfigMap, func() error {
-		newConfigMap.Data = common.Config
+		if isInternalConfig {
+			newConfigMap.Data = lutils.InternalConfig
+		} else {
+			newConfigMap.Data = common.Config
+		}
 		return nil
 	})
 	if cerr != nil {
@@ -235,8 +250,7 @@ func createOperandRequest(client client.Client, requestNamespace string, mapName
 	operands = append(operands, odlmv1alpha1.Operand{Name: "ibm-licensing-operator"})
 
 	// Generate operand request instance
-	var requestInstance *odlmv1alpha1.OperandRequest
-	requestInstance = &odlmv1alpha1.OperandRequest{
+	requestInstance := &odlmv1alpha1.OperandRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mapName,
 			Namespace: requestNamespace,
@@ -257,7 +271,6 @@ func createOperandRequest(client client.Client, requestNamespace string, mapName
 		},
 	}
 
-	// Create operand request
 	_, cerr := controllerutil.CreateOrUpdate(context.TODO(), client, requestInstance, func() error {
 		return nil
 	})
@@ -289,4 +302,12 @@ func isGroupVersionSupported(restConfig *rest.Config, groupVersion string, kind 
 		}
 	}
 	return false, nil
+}
+
+func isOpenShift(restConfig *rest.Config) bool {
+	openshift, err := isGroupVersionSupported(restConfig, routev1.SchemeGroupVersion.String(), "Route")
+	if err != nil {
+		return false
+	}
+	return openshift
 }
