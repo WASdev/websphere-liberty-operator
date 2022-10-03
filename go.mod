@@ -8,8 +8,8 @@ require (
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220630204433-c71d40c7de49
 	github.com/pkg/errors v0.9.1
-	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
+	k8s.io/api v0.23.12
+	k8s.io/apimachinery v0.23.12
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/serving v0.32.0
 	sigs.k8s.io/controller-runtime v0.11.2
@@ -85,9 +85,9 @@ replace (
 	golang.org/x/net => golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/text => golang.org/x/text v0.3.7
 
-	k8s.io/api => k8s.io/api v0.23.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.23.0
-	k8s.io/client-go => k8s.io/client-go v0.23.0
+	k8s.io/api => k8s.io/api v0.23.12
+	k8s.io/apimachinery => k8s.io/apimachinery v0.23.12
+	k8s.io/client-go => k8s.io/client-go v0.23.12
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.11.2
 
 )
