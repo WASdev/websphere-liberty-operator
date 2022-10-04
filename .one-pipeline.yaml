@@ -62,6 +62,14 @@ test:
   script: |
     #!/usr/bin/env bash
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping unit-tests. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     ## Setup required tooling
 
     # Download Go
@@ -84,7 +92,15 @@ static-scan:
   script: |
     #!/usr/bin/env bash
 
-    BRANCH=$(get_env branch)      
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    BRANCH=$(get_env branch) 
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
     SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
@@ -114,24 +130,25 @@ containerize:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
-    if [[ "$PIPELINE_DEBUG" == 1 ]]; then
-      trap env EXIT
-      env
-      set -x
-    fi
 
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
-    export PATH=$PATH:/usr/local/go/bin
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    #  Build images
+    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
+    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
+    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
+    export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
+    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
+    export DOCKER_USERNAME=$(get_env docker-username)
+    export DOCKER_PASSWORD=$(get_env docker-password)
+    export REDHAT_USERNAME=$(get_env redhat-user-id)
+    export REDHAT_PASSWORD=$(get_env redhat-password)
+    export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
+    export REDHAT_REGISTRY=$(get_env redhat-registry)
+    export OPM_VERSION=$(get_env opm-version)
+    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
 
-    apt-get update
-    apt-get -qq -y install build-essential software-properties-common uidmap
-
-    # Download and install skopeo
+     # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
       PACKAGE_CACHE_URL=$(get_env package-cache-url)
       wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
@@ -143,93 +160,102 @@ containerize:
     fi
     skopeo --version || exit 1
 
-    #  Build images
-    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
-    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
-    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
-    export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
-    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export RELEASE_TARGET=$(get_env branch)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
-    export REDHAT_USERNAME=$(get_env redhat-user-id)
-    export REDHAT_PASSWORD=$(get_env redhat-password)
-    export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
-    export REDHAT_REGISTRY=$(get_env redhat-registry)
-    export OPM_VERSION=$(get_env opm-version)
-    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
-    
-    if [[ -z $DISABLE_ARTIFACTORY ]]; then
-      DISABLE_ARTIFACTORY="false"
-    fi
-    if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
-      # Only push to the staging registry
-
-      echo "Running with artifactory disabled."
-
-      # Build amd64 image
-      make build-pipeline-releases
-
-      # Build ppc64le and s390x images
-      # Disabled for Liberty Operator builds for now
-      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
-
-      # Build manifest
-      make build-pipeline-manifest
-
-      # Build bundle image
-      make setup
-      make bundle-pipeline
-
-      # Build catalog image
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-      make catalog-pipeline-build
-      make catalog-pipeline-push
-
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
+      RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
     else
-      # Push to the staging registry and artifactory
+      if [[ "$PIPELINE_DEBUG" == 1 ]]; then
+        trap env EXIT
+        env
+        set -x
+      fi
 
-      echo "Running with artifactory enabled."
+      # Download and configure golang
+      GO_VERSION=$(get_env go-version)
+      if [[ -z "${GO_VERSION}" ]]; then
+        GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
+      fi
+      rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+      export PATH=$PATH:/usr/local/go/bin
 
-      read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
-      read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
-      read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+      apt-get update
+      apt-get -qq -y install build-essential software-properties-common uidmap
+      #  Build images
+      export RELEASE_TARGET=$(get_env branch)
+      
+      if [[ -z $DISABLE_ARTIFACTORY ]]; then
+        DISABLE_ARTIFACTORY="false"
+      fi
+      if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
+        # Only push to the staging registry
 
-      export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
-      export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
-      export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+        echo "Running with artifactory disabled."
 
-      # Build amd64 image
-      make build-all-releases
+        # Build amd64 image
+        make build-pipeline-releases
 
-      # Build ppc64le and s390x images
-      # Disabled for Liberty Operator builds for now
-      #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+        # Build ppc64le and s390x images
+        # Disabled for Liberty Operator builds for now
+        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
-      # Build manifest
-      make build-all-manifest
+        # Build manifest
+        make build-pipeline-manifest
 
-      # Build bundle image
-      make setup
-      make bundle-all
+        # Build bundle image
+        make setup
+        make bundle-pipeline
 
-      # Build catalog image
-      echo "Connecting to docker..."
+        # Build catalog image
+        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+        make catalog-pipeline-build
+        make catalog-pipeline-push
 
-      echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-      echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
-      echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+      else
+        # Push to the staging registry and artifactory
 
-      make catalog-all-build
-      make catalog-all-push
+        echo "Running with artifactory enabled."
 
-      echo "Completed pushing to artifactory."
+        read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
+        read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
+        read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+
+        export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
+        export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
+        export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+
+        # Build amd64 image
+        make build-all-releases
+
+        # Build ppc64le and s390x images
+        # Disabled for Liberty Operator builds for now
+        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+
+        # Build manifest
+        make build-all-manifest
+
+        # Build bundle image
+        make setup
+        make bundle-all
+
+        # Build catalog image
+        echo "Connecting to docker..."
+
+        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
+        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+
+        make catalog-all-build
+        make catalog-all-push
+
+        echo "Completed pushing to artifactory."
+      fi
     fi
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
     # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
     echo "**** Saving Artifacts ****"
     declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
@@ -263,6 +289,10 @@ containerize:
      save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
+    echo "MEND unified agent scan"
+    chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+    source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+
 sign-artifact:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/image-signing:1.0.0@sha256:e9d8e354668ba3d40be2aaee08298d2aa7f0e1c8a1829cca4094ec93830e3e6a
@@ -270,10 +300,27 @@ sign-artifact:
     #!/usr/bin/env bash
     echo "sign-artifact"
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping sign-artifact. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
 deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping deploy. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     if [[ "$PIPELINE_DEBUG" == 1 ]]; then
       trap env EXIT
       env
@@ -287,6 +334,15 @@ dynamic-scan:
   script: |
     #!/usr/bin/env bash
     echo "dynamic-scan"
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     #export APP_URL=$(cat ../app-url)
     # feature preview this until evidence locker v2 usage is full feature ready
     # can be triggered, and owasp will run for preview purposes
@@ -299,6 +355,21 @@ acceptance-test:
   script: |
     #!/usr/bin/env bash
     echo "acceptance-test"
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_KIND_E2E_TEST=$(get_env SKIP_KIND_E2E_TEST)
+    SKIP_KIND_E2E_TEST="$(echo "$SKIP_KIND_E2E_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_KIND_E2E_TEST" && "$SKIP_KIND_E2E_TEST" != "false" && "$SKIP_KIND_E2E_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_KIND_E2E_TEST=$SKIP_KIND_E2E_TEST"
+      exit 0
+    fi
 
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
@@ -331,47 +402,57 @@ acceptance-test:
 
 scan-artifact:
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
     #!/usr/bin/env bash
-    echo "twistlock-scan"
-    ./scripts/pipeline/twistlock-scan.sh
-    echo "VA scan"
-    . scripts/pipeline/va_scan
-    if which list_artifacts >/dev/null; then
-      list_artifacts | while IFS= read -r artifact; do
-        image="$(load_artifact "$artifact" "name")"
-        type="$(load_artifact "$artifact" "type")"
-        digest="$(load_artifact "$artifact" "digest")"
-        name="$(echo "$artifact" | awk '{print $1}')"
-        if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* ]]; then
-            echo "Starting VA scan for $image"
-            start_va_scan "$name" "$image" "$digest"
-          else
-            echo "Skipping VA scan for $image"
-          fi
-        fi
-      done
-    fi
+    # echo "twistlock-scan"
+    # ./scripts/pipeline/twistlock-scan.sh
+    # echo "VA scan"
+    # . scripts/pipeline/va_scan
+    # if which list_artifacts >/dev/null; then
+    #   list_artifacts | while IFS= read -r artifact; do
+    #     image="$(load_artifact "$artifact" "name")"
+    #     type="$(load_artifact "$artifact" "type")"
+    #     digest="$(load_artifact "$artifact" "digest")"
+    #     name="$(echo "$artifact" | awk '{print $1}')"
+    #     if [[ "$type" == "image" ]]; then
+    #       if [[ "$image" == *"icr.io"* ]]; then
+    #         echo "Starting VA scan for $image"
+    #         start_va_scan "$name" "$image" "$digest"
+    #       else
+    #         echo "Skipping VA scan for $image"
+    #       fi
+    #     fi
+    #   done
+    # fi
 
-    echo "aqua scan"
-    # install docker
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    # get aqua scan executables
-    git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
-    chmod -R +x cpp-pipelines
-    # setup and execute aqua scan
-    cd cpp-pipelines
-    export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
-    ./commons/aqua/aqua-local-scan
+    # echo "aqua scan"
+    # # install docker
+    # curl -fsSL https://get.docker.com -o get-docker.sh
+    # sudo sh get-docker.sh
+    # # get aqua scan executables
+    # git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
+    # chmod -R +x cpp-pipelines
+    # # setup and execute aqua scan
+    # cd cpp-pipelines
+    # export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
+    # ./commons/aqua/aqua-local-scan
+    # ========== Security Scanner ==========
+    ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
 release:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     RELEASE_FLAG=$(get_env release "false")
 
