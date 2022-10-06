@@ -135,10 +135,10 @@ scan-artifact:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
   script: |
     #!/usr/bin/env bash
-    save_artifact operator-1.0.1 type=manifest name="cp.stg.icr.io/cp/websphere-liberty-operator:1.0.1" "digest=sha256:7669d76603e1b8a1a3b7b347c6a4e702f8854e664c3248f5b026880798577e30" "arch=amd64" 
-    save_artifact operator-1.0.1-amd64 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator:1.0.1-amd64" "digest=sha256:82b9fe34a94b0ae62935ee9b314b228a7a8eee005286b2d34b5ae7662c3a69e9" "arch=amd64" 
-    save_artifact bundle-1.0.1 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator-bundle:1.0.1" "digest=sha256:5a8c6095ccc58bcfc17cdac217b79d188cbac6e22197f0ca9f789214156a32e0" "arch=amd64" 
-    save_artifact catalog-1.0.1 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator-catalog:1.0.1" "digest=sha256:acb52ff0c00e37a8de858408b13b0ae4323f32d2188141b6a8792d12d89f0c0d" "arch=amd64" 
+    save_artifact operator-1.0.2 type=manifest name="cp.stg.icr.io/cp/websphere-liberty-operator:1.0.2" "digest=sha256:3b4582072246071081e615379d16854992456df2972af131a6e30192a82088e0" "arch=amd64" 
+    save_artifact operator-1.0.2-amd64 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator:1.0.2-amd64" "digest=sha256:6454f01ad42cde636394108ed954c5a5784ffc16b363102bb5bc753a40bc0b99" "arch=amd64" 
+    save_artifact bundle-1.0.2 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator-bundle:1.0.2" "digest=sha256:fec734a261d612829ccdbe429bdb859e949d99f3b2f2a9ede3d00f57b60fe6f1" "arch=amd64" 
+    save_artifact catalog-1.0.2 type=image name="cp.stg.icr.io/cp/websphere-liberty-operator-catalog:1.0.2" "digest=sha256:9d3ffce1b61970fd9f81726c703cc6bc48e303ef538be00a5ee1c7c7a806d953" "arch=amd64" 
     echo "twistlock-scan"
     ./scripts/pipeline/twistlock-scan.sh
     echo "VA scan"
