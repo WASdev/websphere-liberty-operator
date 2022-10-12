@@ -63,8 +63,8 @@ setup:
     git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
     cd ebc-gateway-http
 
-    export intranetId_USR=$(get_env app_fid)
-    export intranetId_PSW=$(get_env app_pw)
+    export intranetId_USR=$(get_env ebc_id)
+    export intranetId_PSW=$(get_env ebc_pw)
     export demandId=$wlo_demand_id
     #(prod or dev to use dev ebc)
     export ebcEnvironment=dev
@@ -383,8 +383,8 @@ acceptance-test:
     git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
     cd ebc-gateway-http
 
-    export intranetId_USR=$(get_env app_fid)
-    export intranetId_PSW=$(get_env app_pw)
+    export intranetId_USR=$(get_env ebc_id)
+    export intranetId_PSW=$(get_env ebc_pw)
 
     wlo_demand_id=$(get_env WLO_DEMAND_ID)
     export demandId=$wlo_demand_id
@@ -396,21 +396,19 @@ acceptance-test:
     rc=$?
     # if rc non zero echo msg and exit 1
 
-# ip_address_json
-#     {
-#    autoCompleteAfterXHours":24,
-#    demandId: "...",
-#    liveTime: "...",
-#    machineAddresses: {
-#         buildMachine: "10.1.2.3",
-#         ...
-#    },
-#    modifiedTime: "...",
-#    status: "LIVE", 
-#    type: "Environment"
-# }
-
-
+    # ip_address_json contents:
+      #   {
+      #    autoCompleteAfterXHours":24,
+      #    demandId: "...",
+      #    liveTime: "...",
+      #    machineAddresses: {
+      #         buildMachine: "10.1.2.3",
+      #         ...
+      #    },
+      #    modifiedTime: "...",
+      #    status: "LIVE", 
+      #    type: "Environment"
+      #   }
 
     cd ..
 
@@ -458,52 +456,22 @@ acceptance-test:
     scripts/acceptance-test.sh
     rc=$?
 
-    # if not rc=0 then put out msg to dev to issue @ebc debug #was-ebc
-    # @ebc debugcomplete demand
-    # call complete regardless
-
     cd ebc-gateway-http
 
-    ./ebc_complete.sh
-
+    if [[ "$rc" == 0 ]]; then
+      ./ebc_complete.sh
+    else
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
+      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+      # remove following when we go to production
+      ./ebc_complete.sh
+    fi
 
 scan-artifact:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
-    #!/usr/bin/env bash
-    # echo "twistlock-scan"
-    # ./scripts/pipeline/twistlock-scan.sh
-    # echo "VA scan"
-    # . scripts/pipeline/va_scan
-    # if which list_artifacts >/dev/null; then
-    #   list_artifacts | while IFS= read -r artifact; do
-    #     image="$(load_artifact "$artifact" "name")"
-    #     type="$(load_artifact "$artifact" "type")"
-    #     digest="$(load_artifact "$artifact" "digest")"
-    #     name="$(echo "$artifact" | awk '{print $1}')"
-    #     if [[ "$type" == "image" ]]; then
-    #       if [[ "$image" == *"icr.io"* ]]; then
-    #         echo "Starting VA scan for $image"
-    #         start_va_scan "$name" "$image" "$digest"
-    #       else
-    #         echo "Skipping VA scan for $image"
-    #       fi
-    #     fi
-    #   done
-    # fi
 
-    # echo "aqua scan"
-    # # install docker
-    # curl -fsSL https://get.docker.com -o get-docker.sh
-    # sudo sh get-docker.sh
-    # # get aqua scan executables
-    # git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
-    # chmod -R +x cpp-pipelines
-    # # setup and execute aqua scan
-    # cd cpp-pipelines
-    # export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
-    # ./commons/aqua/aqua-local-scan
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
