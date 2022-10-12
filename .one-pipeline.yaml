@@ -73,8 +73,8 @@ setup:
     export ebc_priority=30
     export ebc_autoCompleteAfterXHours=12
     # gather pipeline URL and place in following env var
-    export ebc_reasonForEnvironment=OnePipelineBuild_WLO_testing
-    # create env var drop down for ocp versions
+    reason="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
+    export ebc_reasonForEnvironment=$reason
     export ebc_ocp_version=$(get_env ocp_version)
 
     ./ebc_demand.sh
