@@ -55,6 +55,30 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
+    timestamp=$(date +%s)
+    echo $timestamp
+    wlo_demand_id="wlo_$timestamp"
+    set_env WLO_DEMAND_ID "$wlo_demand_id"
+
+    git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    cd ebc-gateway-http
+
+    export intranetId_USR=$(get_env app_fid)
+    export intranetId_PSW=$(get_env app_pw)
+    export demandId=$wlo_demand_id
+    #(prod or dev to use dev ebc)
+    export ebcEnvironment=dev
+    export ebc_plan=svl-onepipeline-ocpplus_x.yml
+    # priority is 30 to start, prod priority may be 100
+    export ebc_priority=30
+    export ebc_autoCompleteAfterXHours=12
+    # gather pipeline URL and place in following env var
+    export ebc_reasonForEnvironment=OnePipelineBuild_WLO_testing
+    # create env var drop down for ocp versions
+    export ebc_ocp_version=$(get_env ocp_version)
+
+    ./ebc_demand.sh
+
 test:
   dind: true
   abort_on_failure: true
@@ -356,6 +380,40 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
+    git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    cd ebc-gateway-http
+
+    export intranetId_USR=$(get_env app_fid)
+    export intranetId_PSW=$(get_env app_pw)
+
+    wlo_demand_id=$(get_env WLO_DEMAND_ID)
+    export demandId=$wlo_demand_id
+
+    #(prod or dev to use dev ebc)
+    export ebcEnvironment=dev
+    
+    ip_address_json=$(./ebc_waitForDemand.sh)
+    rc=$?
+    # if rc non zero echo msg and exit 1
+
+# ip_address_json
+#     {
+#    autoCompleteAfterXHours":24,
+#    demandId: "...",
+#    liveTime: "...",
+#    machineAddresses: {
+#         buildMachine: "10.1.2.3",
+#         ...
+#    },
+#    modifiedTime: "...",
+#    status: "LIVE", 
+#    type: "Environment"
+# }
+
+
+
+    cd ..
+
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
@@ -398,6 +456,15 @@ acceptance-test:
     export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
     scripts/acceptance-test.sh
+    rc=$?
+
+    # if not rc=0 then put out msg to dev to issue @ebc debug #was-ebc
+    # @ebc debugcomplete demand
+    # call complete regardless
+
+    cd ebc-gateway-http
+
+    ./ebc_complete.sh
 
 
 scan-artifact:
