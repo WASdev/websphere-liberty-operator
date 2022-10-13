@@ -422,7 +422,7 @@ acceptance-test:
     read -r status <<< $(jq -c '.status' <<< $json)
     read -r alljson <<< $(jq -c '.' <<< $json)
 
-   # remove this if else block after this initial testing
+    # remove this if else block after this initial testing
 
     if [[ "$rc" == 0 ]]; then
       ./ebc_complete.sh
