@@ -31,7 +31,7 @@ done
 
 demandJson="${demandJson}\"ebc_createdBy\":\"ebc_demand.sh\"}"
 echo "Creating $demandId via ${gateway_url} using $demandJson"
-curl --fail -s -X POST -d "${demandJson}" -H "Content-type: application/json" -u "$intranetId_USR:$intranetId_PSW" --insecure ${gateway_url}/environments/${demandId}
+curl -v --fail -s -X POST -d "${demandJson}" -H "Content-type: application/json" -u "$intranetId_USR:$intranetId_PSW" --insecure ${gateway_url}/environments/${demandId}
 rc=$?
 if [[ $rc -ne 0 ]]; then
   echo "Issue sending EBC Request giving up.  Curl returned $rc"
