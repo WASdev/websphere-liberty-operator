@@ -397,30 +397,30 @@ acceptance-test:
     # if rc non zero echo msg and exit 1
 
     # ip_address_json contents:
-      #   {
-      #    autoCompleteAfterXHours":24,
-      #    demandId: "...",
-      #    liveTime: "...",
-      #    machineAddresses: {
-      #         buildMachine: "10.1.2.3",
-      #         ...
-      #    },
-      #    modifiedTime: "...",
-      #    status: "LIVE", 
-      #    type: "Environment"
-      #   }
+    #   {
+    #    autoCompleteAfterXHours":24,
+    #    demandId: "...",
+    #    liveTime: "...",
+    #    machineAddresses: {
+    #         buildMachine: "10.1.2.3",
+    #         ...
+    #    },
+    #    modifiedTime: "...",
+    #    status: "LIVE", 
+    #    type: "Environment"
+    #   }
 
    
-   jq -c '.status' <<< $json
-   status=$(jq -c '.status' <<< $json)
-   ip=$(jq -c '.machineAddresses.buildMachine' <<< $json)
+    jq -c '.status' <<< $json
+    status=$(jq -c '.status' <<< $json)
+    ip=$(jq -c '.machineAddresses.buildMachine' <<< $json)
    
-   echo "*** results from EBC wait:"
-   echo "ip=$ip"
-   echo "status=$status"
-   read -r ip_address <<< $(jq -c '.machineAddresses.buildMachine' <<< $json)
-   read -r status <<< $(jq -c '.status' <<< $json)
-   read -r alljson <<< $(jq -c '.' <<< $json)
+    echo "*** results from EBC wait:"
+    echo "ip=$ip"
+    echo "status=$status"
+    read -r ip_address <<< $(jq -c '.machineAddresses.buildMachine' <<< $json)
+    read -r status <<< $(jq -c '.status' <<< $json)
+    read -r alljson <<< $(jq -c '.' <<< $json)
 
    # remove this if else block after this initial testing
 
