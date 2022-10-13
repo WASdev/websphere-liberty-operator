@@ -59,8 +59,8 @@ setup:
     echo $timestamp
     wlo_demand_id="wlo_$timestamp"
     set_env WLO_DEMAND_ID "$wlo_demand_id"
-
-    git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
     cd ebc-gateway-http
 
     export intranetId_USR=$(get_env ebc_id)
@@ -380,7 +380,7 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
-    git clone https://github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
     cd ebc-gateway-http
 
     export intranetId_USR=$(get_env ebc_id)
