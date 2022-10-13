@@ -60,8 +60,8 @@ setup:
     wlo_demand_id="wlo_$timestamp"
     set_env WLO_DEMAND_ID "$wlo_demand_id"
     
-    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-    cd ebc-gateway-http
+    # git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    # cd ebc-gateway-http
 
     export intranetId_USR=$(get_env ebc_id)
     export intranetId_PSW=$(get_env ebc_pw)
@@ -77,7 +77,7 @@ setup:
     export ebc_reasonForEnvironment=$reason
     export ebc_ocp_version=$(get_env ocp_version)
 
-    ./ebc_demand.sh
+    ./scripts/pipeline/ebc_demand.sh
 
 test:
   dind: true
