@@ -422,6 +422,17 @@ acceptance-test:
    read -r status <<< $(jq -c '.status' <<< $json)
    read -r alljson <<< $(jq -c '.' <<< $json)
 
+   # remove this if else block after this initial testing
+
+    if [[ "$rc" == 0 ]]; then
+      ./ebc_complete.sh
+    else
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
+      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+      # remove following when we go to production
+      ./ebc_complete.sh
+    fi
+
     cd ..
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
