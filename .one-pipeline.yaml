@@ -77,7 +77,8 @@ setup:
     export ebc_reasonForEnvironment=$reason
     export ebc_ocp_version=$(get_env ocp_version)
 
-    ./scripts/pipeline/ebc_demand.sh
+    #./scripts/pipeline/ebc_demand.sh
+    ./ebc_demand.sh
 
 test:
   dind: true
@@ -413,11 +414,13 @@ acceptance-test:
    
     jq -c '.status' <<< $json
     status=$(jq -c '.status' <<< $json)
-    ip=$(jq -c '.machineAddresses.buildMachine' <<< $json)
+    ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
+    
    
     echo "*** results from EBC wait:"
     echo "ip=$ip"
     echo "status=$status"
+    echo "json=$json"
     read -r ip_address <<< $(jq -c '.machineAddresses.buildMachine' <<< $json)
     read -r status <<< $(jq -c '.status' <<< $json)
     read -r alljson <<< $(jq -c '.' <<< $json)
