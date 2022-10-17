@@ -611,7 +611,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
-
+	message := "Start Semeru Compiler reconcile"
+	reqLogger.Info(message)
+	err, message = r.reconcileSemeruCompiler(instance)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
 }
