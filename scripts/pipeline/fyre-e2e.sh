@@ -162,24 +162,29 @@ run_scorecard() {
     if [ "$INSTALL_MODE" == "AllNamespaces" ]; then
         KUTTL_TEST_DIR="kuttl-all-namespaces"
 	CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
-        SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-watch-all"
         OPERATOR_GROUP_TARGET_NAMESPACE="openshift-operators" # used for CSV cleanup
+	WATCH_NAMESPACE="${TEST_NAMESPACE}"
     elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
 	KUTTL_TEST_DIR="kuttl-single-namespace"
-        CONTROLLER_MANAGER_NAMESPACE="openshift-marketplace"
-        SERVICE_ACCOUNT_NAME="scorecard-kuttl-cluster-wide"
-	OPERATOR_GROUP_NAMESPACE="openshift-marketplace"
-        OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
+        CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-watch-another"
+	OPERATOR_GROUP_NAMESPACE="${CONTROLLER_MANAGER_NAMESPACE}"
+	WATCH_NAMESPACE="wlo-watch-${TEST_TAG}"
+        OPERATOR_GROUP_TARGET_NAMESPACE="${WATCH_NAMESPACE}"
+	oc new-project "$WATCH_NAMESPACE"
     elif [ "$INSTALL_MODE" == "OwnNamespace" ]; then
 	KUTTL_TEST_DIR="kuttl"
 	CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
 	SERVICE_ACCOUNT_NAME="scorecard-kuttl"
 	OPERATOR_GROUP_NAMESPACE="${TEST_NAMESPACE}"
         OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
+	WATCH_NAMESPACE="${TEST_NAMESPACE}"
     fi
 
-    # Delete a subscription that may be blocking the install
+    # Delete a subscription or catalog source that may be blocking the install
     oc delete subscription.operators.coreos.com websphere-liberty-operator-subscription -n ${CONTROLLER_MANAGER_NAMESPACE}
+    oc delete catalogsource websphere-liberty-catalog -n ${CONTROLLER_MANAGER_NAMESPACE}
 
     install_operator
 
@@ -192,10 +197,11 @@ run_scorecard() {
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
  
     echo "****** Starting scorecard tests in the '${KUTTL_TEST_DIR}' directory..."
+    oc project "${WATCH_NAMESPACE}"
     set_rbac
     set_kuttl_test_dir
     TESTS_FAILED=false
-    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="${SERVICE_ACCOUNT_NAME}" --wait-time 30m ./bundle || {
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${WATCH_NAMESPACE}" --service-account="${SERVICE_ACCOUNT_NAME}" --wait-time 30m ./bundle || {
        echo "****** Scorecard tests failed..."
        TESTS_FAILED=true
     }
@@ -211,24 +217,38 @@ run_scorecard() {
 set_rbac() {
     if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
         oc apply -f config/rbac/kuttl-rbac.yaml
-    else 
-        cp config/rbac/kuttl-rbac-cluster-wide.yaml ./
-        sed -i "s/wlo-ns/${TEST_NAMESPACE}/" kuttl-rbac-cluster-wide.yaml
-        oc apply -f kuttl-rbac-cluster-wide.yaml
+    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then 
+        cp config/rbac/kuttl-rbac-watch-all.yaml ./
+        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-all.yaml
+        oc apply -f kuttl-rbac-watch-all.yaml
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+	cp config/rbac/kuttl-rbac-watch-another.yaml ./
+        sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+	oc apply -f kuttl-rbac-watch-another.yaml
+        oc apply -f config/rbac/kuttl-rbac-watcher.yaml
     fi
 }
 
 unset_rbac() {
     if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
         oc delete -f config/rbac/kuttl-rbac.yaml
-    else 
-        oc delete -f kuttl-rbac-cluster-wide.yaml
-	rm kuttl-rbac-cluster-wide.yaml
+    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then 
+        oc delete -f kuttl-rbac-watch-all.yaml
+	rm kuttl-rbac-watch-all.yaml
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+        oc delete -f kuttl-rbac-watch-another.yaml
+        rm kuttl-rbac-watch-another.yaml
     fi
 }
 
 set_kuttl_test_dir() {
-    if [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+    if [ "$KUTTL_TEST_DIR" == "kuttl-single-namespace" ]; then
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+        cp -r bundle/tests/scorecard/${KUTTL_TEST_DIR} bundle/tests/scorecard/kuttl
+        find bundle/tests/scorecard/kuttl -type f -name "*.yaml" -print0 | xargs -0 sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/"
+        mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
+    elif [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
         mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
         mv bundle/tests/scorecard/${KUTTL_TEST_DIR} bundle/tests/scorecard/kuttl
         mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
@@ -236,7 +256,11 @@ set_kuttl_test_dir() {
 }
 
 unset_kuttl_test_dir() {
-    if [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+    if [ "$KUTTL_TEST_DIR" == "kuttl-single-namespace" ]; then
+        mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+	rm -rf bundle/tests/scorecard/kuttl
+        mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+    elif [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
         mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
         mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/${KUTTL_TEST_DIR}
         mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
