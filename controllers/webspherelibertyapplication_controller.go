@@ -140,6 +140,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+
 	// Check if the WebSphereLibertyApplication instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
 	isInstanceMarkedToBeDeleted := instance.GetDeletionTimestamp() != nil
@@ -609,8 +610,15 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	} else {
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
-
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
+
+	message := "Start Semeru Compiler reconcile"
+	reqLogger.Info(message)
+	err, message = r.reconcileSemeruCompiler(instance)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
 
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
