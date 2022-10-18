@@ -149,6 +149,11 @@ setup_test() {
     mv bundle/tests/scorecard/kuttl/routes bundle/tests/scorecard/kind-kuttl/
     mv bundle/tests/scorecard/kuttl/route-certificate bundle/tests/scorecard/kind-kuttl/
     mv bundle/tests/scorecard/kuttl/image-stream bundle/tests/scorecard/kind-kuttl/
+    mv bundle/tests/scorecard/kuttl/manage-tls bundle/tests/scorecard/kind-kuttl/
+
+    #disable these tests for kind tests (mount permission issue)
+    mv bundle/tests/scorecard/kuttl/dump bundle/tests/scorecard/kind-kuttl/
+    mv bundle/tests/scorecard/kuttl/trace bundle/tests/scorecard/kind-kuttl/
 
     for image in "${IMAGES[@]}"; do
         files=($(grep -rwl 'bundle/tests/scorecard/kuttl/' -e $APPIMAGE$image))
@@ -224,6 +229,10 @@ cleanup() {
     mv bundle/tests/scorecard/kind-kuttl/route-certificate bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/image-stream bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/stream bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/manage-tls bundle/tests/scorecard/kuttl/
+
+    mv bundle/tests/scorecard/kind-kuttl/dump bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/trace bundle/tests/scorecard/kuttl/
 
     git checkout bundle/tests/scorecard internal/deploy
 }
