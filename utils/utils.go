@@ -125,6 +125,13 @@ func ExecuteCommandInContainer(config *rest.Config, podName, podNamespace, conta
 	return stderr.String(), nil
 }
 
+// Can't import these from controllers due to circular dependencies
+const (
+	jitPort          string = "38400"
+	jitServiceSuffix string = "-semeru-compiler"
+	open_j9_opts     string = "OPENJ9_JAVA_OPTIONS"
+)
+
 // CustomizeLibertyEnv adds configured env variables appending configured liberty settings
 func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
 	// ENV variables have already been set, check if they exist before setting defaults
@@ -132,6 +139,12 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
 		{Name: "WLP_LOGGING_CONSOLE_SOURCE", Value: "message,accessLog,ffdc,audit"},
 		{Name: "WLP_LOGGING_CONSOLE_FORMAT", Value: "json"},
+	}
+
+	jitCompOptions := ""
+	if jit := la.GetSemeruCloudCompiler(); jit != nil {
+		jitCompOptions = "-XX:+UseJITServer -XX:JITServerAddress=" + la.Name + jitServiceSuffix + " -XX:JITServerPort=" + jitPort + " -XX:+JITServerLogConnections"
+		targetEnv = append(targetEnv, corev1.EnvVar{Name: open_j9_opts, Value: jitCompOptions})
 	}
 
 	if la.GetServiceability() != nil {
@@ -147,10 +160,29 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 		targetEnv = append(targetEnv, corev1.EnvVar{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"})
 	}
 
+	prependJitOptions := false
 	envList := pts.Spec.Containers[0].Env
 	for _, v := range targetEnv {
 		if _, found := findEnvVar(v.Name, envList); !found {
 			pts.Spec.Containers[0].Env = append(pts.Spec.Containers[0].Env, v)
+		} else {
+			if v.Name == open_j9_opts {
+				// This needs special treatment, as we need to merge with the CR value
+				// rather than allow the value from the CR to overwrite ours.
+				prependJitOptions = true
+			}
+		}
+	}
+
+	if prependJitOptions && jitCompOptions != "" {
+		// OPENJ9_JAVA_OPTIONS has been set in the CR, and the CR has also configured the JIT server
+		// Need to prepend our OPENJ9_JAVA_OPTIONS to the value from the CR to
+		// ensure that values from the CR 'win' and override our settings
+		for i, v := range pts.Spec.Containers[0].Env {
+			if v.Name == open_j9_opts {
+				pts.Spec.Containers[0].Env[i] = corev1.EnvVar{Name: open_j9_opts, Value: jitCompOptions + " " + v.Value}
+				break
+			}
 		}
 	}
 
