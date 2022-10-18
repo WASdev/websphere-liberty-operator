@@ -95,10 +95,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 							corev1.ResourceMemory: resource.MustParse("1Gi"),
 							corev1.ResourceCPU:    resource.MustParse("500m"),
 						},
-						Limits: corev1.ResourceList{
+						/* 						Limits: corev1.ResourceList{
 							corev1.ResourceLimitsMemory: resource.MustParse("1200Mi"),
 							corev1.ResourceLimitsCPU:    resource.MustParse("2000m"),
-						},
+						}, */
 					},
 
 					Env: []corev1.EnvVar{
