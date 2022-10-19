@@ -73,7 +73,6 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   wlva.Name + SemeruLabelNameSuffix,
 			Labels: getLabels(wlva),
 		},
 		Spec: corev1.PodSpec{
