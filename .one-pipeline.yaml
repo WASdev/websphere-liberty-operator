@@ -423,6 +423,7 @@ acceptance-test:
     
     ping $ip
     #token=$(ssh -i id_private_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    echo "token=$(ssh -i id_private_rsa root@$ip)"
     token=$(ssh root@$ip "cat ~/auth/kubeadmin-password")
     
     echo "demand_id=$wlo_demand_id"
