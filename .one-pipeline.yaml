@@ -379,6 +379,18 @@ acceptance-test:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
+    # ip_address_json contents:
+    #   {
+    #    autoCompleteAfterXHours":24,
+    #    demandId: "...",
+    #    liveTime: "...",
+    #    machineAddresses: {
+    #         ocpinf: "10.1.2.3"
+    #    },
+    #    modifiedTime: "...",
+    #    status: "LIVE", 
+    #    type: "Environment"
+    #   }
     echo "acceptance-test"
 
     git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
@@ -396,44 +408,30 @@ acceptance-test:
     json=$(./ebc_waitForDemand.sh)
     rc=$?
     # if rc non zero echo msg and exit 1
-
-    # ip_address_json contents:
-    #   {
-    #    autoCompleteAfterXHours":24,
-    #    demandId: "...",
-    #    liveTime: "...",
-    #    machineAddresses: {
-    #         buildMachine: "10.1.2.3",
-    #         ...
-    #    },
-    #    modifiedTime: "...",
-    #    status: "LIVE", 
-    #    type: "Environment"
-    #   }
-
    
     jq -c '.status' <<< $json
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
+    PRIVATE_KEY_key=$(get_env private_key)
+    token=$(ssh -i $PRIVATE_KEY root@$ip cat ~/auth/kubeadmin-password)
     
-   
     echo "*** results from EBC wait:"
     echo "ip=$ip"
     echo "status=$status"
     echo "json=$json"
-    read -r ip_address <<< $(jq -c '.machineAddresses.buildMachine' <<< $json)
-    read -r status <<< $(jq -c '.status' <<< $json)
-    read -r alljson <<< $(jq -c '.' <<< $json)
+    echo "token=$token"
 
     # remove this if else block after this initial testing
 
     if [[ "$rc" == 0 ]]; then
       ./ebc_complete.sh
+      exit 0
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
       # remove following when we go to production
       ./ebc_complete.sh
+      exit 1
     fi
 
     cd ..
@@ -469,7 +467,7 @@ acceptance-test:
     export DOCKER_PASSWORD=$(get_env docker-password)
     export CLUSTER_URL=$(get_env test-cluster-url)
     export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
-    export CLUSTER_TOKEN=$(get_env test-cluster-token)
+    export CLUSTER_TOKEN=$token
     export RELEASE_TARGET=$(get_env branch)
     export DEBUG_FAILURE=$(get_env debug-failure)
 
