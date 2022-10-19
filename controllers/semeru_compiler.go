@@ -29,7 +29,6 @@ const (
 	SemeruLabelNameSuffix = "-semeru-compiler"
 	SemeruLabelName       = "semeru-compiler"
 	JitServer             = "jitserver"
-	ImageURL              = "docker.io/ibm-semeru-runtimes:open-17.0.3_7-jre"
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
@@ -74,33 +73,32 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   wlva.Name + SemeruLabelName,
+			Name:   wlva.Name + SemeruLabelNameSuffix,
 			Labels: getLabels(wlva),
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
 					Name:            JitServer,
-					Image:           ImageURL,
-					ImagePullPolicy: "IfNotPresent",
+					Image:           wlva.Status.GetImageReference(),
+					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
 					Ports: []corev1.ContainerPort{
 						{
-							ContainerPort: 8443,
+							ContainerPort: 38400,
 							Protocol:      corev1.ProtocolTCP,
 						},
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("1Gi"),
-							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1200Mi"),
+							corev1.ResourceCPU:    resource.MustParse("1000m"),
 						},
-						/* 						Limits: corev1.ResourceList{
-							corev1.ResourceLimitsMemory: resource.MustParse("1200Mi"),
-							corev1.ResourceLimitsCPU:    resource.MustParse("2000m"),
-						}, */
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("1200Mi"),
+							corev1.ResourceCPU:    resource.MustParse("8000m"),
+						},
 					},
-
 					Env: []corev1.EnvVar{
 						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections"},
 					},
@@ -143,7 +141,7 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels := make(map[string]string)
 	requiredLabels["app.kubernetes.io/name"] = wlva.GetName() + SemeruLabelNameSuffix
 	requiredLabels["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
-	requiredLabels["app.kubernetes.io/managed-by"] = `websphere-liberty-operator`
+	requiredLabels["app.kubernetes.io/managed-by"] = OperatorName
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
 	return requiredLabels
