@@ -127,12 +127,12 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 			Containers: []corev1.Container{
 				{
 					Name:            JitServer,
-					Image:           ImageURL,
-					ImagePullPolicy: "IfNotPresent",
+					Image:           wlva.Status.GetImageReference(),
+					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
 					Ports: []corev1.ContainerPort{
 						{
-							ContainerPort: 8443,
+							ContainerPort: 38400,
 							Protocol:      corev1.ProtocolTCP,
 						},
 					},
