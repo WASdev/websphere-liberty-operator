@@ -181,7 +181,7 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $NAMESPACE
 spec:
-  channel:  v1.0 
+  channel:  v1.1
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $NAMESPACE
