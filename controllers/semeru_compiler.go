@@ -73,7 +73,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   wlva.Name + SemeruLabelName,
+			Name:   wlva.Name + SemeruLabelNameSuffix,
 			Labels: getLabels(wlva),
 		},
 		Spec: corev1.PodSpec{
@@ -141,7 +141,7 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels := make(map[string]string)
 	requiredLabels["app.kubernetes.io/name"] = wlva.GetName() + SemeruLabelNameSuffix
 	requiredLabels["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
-	requiredLabels["app.kubernetes.io/managed-by"] = `websphere-liberty-operator`
+	requiredLabels["app.kubernetes.io/managed-by"] = OperatorName
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
 	return requiredLabels
