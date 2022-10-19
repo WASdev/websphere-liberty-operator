@@ -26,16 +26,15 @@ import (
 )
 
 const (
-	SemeruLabelNamePrefixed = "-semeru-compiler"
-	SemeruLabelName         = "semeru-compiler"
-	JitServer               = "jitserver"
-	ImageURL                = "docker.io/ibm-semeru-runtimes:open-17.0.3_7-jre"
+	SemeruLabelNameSuffix = "-semeru-compiler"
+	SemeruLabelName       = "semeru-compiler"
+	JitServer             = "jitserver"
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
 func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(la *wlv1.WebSphereLibertyApplication) (error, string) {
 	compilerMeta := metav1.ObjectMeta{
-		Name:      la.GetName() + SemeruLabelNamePrefixed,
+		Name:      la.GetName() + SemeruLabelNameSuffix,
 		Namespace: la.GetNamespace(),
 	}
 	//Deployment
@@ -50,52 +49,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(la *wlv1.WebSphereLi
 	// Create the Semeru Service object
 	semsvc := &corev1.Service{ObjectMeta: compilerMeta}
 	err = r.CreateOrUpdate(semsvc, la, func() error {
-		createSemeruService(semsvc, la)
+		reconcileSemeruService(semsvc, la)
 		return nil
 	})
 	if err != nil {
 		return err, "Failed to reconcile the Semeru Compiler Service"
 	}
 	return nil, ""
-}
-
-func createSemeruService(svc *corev1.Service, la *wlv1.WebSphereLibertyApplication) {
-	var port int32 = 38400
-	var timeout int32 = 86400
-	svc.Labels = getLabels(la)
-	svc.Spec.Selector = getSelectors(la)
-	if len(svc.Spec.Ports) == 0 {
-		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
-	}
-	svc.Spec.Ports[0].Protocol = corev1.ProtocolTCP
-	svc.Spec.Ports[0].Port = port
-	svc.Spec.Ports[0].TargetPort = intstr.FromInt(int(port))
-	svc.Spec.SessionAffinity = corev1.ServiceAffinityClientIP
-	svc.Spec.SessionAffinityConfig = &corev1.SessionAffinityConfig{
-		ClientIP: &corev1.ClientIPConfig{
-			TimeoutSeconds: &timeout,
-		},
-	}
-}
-
-// Create the Selector map for a Semeru Compiler
-func getSelectors(la *wlv1.WebSphereLibertyApplication) map[string]string {
-	requiredSelector := make(map[string]string)
-	requiredSelector["app.kubernetes.io/component"] = SemeruLabelName
-	requiredSelector["app.kubernetes.io/instance"] = la.GetName() + SemeruLabelNamePrefixed
-	requiredSelector["app.kubernetes.io/part-of"] = la.GetName()
-	return requiredSelector
-}
-
-// Create the Labels map for a Semeru Compiler
-func getLabels(la *wlv1.WebSphereLibertyApplication) map[string]string {
-	requiredLabels := make(map[string]string)
-	requiredLabels["app.kubernetes.io/name"] = la.GetName() + SemeruLabelNamePrefixed
-	requiredLabels["app.kubernetes.io/instance"] = la.GetName() + SemeruLabelNamePrefixed
-	requiredLabels["app.kubernetes.io/managed-by"] = OperatorName
-	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
-	requiredLabels["app.kubernetes.io/part-of"] = la.GetName()
-	return requiredLabels
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
@@ -120,26 +80,25 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 			Containers: []corev1.Container{
 				{
 					Name:            JitServer,
-					Image:           ImageURL,
-					ImagePullPolicy: "IfNotPresent",
+					Image:           wlva.Status.GetImageReference(),
+					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
 					Ports: []corev1.ContainerPort{
 						{
-							ContainerPort: 8443,
+							ContainerPort: 38400,
 							Protocol:      corev1.ProtocolTCP,
 						},
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("1Gi"),
-							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1200Mi"),
+							corev1.ResourceCPU:    resource.MustParse("1000m"),
 						},
 						Limits: corev1.ResourceList{
-							corev1.ResourceLimitsMemory: resource.MustParse("1200Mi"),
-							corev1.ResourceLimitsCPU:    resource.MustParse("2000m"),
+							corev1.ResourceMemory: resource.MustParse("1200Mi"),
+							corev1.ResourceCPU:    resource.MustParse("8000m"),
 						},
 					},
-
 					Env: []corev1.EnvVar{
 						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections"},
 					},
@@ -147,4 +106,43 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 			},
 		},
 	}
+}
+
+func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
+	var port int32 = 38400
+	var timeout int32 = 86400
+	svc.Labels = getLabels(wlva)
+	svc.Spec.Selector = getSelectors(wlva)
+	if len(svc.Spec.Ports) == 0 {
+		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
+	}
+	svc.Spec.Ports[0].Protocol = corev1.ProtocolTCP
+	svc.Spec.Ports[0].Port = port
+	svc.Spec.Ports[0].TargetPort = intstr.FromInt(int(port))
+	svc.Spec.SessionAffinity = corev1.ServiceAffinityClientIP
+	svc.Spec.SessionAffinityConfig = &corev1.SessionAffinityConfig{
+		ClientIP: &corev1.ClientIPConfig{
+			TimeoutSeconds: &timeout,
+		},
+	}
+}
+
+// Create the Selector map for a Semeru Compiler
+func getSelectors(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
+	requiredSelector := make(map[string]string)
+	requiredSelector["app.kubernetes.io/component"] = SemeruLabelName
+	requiredSelector["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
+	requiredSelector["app.kubernetes.io/part-of"] = wlva.GetName()
+	return requiredSelector
+}
+
+// Create the Labels map for a Semeru Compiler
+func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
+	requiredLabels := make(map[string]string)
+	requiredLabels["app.kubernetes.io/name"] = wlva.GetName() + SemeruLabelNameSuffix
+	requiredLabels["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
+	requiredLabels["app.kubernetes.io/managed-by"] = `websphere-liberty-operator`
+	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
+	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
+	return requiredLabels
 }
