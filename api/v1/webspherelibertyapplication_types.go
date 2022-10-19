@@ -151,6 +151,9 @@ type WebSphereLibertyApplicationSpec struct {
 	// Security context for the application container.
 	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Semeru Cloud Compiler"
+	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
 }
 
 // License information is required.
@@ -427,6 +430,16 @@ type WebSphereLibertyApplicationRoute struct {
 	// HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect and None.
 	// +operator-sdk:csv:customresourcedefinitions:order=47,type=spec,displayName="Insecure Edge Termination Policy",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:Allow", "urn:alm:descriptor:com.tectonic.ui:select:Redirect", "urn:alm:descriptor:com.tectonic.ui:select:None"}
 	InsecureEdgeTerminationPolicy *routev1.InsecureEdgeTerminationPolicyType `json:"insecureEdgeTerminationPolicy,omitempty"`
+}
+
+type WebSphereLibertyApplicationSemeruCloudCompiler struct {
+	// SemeruCloudCompiler Resources
+	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// SemeruCloudCompiler disable JIT compiler
+	// +operator-sdk:csv:customresourcedefinitions:order=49,type=spec,displayName="Disable JIT",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	DisableJIT *bool `json:"disableJIT,omitempty"`
 }
 
 // Defines the observed state of WebSphereLibertyApplication.
@@ -1104,6 +1117,11 @@ func (a *WebSphereLibertyApplicationAffinity) GetNodeAffinityLabels() map[string
 // GetSecurityContext returns container security context
 func (cr *WebSphereLibertyApplication) GetSecurityContext() *corev1.SecurityContext {
 	return cr.Spec.SecurityContext
+}
+
+// GetSemeruCloudCompiler returns the semeru cloud compiler configuration
+func (cr *WebSphereLibertyApplication) GetSemeruCloudCompiler() *WebSphereLibertyApplicationSemeruCloudCompiler {
+	return cr.Spec.SemeruCloudCompiler
 }
 
 // Initialize sets default values
