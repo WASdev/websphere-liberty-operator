@@ -413,8 +413,16 @@ acceptance-test:
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
     PRIVATE_KEY_key=$(get_env private_key)
+    
+    echo "*** private key from property ****"
+    echo "***$PRIVATE_KEY***"
     echo "$PRIVATE_KEY" > id_private_rsa
-    token=$(ssh -i ./id_private_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    
+    echo "*** private key from file ****"
+    cat id_private_rsa
+    
+    ping $ip
+    token=$(ssh -i id_private_rsa root@$ip "cat ~/auth/kubeadmin-password")
     
     echo "demand_id=$wlo_demand_id"
     echo "*** results from EBC wait:"
