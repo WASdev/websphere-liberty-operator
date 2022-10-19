@@ -413,8 +413,10 @@ acceptance-test:
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
     PRIVATE_KEY_key=$(get_env private_key)
-    token=$(ssh -i $PRIVATE_KEY root@$ip cat ~/auth/kubeadmin-password)
+    echo "$PRIVATE_KEY" > id_private_rsa
+    token=$(ssh -i ./id_private_rsa root@$ip cat ~/auth/kubeadmin-password)
     
+    echo "demand_id=$wlo_demand_id"
     echo "*** results from EBC wait:"
     echo "ip=$ip"
     echo "status=$status"
@@ -424,13 +426,13 @@ acceptance-test:
     # remove this if else block after this initial testing
 
     if [[ "$rc" == 0 ]]; then
-      ./ebc_complete.sh
+       #./ebc_complete.sh
       exit 0
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
       # remove following when we go to production
-      ./ebc_complete.sh
+      #./ebc_complete.sh
       exit 1
     fi
 
