@@ -416,34 +416,28 @@ acceptance-test:
     
     PRIVATE_KEY="$(get_env private_key "")"
     echo -n "${PRIVATE_KEY}" | base64 -d > id_rsa
-    echo ">>> private key from property <<<"
-    echo "|||$PRIVATE_KEY|||"
-
-    echo "*** start private key from file ****"
-    cat id_rsa
-    echo "*** end private key from file ****"
+    
     chmod 600 id_rsa
     pwd
     ls -l id_rsa
     
     token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
-    # token=$(ssh root@$ip "cat ~/auth/kubeadmin-password")
+    
     
     echo "demand_id=$wlo_demand_id"
     echo "*** results from EBC wait:"
-    echo "ip=|||$ip|||"
+    echo "ip=$ip"
     echo "status=$status"
     echo "json=$json"
     echo "token=$token"
-    # echo "token2=$token2"
-
+    
     # remove this if else block after this initial testing
 
     if [[ "$rc" == 0 ]]; then
        #./ebc_complete.sh
-      exit 0
+       echo "EBC create of id: $wlo_demand_id cluster successful"
     else
-      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
       # remove following when we go to production
       #./ebc_complete.sh
@@ -481,8 +475,9 @@ acceptance-test:
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
-    export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
+    #export CLUSTER_URL=$(get_env test-cluster-url)
+    export CLUSTER_URL=$ip
+    #export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
     export CLUSTER_TOKEN=$token
     export RELEASE_TARGET=$(get_env branch)
     export DEBUG_FAILURE=$(get_env debug-failure)
@@ -503,8 +498,9 @@ acceptance-test:
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+      echo "for more information on accessing the problem machine see: https://github.ibm.com/websphere/WS-CD-Open/wiki/Build-Debug"
       # remove following when we go to production
-      ./ebc_complete.sh
+      # ./ebc_complete.sh
     fi
 
 scan-artifact:
