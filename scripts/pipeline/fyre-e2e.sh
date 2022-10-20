@@ -209,6 +209,9 @@ run_scorecard() {
     unset_kuttl_test_dir
     unset_rbac
     uninstall_operator
+    if [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+        oc delete project "${WATCH_NAMESPACE}"
+    fi
     if $TESTS_FAILED ; then 
         exit 1 
     fi
@@ -223,10 +226,9 @@ set_rbac() {
         oc apply -f kuttl-rbac-watch-all.yaml
     elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
 	cp config/rbac/kuttl-rbac-watch-another.yaml ./
-        sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-another.yaml
-        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+        sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-another.yaml
 	oc apply -f kuttl-rbac-watch-another.yaml
-        oc apply -f config/rbac/kuttl-rbac-watcher.yaml
     fi
 }
 
