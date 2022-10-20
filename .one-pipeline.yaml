@@ -422,11 +422,12 @@ acceptance-test:
     echo "*** start private key from file ****"
     cat id_rsa
     echo "*** end private key from file ****"
+    chmod 600 id_rsa
     pwd
     ls -l id_rsa
     
-    token2=$(ssh -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
-    token=$(ssh root@$ip "cat ~/auth/kubeadmin-password")
+    token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    # token=$(ssh root@$ip "cat ~/auth/kubeadmin-password")
     
     echo "demand_id=$wlo_demand_id"
     echo "*** results from EBC wait:"
@@ -434,7 +435,7 @@ acceptance-test:
     echo "status=$status"
     echo "json=$json"
     echo "token=$token"
-    echo "token2=$token2"
+    # echo "token2=$token2"
 
     # remove this if else block after this initial testing
 
