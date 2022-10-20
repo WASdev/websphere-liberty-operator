@@ -3630,9 +3630,6 @@ spec:
                 type: object
               semeruCloudCompiler:
                 properties:
-                  disableJIT:
-                    description: Flag to disable JIT compiler
-                    type: boolean
                   resources:
                     description: SemeruCloudCompiler Resources
                     properties:

@@ -436,10 +436,6 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// SemeruCloudCompiler Resources
 	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// Flag to disable JIT compiler
-	// +operator-sdk:csv:customresourcedefinitions:order=49,type=spec,displayName="Disable JIT",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
-	DisableJIT *bool `json:"disableJIT,omitempty"`
 }
 
 // Defines the observed state of WebSphereLibertyApplication.
