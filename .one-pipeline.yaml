@@ -414,11 +414,12 @@ acceptance-test:
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
     ip=$(echo "$ip" | tr -d '"')
     
-    PRIVATE_KEY_key=$(get_env private_key)
+    PRIVATE_KEY="$(get_env private_key "")"
+    echo -n "${PRIVATE_KEY}" | base64 -d > id_private_rsa
     echo ">>> private key from property <<<"
     echo "|||$PRIVATE_KEY|||"
 
-    echo "$PRIVATE_KEY" > id_private_rsa
+    # echo "$PRIVATE_KEY" > id_private_rsa
     echo "*** private key from file ****"
     cat id_private_rsa
     
