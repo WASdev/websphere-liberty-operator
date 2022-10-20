@@ -54,6 +54,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	OperatorName = "websphere-liberty-operator"
+)
+
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
 type ReconcileWebSphereLiberty struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -103,11 +107,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
-	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
+	configMap, err := r.GetOpConfigMap(OperatorName, ns)
 	if err != nil {
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		common.Config = common.DefaultOpConfig()
-		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: ns}}
+		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: OperatorName, Namespace: ns}}
 		configMap.Data = common.Config
 	} else {
 		common.Config.LoadFromConfigMap(configMap)
@@ -254,7 +258,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
-
+	// Reconcile the Semeru Compiler deployment and service
+	message := "Start Semeru Compiler reconcile"
+	reqLogger.Info(message)
+	err, message = r.reconcileSemeruCompiler(instance)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
 	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
 	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
 	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
@@ -623,9 +634,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	} else {
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
-
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
-
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
 }

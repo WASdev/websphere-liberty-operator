@@ -8,5 +8,5 @@ spec:
     accept: true
   securityContext:
     allowPrivilegeEscalation: true
-    readOnlyRootFilesystem: true
+    #readOnlyRootFilesystem: true
     runAsNonRoot: false

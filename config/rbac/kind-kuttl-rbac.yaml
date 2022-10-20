@@ -112,6 +112,7 @@ rules:
 - apiGroups:
   - networking.k8s.io
   resources:
+  - ingresses
   - networkpolicies
   verbs:
   - get
@@ -120,10 +121,10 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - extensions
+  - cert-manager.io
   resources:
-  - ingresses
+  - issuers
+  - certificates
   verbs:
   - get
   - list
-  - delete
