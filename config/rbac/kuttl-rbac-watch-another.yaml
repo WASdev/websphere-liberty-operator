@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scorecard-kuttl-watch-another
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: watched-role
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: watcher-role
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - get
+  - create
+  - patch
+- apiGroups:
+  - liberty.websphere.ibm.com
+  resources:
+  - webspherelibertyapplications
+  - webspherelibertydumps
+  - webspherelibertytraces
+  verbs:
+  - get
+  - list
+  - create
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: watched-rolebinding
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: watched-role
+subjects:
+- kind: ServiceAccount
+  name: scorecard-kuttl-watch-another
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: watcher-rolebinding
+  namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: watcher-role
+subjects:
+- kind: ServiceAccount
+  name: scorecard-kuttl-watch-another

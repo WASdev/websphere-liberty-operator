@@ -20,9 +20,6 @@ setup_env() {
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
-
-    ## Create service account for Kuttl tests
-    oc apply -f config/rbac/kuttl-rbac.yaml
 }
 
 ## cleanup_env : Delete generated resources that are not bound to a test TEST_NAMESPACE.
@@ -148,23 +145,10 @@ main() {
     echo "Updating global pull secret"
     oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
 
-    echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
-    install_operator
-
-    # Wait for operator deployment to be ready
-    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
-        echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
-        sleep 10
-    done
-
-    echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
-
-    echo "****** Starting scorecard tests..."
-    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
-       echo "****** Scorecard tests failed..."
-       exit 1
-    }
-    result=$?
+    # Run Kuttl scorecard tests
+    run_scorecard "OwnNamespace"
+    run_scorecard "AllNamespaces"
+    run_scorecard "SingleNamespace"
 
     echo "****** Cleaning up test environment..."
     cleanup_env
@@ -172,15 +156,129 @@ main() {
     return $result
 }
 
+run_scorecard() {
+    INSTALL_MODE=$1
+    echo "****** Provisioning the cluster to setup operator in ${INSTALL_MODE} mode..."
+    if [ "$INSTALL_MODE" == "AllNamespaces" ]; then
+        KUTTL_TEST_DIR="kuttl-all-namespaces"
+	CONTROLLER_MANAGER_NAMESPACE="openshift-operators"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-watch-all"
+        OPERATOR_GROUP_TARGET_NAMESPACE="openshift-operators" # used for CSV cleanup
+	WATCH_NAMESPACE="${TEST_NAMESPACE}"
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+	KUTTL_TEST_DIR="kuttl-single-namespace"
+        CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
+        SERVICE_ACCOUNT_NAME="scorecard-kuttl-watch-another"
+	OPERATOR_GROUP_NAMESPACE="${CONTROLLER_MANAGER_NAMESPACE}"
+	WATCH_NAMESPACE="wlo-watch-${TEST_TAG}"
+        OPERATOR_GROUP_TARGET_NAMESPACE="${WATCH_NAMESPACE}"
+	oc new-project "$WATCH_NAMESPACE"
+    elif [ "$INSTALL_MODE" == "OwnNamespace" ]; then
+	KUTTL_TEST_DIR="kuttl"
+	CONTROLLER_MANAGER_NAMESPACE="${TEST_NAMESPACE}"
+	SERVICE_ACCOUNT_NAME="scorecard-kuttl"
+	OPERATOR_GROUP_NAMESPACE="${TEST_NAMESPACE}"
+        OPERATOR_GROUP_TARGET_NAMESPACE="${TEST_NAMESPACE}"
+	WATCH_NAMESPACE="${TEST_NAMESPACE}"
+    fi
+
+    # Delete a subscription or catalog source that may be blocking the install
+    oc delete subscription.operators.coreos.com websphere-liberty-operator-subscription -n ${CONTROLLER_MANAGER_NAMESPACE}
+    oc delete catalogsource websphere-liberty-catalog -n ${CONTROLLER_MANAGER_NAMESPACE}
+
+    install_operator
+
+    # Wait for operator deployment to be ready
+    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -n ${CONTROLLER_MANAGER_NAMESPACE} -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+        echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} in namespace ${CONTROLLER_MANAGER_NAMESPACE} to be ready..."
+        sleep 10
+    done
+
+    echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
+ 
+    echo "****** Starting scorecard tests in the '${KUTTL_TEST_DIR}' directory..."
+    oc project "${WATCH_NAMESPACE}"
+    set_rbac
+    set_kuttl_test_dir
+    TESTS_FAILED=false
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${WATCH_NAMESPACE}" --service-account="${SERVICE_ACCOUNT_NAME}" --wait-time 30m ./bundle || {
+       echo "****** Scorecard tests failed..."
+       TESTS_FAILED=true
+    }
+    echo "****** Starting cluster cleanup..."
+    unset_kuttl_test_dir
+    unset_rbac
+    uninstall_operator
+    if [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+        oc delete project "${WATCH_NAMESPACE}"
+    fi
+    if $TESTS_FAILED ; then 
+        exit 1 
+    fi
+}
+
+set_rbac() {
+    if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
+        oc apply -f config/rbac/kuttl-rbac.yaml
+    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then 
+        cp config/rbac/kuttl-rbac-watch-all.yaml ./
+        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-all.yaml
+        oc apply -f kuttl-rbac-watch-all.yaml
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+	cp config/rbac/kuttl-rbac-watch-another.yaml ./
+        sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+        sed -i "s/WEBSPHERE_LIBERTY_WATCH_NAMESPACE/${WATCH_NAMESPACE}/" kuttl-rbac-watch-another.yaml
+	oc apply -f kuttl-rbac-watch-another.yaml
+    fi
+}
+
+unset_rbac() {
+    if [ "$INSTALL_MODE" == "OwnNamespace" ]; then
+        oc delete -f config/rbac/kuttl-rbac.yaml
+    elif [ "$INSTALL_MODE" == "AllNamespaces" ]; then 
+        oc delete -f kuttl-rbac-watch-all.yaml
+	rm kuttl-rbac-watch-all.yaml
+    elif [ "$INSTALL_MODE" == "SingleNamespace" ]; then
+        oc delete -f kuttl-rbac-watch-another.yaml
+        rm kuttl-rbac-watch-another.yaml
+    fi
+}
+
+set_kuttl_test_dir() {
+    if [ "$KUTTL_TEST_DIR" == "kuttl-single-namespace" ]; then
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+        cp -r bundle/tests/scorecard/${KUTTL_TEST_DIR} bundle/tests/scorecard/kuttl
+        find bundle/tests/scorecard/kuttl -type f -name "*.yaml" -print0 | xargs -0 sed -i "s/WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE/${CONTROLLER_MANAGER_NAMESPACE}/"
+        mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
+    elif [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/kuttl-temp
+        mv bundle/tests/scorecard/${KUTTL_TEST_DIR} bundle/tests/scorecard/kuttl
+        mv bundle/tests/scorecard/kuttl-temp/kuttl-test.yaml bundle/tests/scorecard/kuttl 
+    fi
+}
+
+unset_kuttl_test_dir() {
+    if [ "$KUTTL_TEST_DIR" == "kuttl-single-namespace" ]; then
+        mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+	rm -rf bundle/tests/scorecard/kuttl
+        mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+    elif [ "$KUTTL_TEST_DIR" != "kuttl" ]; then
+        mv bundle/tests/scorecard/kuttl/kuttl-test.yaml bundle/tests/scorecard/kuttl-temp
+        mv bundle/tests/scorecard/kuttl bundle/tests/scorecard/${KUTTL_TEST_DIR}
+        mv bundle/tests/scorecard/kuttl-temp bundle/tests/scorecard/kuttl
+    fi
+}
+
 install_operator() {
-    # Apply the catalog
-    echo "****** Applying the catalog source..."
+    echo "****** Installing the operator in ${INSTALL_MODE} mode..."
+
+    echo "****** Applying catalog source..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
   name: websphere-liberty-catalog
-  namespace: $TEST_NAMESPACE
+  namespace: $CONTROLLER_MANAGER_NAMESPACE
 spec:
   sourceType: grpc
   image: $CATALOG_IMAGE
@@ -188,32 +286,49 @@ spec:
   publisher: IBM
 EOF
 
-    echo "****** Applying the operator group..."
-    cat <<EOF | oc apply -f -
+    if [ "$INSTALL_MODE" != "AllNamespaces" ]; then
+      echo "****** Applying the OperatorGroup supporting $INSTALL_MODE..."
+      cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: websphere-operator-group
-  namespace: $TEST_NAMESPACE
+  namespace: $OPERATOR_GROUP_NAMESPACE
 spec:
   targetNamespaces:
-    - $TEST_NAMESPACE
+    - $OPERATOR_GROUP_TARGET_NAMESPACE
 EOF
+    else
+      echo "****** Skipping OperatorGroup creation since AllNamespaces is selected..."
+    fi
 
-    echo "****** Applying the subscription..."
+    echo "****** Applying the Subscription..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: websphere-liberty-operator-subscription
-  namespace: $TEST_NAMESPACE
+  namespace: $CONTROLLER_MANAGER_NAMESPACE
 spec:
   channel: $DEFAULT_CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
-  sourceNamespace: $TEST_NAMESPACE
+  sourceNamespace: $CONTROLLER_MANAGER_NAMESPACE
   installPlanApproval: Automatic
 EOF
+}
+
+uninstall_operator() {
+    echo "****** Uninstalling the operator..."
+    oc delete subscription.operators.coreos.com websphere-liberty-operator-subscription -n ${CONTROLLER_MANAGER_NAMESPACE}
+
+    currentCSV=$(oc get clusterserviceversion | grep ibm-websphere-liberty | cut -d ' ' -f1 )
+    oc delete clusterserviceversion $currentCSV -n ${OPERATOR_GROUP_TARGET_NAMESPACE}
+
+    oc delete catalogsource websphere-liberty-catalog -n ${CONTROLLER_MANAGER_NAMESPACE} 
+    if [ "$INSTALL_MODE" != "AllNamespaces" ]; then
+        oc delete operatorgroup websphere-operator-group -n ${CONTROLLER_MANAGER_NAMESPACE}
+    fi
 }
 
 parse_args() {

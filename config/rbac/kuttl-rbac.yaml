@@ -42,6 +42,14 @@ rules:
   - get
   - list
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - delete
+- apiGroups:
     - ""
   resources:
     - services
