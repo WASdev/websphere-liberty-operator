@@ -17,10 +17,6 @@ rules:
     verbs:
       - get
       - list
-      - watch
-      - create
-      - update
-      - patch
       - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -29,15 +25,6 @@ metadata:
   name: watcher-role
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - pods
-  - routes
-  verbs:
-  - get
-  - list
 - apiGroups:
   - ""
   resources:

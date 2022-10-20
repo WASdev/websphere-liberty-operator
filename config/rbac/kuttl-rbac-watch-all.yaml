@@ -25,15 +25,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
-  - pods
-  - routes
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - ""
-  resources:
   - configmaps
   verbs:
   - get
