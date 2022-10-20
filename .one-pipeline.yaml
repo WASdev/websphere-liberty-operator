@@ -412,6 +412,7 @@ acceptance-test:
     jq -c '.status' <<< $json
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
+    ip=$(echo "$ip" | tr -d '"')
     PRIVATE_KEY_key=$(get_env private_key)
     
     echo "*** private key from property ****"
@@ -422,7 +423,7 @@ acceptance-test:
     cat id_private_rsa
     
     ping $ip
-    #token=$(ssh -i id_private_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    token2=$(ssh -i id_private_rsa root@$ip "cat ~/auth/kubeadmin-password")
     token=$(ssh root@$ip "cat ~/auth/kubeadmin-password")
     
     echo "demand_id=$wlo_demand_id"
@@ -431,6 +432,7 @@ acceptance-test:
     echo "status=$status"
     echo "json=$json"
     echo "token=$token"
+    echo "token2=$token2"
 
     # remove this if else block after this initial testing
 
