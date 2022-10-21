@@ -461,6 +461,8 @@ acceptance-test:
     fi
     export GO_VERSION
 
+    clusterurl="$ip:6443"
+
     # OCP test
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
@@ -469,7 +471,7 @@ acceptance-test:
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
     #export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_URL=$ip
+    export CLUSTER_URL=$clusterurl
     #export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
     export CLUSTER_TOKEN=$token
     export RELEASE_TARGET=$(get_env branch)
