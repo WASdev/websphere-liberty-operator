@@ -453,13 +453,14 @@ acceptance-test:
     chmod +x configure-cluster.sh
     ./configure-cluster.sh -p $token -k $(get_env ibmcloud-api-key-staging) -A
 
-    PERIODIC_SCAN=$(get_env periodic-rescan)
-    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    # remove comment after test
+    # PERIODIC_SCAN=$(get_env periodic-rescan)
+    # PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-      exit 0
-    fi
+    # if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+    #   echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+    #   exit 0
+    # fi
 
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
