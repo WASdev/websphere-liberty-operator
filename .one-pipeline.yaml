@@ -426,9 +426,6 @@ acceptance-test:
     oc version
     
     token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
-    echo "Open Shift Console:"
-    oc whoami --show-console
-    
     
     echo "demand_id=$wlo_demand_id"
     echo "*** results from EBC wait:"
@@ -461,8 +458,10 @@ acceptance-test:
     chmod +x configure-cluster.sh
     echo "**** issuing oc login"
     oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
+    echo "Open Shift Console:"
+    oc whoami --show-console
     echo "*** after issuing oc login"
-    ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
+    ./configure-cluster.sh -A
 
     # remove comment after test
     # PERIODIC_SCAN=$(get_env periodic-rescan)
