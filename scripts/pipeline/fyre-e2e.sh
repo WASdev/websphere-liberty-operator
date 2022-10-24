@@ -147,6 +147,10 @@ main() {
 
     # echo "Updating global pull secret"
     # oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
+    echo "creating secret"
+    kubectl create secret docker-registry regcred --docker-server=$PIPELINE_REGISTRY --docker-username="iamapikey" --docker-password=$PIPELINE_PASSWORD --docker-email="unused" --namespace=$TEST_NAMESPACE
+    echo "inspect secret"
+    kubectl get secret regcred --output=yaml
 
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator
@@ -186,6 +190,8 @@ spec:
   image: $CATALOG_IMAGE
   displayName: WebSphere Liberty Catalog
   publisher: IBM
+  imagePullSecrets:
+  - name: regcred
 EOF
 
     echo "****** Applying the operator group..."
