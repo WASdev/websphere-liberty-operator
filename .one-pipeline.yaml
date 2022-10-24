@@ -456,13 +456,14 @@ acceptance-test:
     GITHUB_SCRIPT_URL="https://api.github.ibm.com/repos/websphere/operators/contents/scripts/configure-cluster/configure-cluster.sh"
     curl -H "Authorization: token $GITHUB_ACCESS_TOKEN" -H "Accept: application/vnd.github.v3+json" "$GITHUB_SCRIPT_URL" | jq -r ".content" | base64 --decode > configure-cluster.sh
     chmod +x configure-cluster.sh
+    ls -l cluster.sh
     echo "**** issuing oc login"
     oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
     echo "Open Shift Console:"
     oc whoami --show-console
     echo "*** after issuing oc login"
     ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
-
+    
     # remove comment after test
     # PERIODIC_SCAN=$(get_env periodic-rescan)
     # PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
