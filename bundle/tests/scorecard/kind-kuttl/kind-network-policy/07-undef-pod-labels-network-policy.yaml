@@ -1,0 +1,16 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: network-policy-rc
+spec:
+  license:
+    accept: true
+  applicationImage: k8s.gcr.io/pause:2.0
+  expose: false
+  networkPolicy:
+    fromLabels:
+  service:
+    port: 8080
+    ports:
+      - port: 9090
+        protocol: TCP
