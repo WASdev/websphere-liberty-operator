@@ -461,7 +461,7 @@ acceptance-test:
     echo "Open Shift Console:"
     oc whoami --show-console
     echo "*** after issuing oc login"
-    ./configure-cluster.sh -R -S -K -L -I
+    ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
 
     # remove comment after test
     # PERIODIC_SCAN=$(get_env periodic-rescan)
