@@ -422,8 +422,8 @@ acceptance-test:
     chmod 600 id_rsa
     pwd
     ls -l id_rsa
-    # echo "private key"
-    # cat id_rsa
+    echo "private key"
+    cat id_rsa
 
     echo "oc version:"
     oc version
