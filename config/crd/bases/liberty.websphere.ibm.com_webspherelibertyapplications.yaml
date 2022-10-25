@@ -3631,7 +3631,8 @@ spec:
               semeruCloudCompiler:
                 properties:
                   resources:
-                    description: SemeruCloudCompiler Resources
+                    description: Resource requests and limits for the Semeru Cloud
+                      Compiler.
                     properties:
                       limits:
                         additionalProperties:

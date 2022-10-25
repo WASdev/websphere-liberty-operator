@@ -276,13 +276,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		deployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
 		err = r.DeleteResource(deployment)
 		if err != nil {
-			reqLogger.Error(err, "Failed to delete Deployment")
+			reqLogger.Error(err, "Failed to delete Deployment of Semeru Cloud Compiler")
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 		service := &corev1.Service{ObjectMeta: compilerMeta}
 		err = r.DeleteResource(service)
 		if err != nil {
-			reqLogger.Error(err, "Failed to delete Service")
+			reqLogger.Error(err, "Failed to delete Service of Semeru Cloud Compiler")
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
