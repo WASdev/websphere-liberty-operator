@@ -258,13 +258,33 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
-	// Reconcile the Semeru Compiler deployment and service
-	message := "Start Semeru Compiler reconcile"
-	reqLogger.Info(message)
-	err, message = r.reconcileSemeruCompiler(instance)
-	if err != nil {
-		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	// Check if SemeruCloudCompiler is enabled before reconciling the Semeru Compiler deployment and service.
+	// Otherwise, delete the Semeru Compiler deployment and service.
+	if instance.Spec.SemeruCloudCompiler != nil {
+		message := "Start Semeru Compiler reconcile"
+		reqLogger.Info(message)
+		err, message = r.reconcileSemeruCompiler(instance)
+		if err != nil {
+			reqLogger.Error(err, message)
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	} else {
+		compilerMeta := metav1.ObjectMeta{
+			Name:      instance.GetName() + SemeruLabelNameSuffix,
+			Namespace: ns,
+		}
+		deployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
+		err = r.DeleteResource(deployment)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete Deployment of Semeru Cloud Compiler")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+		service := &corev1.Service{ObjectMeta: compilerMeta}
+		err = r.DeleteResource(service)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete Service of Semeru Cloud Compiler")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
 	}
 	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
 	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop

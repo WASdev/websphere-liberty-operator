@@ -37,7 +37,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		Name:      wlva.GetName() + SemeruLabelNameSuffix,
 		Namespace: wlva.GetNamespace(),
 	}
-	//Deployment
+	// Create the Semeru Deployment object
 	semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
 	err := r.CreateOrUpdate(semeruDeployment, wlva, func() error {
 		r.reconcileSemeruDeployment(wlva, semeruDeployment)
@@ -71,6 +71,14 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		}
 	}
 
+	// Get Semeru resources config
+	semeruCloudCompiler := wlva.GetSemeruCloudCompiler()
+	instanceResources := semeruCloudCompiler.Resources
+	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
+	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
+	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
+	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: getLabels(wlva),
@@ -90,12 +98,12 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("1200Mi"),
-							corev1.ResourceCPU:    resource.MustParse("1000m"),
+							corev1.ResourceMemory: requestsMemory,
+							corev1.ResourceCPU:    requestsCPU,
 						},
 						Limits: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("1200Mi"),
-							corev1.ResourceCPU:    resource.MustParse("8000m"),
+							corev1.ResourceMemory: limitsMemory,
+							corev1.ResourceCPU:    limitsCPU,
 						},
 					},
 					Env: []corev1.EnvVar{
@@ -144,4 +152,24 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
 	return requiredLabels
+}
+
+// Returns quantity at resourceRequirements.Requests[resourceName] if it exists, otherwise return the parsed defaultQuantity
+func getQuantityFromRequestsOrDefault(resourceRequirements *corev1.ResourceRequirements, resourceName corev1.ResourceName, defaultQuantity string) resource.Quantity {
+	if resourceRequirements != nil && resourceRequirements.Requests != nil {
+		if mapValue, ok := resourceRequirements.Requests[resourceName]; ok {
+			return mapValue
+		}
+	}
+	return resource.MustParse(defaultQuantity)
+}
+
+// Returns quantity at resourceRequirements.Limits[resourceName] if it exists, otherwise return the parsed defaultQuantity
+func getQuantityFromLimitsOrDefault(resourceRequirements *corev1.ResourceRequirements, resourceName corev1.ResourceName, defaultQuantity string) resource.Quantity {
+	if resourceRequirements != nil && resourceRequirements.Limits != nil {
+		if mapValue, ok := resourceRequirements.Limits[resourceName]; ok {
+			return mapValue
+		}
+	}
+	return resource.MustParse(defaultQuantity)
 }
