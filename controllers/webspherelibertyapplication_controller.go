@@ -512,6 +512,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
+			deploy.Spec.Template.Spec.Containers[0].Args = getSemeruJavaOptions(instance)
+
 			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
@@ -528,6 +530,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 
 			lutils.ConfigureServiceability(&deploy.Spec.Template, instance)
+			semeruCertVolume := getSemeruCertVolume(instance)
+			if semeruCertVolume != nil {
+				deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *semeruCertVolume)
+				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts,
+					getSemeruCertVolumeMount(instance))
+				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
+				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
+					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		})
 		if err != nil {

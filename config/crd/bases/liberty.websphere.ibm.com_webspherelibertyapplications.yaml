@@ -3630,9 +3630,10 @@ spec:
                 type: object
               semeruCloudCompiler:
                 properties:
+                  enabled:
+                    type: boolean
                   resources:
-                    description: Resource requests and limits for the Semeru Cloud
-                      Compiler.
+                    description: SemeruCloudCompiler Resources
                     properties:
                       limits:
                         additionalProperties:
@@ -7096,6 +7097,14 @@ spec:
                 type: object
               routeAvailable:
                 type: boolean
+              semeruCompiler:
+                description: Defines SemeruCompiler status
+                properties:
+                  serviceHostname:
+                    type: string
+                  tlsSecretName:
+                    type: string
+                type: object
               versions:
                 properties:
                   reconciled:
