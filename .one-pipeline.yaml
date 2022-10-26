@@ -463,7 +463,8 @@ acceptance-test:
     echo "**** issuing oc login"
     oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
     echo "Open Shift Console:"
-    oc whoami --show-console
+    console=$(oc whoami --show-console)
+    echo $console
     echo "*** after issuing oc login"
     ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
     
@@ -513,9 +514,11 @@ acceptance-test:
     if [[ "$rc" == 0 ]]; then
       ./ebc_complete.sh
     else
-      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channelto keep cluster for debug"
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
       echo "for more information on accessing the problem machine see: https://github.ibm.com/websphere/WS-CD-Open/wiki/Build-Debug"
+      echo "access console at: $console"
+      echo "credentials: kubeadmin/$token"
       # remove following when we go to production
       # ./ebc_complete.sh
     fi
