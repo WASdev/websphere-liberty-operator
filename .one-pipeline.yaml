@@ -519,8 +519,6 @@ acceptance-test:
       echo "for more information on accessing the problem machine see: https://github.ibm.com/websphere/WS-CD-Open/wiki/Build-Debug"
       echo "access console at: $console"
       echo "credentials: kubeadmin/$token"
-      # remove following when we go to production
-      # ./ebc_complete.sh
     fi
 
 scan-artifact:
