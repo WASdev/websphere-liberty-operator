@@ -59,7 +59,6 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
-
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 	replicas := int32(1)
@@ -78,6 +77,30 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
 	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+
+	// Liveness probe
+	livenessExecAction := corev1.ExecAction{
+		Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log"},
+	}
+	livenessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			Exec: &livenessExecAction,
+		},
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+	}
+
+	// Readiness probe
+	readinessExecAction := corev1.ExecAction{
+		Command: []string{"/bin/bash", "-c", "grep -Fxq 'JITServer is ready to accept incoming requests' /tmp/output.log;"},
+	}
+	readinessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			Exec: &readinessExecAction,
+		},
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+	}
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -109,9 +132,23 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 					Env: []corev1.EnvVar{
 						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections"},
 					},
+					LivenessProbe:  &livenessProbe,
+					ReadinessProbe: &readinessProbe,
 				},
 			},
 		},
+	}
+
+	// Copy the pullSecret from the WebSphereLibertyApplcation CR
+	if wlva.Spec.PullSecret != nil {
+		deploy.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{
+			Name: *wlva.Spec.PullSecret,
+		}}
+	}
+
+	// Copy the securityContext from the WebSphereLibertyApplcation CR
+	if wlva.Spec.SecurityContext != nil {
+		deploy.Spec.Template.Spec.Containers[0].SecurityContext = wlva.Spec.SecurityContext
 	}
 }
 
