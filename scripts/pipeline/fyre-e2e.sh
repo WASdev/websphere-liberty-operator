@@ -137,6 +137,7 @@ main() {
     echo "****** Logging into private registry..."
     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_NAME} -u "${REGISTRY_USER}" --password-stdin
 
+    sleep 10m
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator
 
