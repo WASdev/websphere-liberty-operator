@@ -140,7 +140,6 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	// Copy the service account from the WebSphereLibertyApplcation CR
 	if wlva.GetServiceAccountName() != nil && *wlva.GetServiceAccountName() != "" {
-
 		deploy.Spec.Template.Spec.ServiceAccountName = *wlva.GetServiceAccountName()
 	} else {
 		deploy.Spec.Template.Spec.ServiceAccountName = wlva.GetName()
