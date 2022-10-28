@@ -153,9 +153,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	}
 
 	// Copy the securityContext from the WebSphereLibertyApplcation CR
-	if wlva.Spec.SecurityContext != nil {
-		deploy.Spec.Template.Spec.Containers[0].SecurityContext = getSecurityContext(wlva)
-	}
+	deploy.Spec.Template.Spec.Containers[0].SecurityContext = getSecurityContext(wlva)
+
 }
 
 func getSecurityContext(ba common.BaseComponent) *corev1.SecurityContext {
