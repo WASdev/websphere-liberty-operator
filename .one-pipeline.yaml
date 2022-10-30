@@ -380,19 +380,6 @@ acceptance-test:
   abort_on_failure: true
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
-    #!/usr/bin/env bash
-    # ip_address_json contents:
-    #   {
-    #    autoCompleteAfterXHours":24,
-    #    demandId: "...",
-    #    liveTime: "...",
-    #    machineAddresses: {
-    #         ocpinf: "10.1.2.3"
-    #    },
-    #    modifiedTime: "...",
-    #    status: "LIVE", 
-    #    type: "Environment"
-    #   }
     echo "acceptance-test"
 
     git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
@@ -409,8 +396,7 @@ acceptance-test:
     
     json=$(./ebc_waitForDemand.sh)
     rc=$?
-    # if rc non zero echo msg and exit 1
-   
+    
     jq -c '.status' <<< $json
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
@@ -422,9 +408,7 @@ acceptance-test:
     chmod 600 id_rsa
     pwd
     ls -l id_rsa
-    # echo "private key"
-    # cat id_rsa
-
+    
     echo "oc version:"
     oc version
     
@@ -445,8 +429,6 @@ acceptance-test:
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
-      # remove following when we go to production
-      #./ebc_complete.sh
       exit 1
     fi
 
@@ -468,14 +450,14 @@ acceptance-test:
     echo "*** after issuing oc login"
     ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
     
-    # remove comment after test
-    # PERIODIC_SCAN=$(get_env periodic-rescan)
-    # PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    remove comment after test
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    # if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-    #   echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-    #   exit 0
-    # fi
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     # Download and configure golang
     GO_VERSION=$(get_env go-version)

@@ -32,23 +32,23 @@ declare -A E2E_TESTS=(
 	)
 )
 
-# if [[ "${SKIP_KIND_E2E_TEST}" != true ]]; then
-# 	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
-# 		--volume /var/run/docker.sock:/var/run/docker.sock \
-# 		--env FYRE_USER=${FYRE_USER} \
-# 		--env FYRE_KEY=${FYRE_KEY} \
-# 		--env FYRE_PASS=${FYRE_PASS} \
-# 		--env FYRE_PRODUCT_GROUP_ID=${FYRE_PRODUCT_GROUP_ID} \
-# 		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
-# 		--env VM_SIZE=l \
-# 		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
-# 		e2e-runner:latest \
-# 		make kind-e2e-test
-# 		EOF
-# 	)
-# else
-# 	echo "SKIP_KIND_E2E was set. Skipping kind e2e..."
-# fi
+if [[ "${SKIP_KIND_E2E_TEST}" != true ]]; then
+	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
+		--volume /var/run/docker.sock:/var/run/docker.sock \
+		--env FYRE_USER=${FYRE_USER} \
+		--env FYRE_KEY=${FYRE_KEY} \
+		--env FYRE_PASS=${FYRE_PASS} \
+		--env FYRE_PRODUCT_GROUP_ID=${FYRE_PRODUCT_GROUP_ID} \
+		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
+		--env VM_SIZE=l \
+		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
+		e2e-runner:latest \
+		make kind-e2e-test
+		EOF
+	)
+else
+	echo "SKIP_KIND_E2E was set. Skipping kind e2e..."
+fi
 
 echo "****** Starting e2e tests"
 for test in "${!E2E_TESTS[@]}"; do
