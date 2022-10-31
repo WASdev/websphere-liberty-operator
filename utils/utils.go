@@ -45,10 +45,10 @@ import (
 
 var log = logf.Log.WithName("websphereliberty_utils")
 
-//Constant Values
+// Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.0.0"
+const OperandVersion = "1.1.0"
 
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
