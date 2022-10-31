@@ -380,6 +380,7 @@ acceptance-test:
   abort_on_failure: true
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
+    #!/usr/bin/env bash
     echo "acceptance-test"
 
     git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
@@ -507,7 +508,7 @@ scan-artifact:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
-
+    #!/usr/bin/env bash
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
