@@ -18,6 +18,8 @@ package controllers
 
 import (
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+	"github.com/application-stacks/runtime-component-operator/common"
+	utils "github.com/application-stacks/runtime-component-operator/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -59,7 +61,6 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
-
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 	replicas := int32(1)
@@ -78,6 +79,28 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
 	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+
+	// Liveness probe
+	livenessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log*"},
+			},
+		},
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+	}
+
+	// Readiness probe
+	readinessProbe := corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{"/bin/bash", "-c", "grep -q '#INFO:  StartTime' /tmp/output.log*"},
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+	}
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,12 +130,31 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections"},
+						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections -Xjit:vlog=/tmp/output.log"},
 					},
+					LivenessProbe:  &livenessProbe,
+					ReadinessProbe: &readinessProbe,
 				},
 			},
 		},
 	}
+
+	// Copy the service account from the WebSphereLibertyApplcation CR
+	if wlva.GetServiceAccountName() != nil && *wlva.GetServiceAccountName() != "" {
+		deploy.Spec.Template.Spec.ServiceAccountName = *wlva.GetServiceAccountName()
+	} else {
+		deploy.Spec.Template.Spec.ServiceAccountName = wlva.GetName()
+	}
+
+	// This ensures that the semeru pod(s) are updated if the service account is updated
+	saRV := wlva.GetStatus().GetReferences()[common.StatusReferenceSAResourceVersion]
+	if saRV != "" {
+		deploy.Spec.Template.Spec.Containers[0].Env = append(deploy.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{Name: "SA_RESOURCE_VERSION", Value: saRV})
+	}
+
+	// Copy the securityContext from the WebSphereLibertyApplcation CR
+	deploy.Spec.Template.Spec.Containers[0].SecurityContext = utils.GetSecurityContext(wlva)
+
 }
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {

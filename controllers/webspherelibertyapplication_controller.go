@@ -258,6 +258,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
+
+	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
+	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
+	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
+	if saErr != nil {
+		return r.ManageError(saErr, common.StatusConditionTypeReconciled, instance)
+	}
+
 	// Check if SemeruCloudCompiler is enabled before reconciling the Semeru Compiler deployment and service.
 	// Otherwise, delete the Semeru Compiler deployment and service.
 	if instance.Spec.SemeruCloudCompiler != nil {
@@ -285,12 +293,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			reqLogger.Error(err, "Failed to delete Service of Semeru Cloud Compiler")
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
-	}
-	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
-	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
-	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
-	if saErr != nil {
-		return r.ManageError(saErr, common.StatusConditionTypeReconciled, instance)
 	}
 
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
