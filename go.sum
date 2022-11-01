@@ -111,6 +111,10 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20220721111305-3815a3152368 h1:9TbnuzGLw57ySW9n9Bb6B4J6I4C7VIqawVC3kGA8B7E=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20220721111305-3815a3152368/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221027143123-2227b1491c3d h1:CM9wuo8/zj9M36M+7t1TK+DrzSRPkOsrtzZyN/Y7sew=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221027143123-2227b1491c3d/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221101170137-727c80a0138c h1:TnkHBLIsld4K2kAdHuRx0rCXrBeWRPrllutnaKnDNGA=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221101170137-727c80a0138c/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=

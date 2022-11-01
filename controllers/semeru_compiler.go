@@ -19,6 +19,7 @@ package controllers
 import (
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	"github.com/application-stacks/runtime-component-operator/common"
+	utils "github.com/application-stacks/runtime-component-operator/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -97,8 +98,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 				Command: []string{"/bin/bash", "-c", "grep -q '#INFO:  StartTime' /tmp/output.log*"},
 			},
 		},
-		InitialDelaySeconds: 10,
-		PeriodSeconds:       10,
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
 	}
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
@@ -152,50 +153,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	}
 
 	// Copy the securityContext from the WebSphereLibertyApplcation CR
-	deploy.Spec.Template.Spec.Containers[0].SecurityContext = getSecurityContext(wlva)
+	deploy.Spec.Template.Spec.Containers[0].SecurityContext = utils.GetSecurityContext(wlva)
 
-}
-
-func getSecurityContext(ba common.BaseComponent) *corev1.SecurityContext {
-	baSecurityContext := ba.GetSecurityContext()
-
-	valFalse := false
-	valTrue := true
-
-	cap := make([]corev1.Capability, 1)
-	cap[0] = "ALL"
-
-	// Set default security context
-	secContext := &corev1.SecurityContext{
-		AllowPrivilegeEscalation: &valFalse,
-		Capabilities: &corev1.Capabilities{
-			Drop: cap,
-		},
-		Privileged:             &valFalse,
-		ReadOnlyRootFilesystem: &valFalse,
-		RunAsNonRoot:           &valTrue,
-	}
-
-	// Customize security context
-	if baSecurityContext != nil {
-		if baSecurityContext.AllowPrivilegeEscalation == nil {
-			baSecurityContext.AllowPrivilegeEscalation = secContext.AllowPrivilegeEscalation
-		}
-		if baSecurityContext.Capabilities == nil {
-			baSecurityContext.Capabilities = secContext.Capabilities
-		}
-		if baSecurityContext.Privileged == nil {
-			baSecurityContext.Privileged = secContext.Privileged
-		}
-		if baSecurityContext.ReadOnlyRootFilesystem == nil {
-			baSecurityContext.ReadOnlyRootFilesystem = secContext.ReadOnlyRootFilesystem
-		}
-		if baSecurityContext.RunAsNonRoot == nil {
-			baSecurityContext.RunAsNonRoot = secContext.RunAsNonRoot
-		}
-		return baSecurityContext
-	}
-	return secContext
 }
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
