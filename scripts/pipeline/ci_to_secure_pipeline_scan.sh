@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail
+
 echo "Connecting to the Security Scan Toolchain"
 
 # IMAGES_TO_SCAN is delimited by "\n" 

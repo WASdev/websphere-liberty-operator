@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -Eeo pipefail
+
 OPM_TOOL="opm"
 CONTAINER_TOOL="docker"
 

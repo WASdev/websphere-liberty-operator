@@ -1,5 +1,7 @@
  #!/bin/bash -e
 
+set -e -o pipefail
+
  function install_twistlock() {
     DEBIAN_FRONTEND=noninteractive apt-get -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install uuid-runtime file jq && \

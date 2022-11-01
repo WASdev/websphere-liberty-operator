@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail
 
 _toolchain_read() {
   jq -r "$1" "$TOOLCHAIN_CONFIG_JSON" | tr -d '\n'
