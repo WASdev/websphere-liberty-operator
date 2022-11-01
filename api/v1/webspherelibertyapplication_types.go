@@ -433,11 +433,8 @@ type WebSphereLibertyApplicationRoute struct {
 }
 
 type WebSphereLibertyApplicationSemeruCloudCompiler struct {
-	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Enabled",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// SemeruCloudCompiler Resources
-	// +operator-sdk:csv:customresourcedefinitions:order=49,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	// Resource requests and limits for the Semeru Cloud Compiler.
+	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 

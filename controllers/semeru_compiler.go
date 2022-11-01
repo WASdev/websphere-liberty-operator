@@ -50,7 +50,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 	}
 
 	semeruCloudCompiler := wlva.GetSemeruCloudCompiler()
-	if semeruCloudCompiler == nil || semeruCloudCompiler.Enabled == nil || !*semeruCloudCompiler.Enabled {
+	if semeruCloudCompiler == nil {
 		semsvc := &corev1.Service{ObjectMeta: compilerMeta}
 		semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
 		err := r.DeleteResources([]client.Object{semsvc, semeruDeployment})
@@ -124,10 +124,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	}
 	// Get Semeru resources config
 	semeruCloudCompiler := wlva.GetSemeruCloudCompiler()
-	var instanceResources *corev1.ResourceRequirements
-	if semeruCloudCompiler != nil {
-		instanceResources = semeruCloudCompiler.Resources
-	}
+	instanceResources := semeruCloudCompiler.Resources
+
 	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
 	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
@@ -246,9 +244,7 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 			TimeoutSeconds: &timeout,
 		},
 	}
-	if wlva.Status.SemeruCompiler == nil {
-		wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
-	}
+
 	if wlva.Status.SemeruCompiler == nil {
 		wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
 	}
@@ -280,6 +276,9 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	})
 	if err != nil {
 		return err
+	}
+	if wlva.Status.SemeruCompiler == nil {
+		wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
 	}
 	wlva.Status.SemeruCompiler.TLSSecretName = svcCert.Spec.SecretName
 	return nil
@@ -348,8 +347,7 @@ func getSemeruCertVolume(wlva *wlv1.WebSphereLibertyApplication) *corev1.Volume 
 }
 
 func getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
-	if instance.GetSemeruCloudCompiler() != nil && instance.GetSemeruCloudCompiler().Enabled != nil &&
-		*instance.GetSemeruCloudCompiler().Enabled {
+	if instance.GetSemeruCloudCompiler() != nil {
 		certificateLocation := "/etc/x509/semeru-certs/ca.crt"
 		if instance.Status.SemeruCompiler != nil && strings.HasSuffix(instance.Status.SemeruCompiler.TLSSecretName, "-ocp") {
 			certificateLocation = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

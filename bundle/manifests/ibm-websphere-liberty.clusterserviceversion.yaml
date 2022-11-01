@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-10-26T16:22:53Z"
+    createdAt: "2022-11-02T16:48:47Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -415,18 +415,14 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:select:Allow
         - urn:alm:descriptor:com.tectonic.ui:select:Redirect
         - urn:alm:descriptor:com.tectonic.ui:select:None
-      - displayName: Enabled
-        path: semeruCloudCompiler.enabled
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
-        displayName: Liveness Probe
-        path: probes.liveness
-      - description: SemeruCloudCompiler Resources
+      - description: Resource requests and limits for the Semeru Cloud Compiler.
         displayName: Resource Requirements
         path: semeruCloudCompiler.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
+        displayName: Liveness Probe
+        path: probes.liveness
       - description: Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails.
         displayName: Readiness Probe
         path: probes.readiness

@@ -3632,10 +3632,9 @@ spec:
                 type: object
               semeruCloudCompiler:
                 properties:
-                  enabled:
-                    type: boolean
                   resources:
-                    description: SemeruCloudCompiler Resources
+                    description: Resource requests and limits for the Semeru Cloud
+                      Compiler.
                     properties:
                       limits:
                         additionalProperties:
