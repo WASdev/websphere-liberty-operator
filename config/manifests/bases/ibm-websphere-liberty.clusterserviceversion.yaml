@@ -287,6 +287,8 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - displayName: Semeru Cloud Compiler
+        path: semeruCloudCompiler
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -358,6 +360,11 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:select:Allow
         - urn:alm:descriptor:com.tectonic.ui:select:Redirect
         - urn:alm:descriptor:com.tectonic.ui:select:None
+      - description: Resource requests and limits for the Semeru Cloud Compiler.
+        displayName: Resource Requirements
+        path: semeruCloudCompiler.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
         displayName: Liveness Probe
         path: probes.liveness

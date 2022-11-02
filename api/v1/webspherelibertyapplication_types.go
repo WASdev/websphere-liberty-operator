@@ -438,6 +438,12 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+// Defines SemeruCompiler status
+type SemeruCompilerStatus struct {
+	TLSSecretName   string `json:"tlsSecretName,omitempty"`
+	ServiceHostname string `json:"serviceHostname,omitempty"`
+}
+
 // Defines the observed state of WebSphereLibertyApplication.
 type WebSphereLibertyApplicationStatus struct {
 	// +listType=atomic
@@ -452,6 +458,8 @@ type WebSphereLibertyApplicationStatus struct {
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
 
 	References common.StatusReferences `json:"references,omitempty"`
+
+	SemeruCompiler *SemeruCompilerStatus `json:"semeruCompiler,omitempty"`
 }
 
 // Defines possible status conditions.
