@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -Eeo pipefail
+
 readonly usage="Usage: e2e-minikube.sh --test-tag <test-id>"
 
 readonly LOCAL_REGISTRY="localhost:5000"

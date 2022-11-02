@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -o pipefail
+
 readonly usage="Usage: static-linter-scan.sh --git-token <GHE token> --static-linter-version <Linter Version>"
 readonly WORK_DIR="${PWD}/linter-tool"
 
