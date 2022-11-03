@@ -7096,6 +7096,14 @@ spec:
                 type: object
               routeAvailable:
                 type: boolean
+              semeruCompiler:
+                description: Defines SemeruCompiler status
+                properties:
+                  serviceHostname:
+                    type: string
+                  tlsSecretName:
+                    type: string
+                type: object
               versions:
                 properties:
                   reconciled:
