@@ -83,10 +83,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Liveness probe
 	livenessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
+
 		InitialDelaySeconds: 10,
 		PeriodSeconds:       10,
 	}
@@ -95,6 +96,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	readinessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
+				// Check the JITServer has started
 				Command: []string{"/bin/bash", "-c", "grep -q '#INFO:  StartTime' /tmp/output.log*"},
 			},
 		},
