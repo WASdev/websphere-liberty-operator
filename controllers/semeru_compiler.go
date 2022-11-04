@@ -18,6 +18,9 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	wlutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -26,8 +29,6 @@ import (
 	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -134,8 +135,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Liveness probe
 	livenessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
 		InitialDelaySeconds: 10,
