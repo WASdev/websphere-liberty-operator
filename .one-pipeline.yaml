@@ -55,6 +55,21 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
+    SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
+      exit 0
+    fi
+
     timestamp=$(date +%s)
     echo $timestamp
     wlo_demand_id="wlo_$timestamp"
@@ -72,7 +87,7 @@ setup:
     export ebc_plan=svl-onepipeline-ocpplus_x.yml
     # priority is 30 to start, prod priority may be 100
     export ebc_priority=30
-    export ebc_autoCompleteAfterXHours=12
+    export ebc_autoCompleteAfterXHours=6
     # gather pipeline URL and place in following env var
     reason="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
     export ebc_reasonForEnvironment=$reason
@@ -383,6 +398,21 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
+    SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
+      exit 0
+    fi
+
     git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
     cd ebc-gateway-http
 
@@ -398,7 +428,6 @@ acceptance-test:
     json=$(./ebc_waitForDemand.sh)
     rc=$?
     
-    jq -c '.status' <<< $json
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
     ip=$(echo "$ip" | tr -d '"')
@@ -422,8 +451,6 @@ acceptance-test:
     echo "json=$json"
     echo "token=$token"
     
-    # remove this if else block after this initial testing
-
     if [[ "$rc" == 0 ]]; then
        #./ebc_complete.sh
        echo "EBC create of id: $wlo_demand_id cluster successful"
@@ -451,15 +478,6 @@ acceptance-test:
     echo "*** after issuing oc login"
     ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
     
-    remove comment after test
-    PERIODIC_SCAN=$(get_env periodic-rescan)
-    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
-
-    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-      exit 0
-    fi
-
     # Download and configure golang
     GO_VERSION=$(get_env go-version)
     if [[ -z "${GO_VERSION}" ]]; then
@@ -499,7 +517,6 @@ acceptance-test:
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
-      echo "for more information on accessing the problem machine see: https://github.ibm.com/websphere/WS-CD-Open/wiki/Build-Debug"
       echo "access console at: $console"
       echo "credentials: kubeadmin/$token"
     fi
