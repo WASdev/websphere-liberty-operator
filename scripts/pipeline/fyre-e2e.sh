@@ -137,17 +137,8 @@ main() {
     echo "****** Logging into private registry..."
     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_NAME} -u "${REGISTRY_USER}" --password-stdin
 
-    echo "****** Creating pull secret..."
-    oc create secret docker-registry regcred --docker-server=${REGISTRY_NAME} "--docker-username=${REGISTRY_USER}" "--docker-password=${REGISTRY_PASSWORD}" --docker-email=unused 
-
-    oc get secret/regcred -o jsonpath='{.data.\.dockerconfigjson}' | base64 --decode > /tmp/pull-secret-new.yaml
-    oc get secret/pull-secret -n openshift-config -o jsonpath='{.data.\.dockerconfigjson}' | base64 --decode > /tmp/pull-secret-global.yaml
-
-    jq -s '.[1] * .[0]' /tmp/pull-secret-new.yaml /tmp/pull-secret-global.yaml > /tmp/pull-secret-merged.yaml
-
-    echo "Updating global pull secret"
-    oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
-
+    # sleep for 10 minutes to wait for rook-cepth, knative and cert-manager to be fully installed
+    sleep 10m
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator
 
