@@ -10,7 +10,7 @@ setup:
     eval "arr=($slack_users)"
     for user in "${arr[@]}"; do 
       echo "user=$user"
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>"}' $(get_env slack_web_hook_url)
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  "}' $(get_env slack_web_hook_url)
     done
     #curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"'$slack_users'\"}' $(get_env slack_web_hook_url)
     #echo "curl -X POST -H 'Content-type: application/json' --data '{text:test post}' $(get_env slack_web_hook_url)"
