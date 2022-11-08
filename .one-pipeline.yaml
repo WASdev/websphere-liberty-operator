@@ -7,9 +7,14 @@ setup:
     echo "curl -X POST -H 'Content-type: application/json' --data '{text:$(get_env slack_users)}' $(get_env slack_web_hook_url)"
     slack_users=$(get_env slack_users)
     echo "slack_users=$slack_users"
-    curl -X POST -H 'Content-type: application/json' --data '{"text":"'$slack_users'"}' $(get_env slack_web_hook_url)
+    eval "arr=($slack_users)"
+    for s in "${arr[@]}"; do 
+      echo "$s"
+      curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"'$s'\"}' $(get_env slack_web_hook_url)
+    done
+    #curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"'$slack_users'\"}' $(get_env slack_web_hook_url)
     #echo "curl -X POST -H 'Content-type: application/json' --data '{text:test post}' $(get_env slack_web_hook_url)"
-    #curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"test post\"}' $(get_env slack_web_hook_url)
+    curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"test post\"}' $(get_env slack_web_hook_url)
     exit 1
     echo "setup"
     apt-get update
