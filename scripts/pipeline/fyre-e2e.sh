@@ -141,12 +141,16 @@ main() {
     sleep 3m
     echo "monitoring knative"
     ./wait.sh deployment knative-serving
-    if [[ "$rc" == 0 ]]; then
+    rc_kn=$?
+    echo "rc_kn=$rc_kn"
+    if [[ "$rc_kn" == 0 ]]; then
         echo "knative up"
     fi
     echo "monitoring rook-ceph"
     ./wait.sh deployment rook-ceph
-    if [[ "$rc" == 0 ]]; then
+    rc_rk=$?
+    echo "rc_rk=$rc_rk"
+    if [[ "$rc_rk" == 0 ]]; then
         echo "rook-ceph up"
     fi
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
