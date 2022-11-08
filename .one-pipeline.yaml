@@ -4,18 +4,7 @@ setup:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
   script: |
     #!/usr/bin/env bash
-    echo "curl -X POST -H 'Content-type: application/json' --data '{text:$(get_env slack_users)}' $(get_env slack_web_hook_url)"
-    slack_users=$(get_env slack_users)
-    echo "slack_users=$slack_users"
-    eval "arr=($slack_users)"
-    for user in "${arr[@]}"; do 
-      echo "user=$user"
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  "}' $(get_env slack_web_hook_url)
-    done
-    #curl -X POST -H 'Content-type: application/json' --data '{\"text\":\"'$slack_users'\"}' $(get_env slack_web_hook_url)
-    #echo "curl -X POST -H 'Content-type: application/json' --data '{text:test post}' $(get_env slack_web_hook_url)"
-    curl -X POST -H 'Content-type: application/json' --data '{"text":"test post"}' $(get_env slack_web_hook_url)
-    exit 1
+   
     echo "setup"
     apt-get update
     apt-get -y install build-essential
@@ -531,7 +520,13 @@ acceptance-test:
       echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
       echo "access console at: $console"
       echo "credentials: kubeadmin/$token"
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"$(get_env slack_users"}' $(get_env slack_web_hook_url)
+      slack_users=$(get_env slack_users)
+      echo "slack_users=$slack_users"
+      eval "arr=($slack_users)"
+      for user in "${arr[@]}"; do 
+        echo "user=$user"
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
+      done
       curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed, the cluster will be retained for 12 hours.  If you need more time to debug ( 72 hours ):"}' $(get_env slack_web_hook_url)
       curl -X POST -H 'Content-type: application/json' --data '{"text":"issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"}' $(get_env slack_web_hook_url)
       curl -X POST -H 'Content-type: application/json' --data '{"text":"access console at: $console"}' $(get_env slack_web_hook_url)
