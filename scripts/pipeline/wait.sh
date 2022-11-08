@@ -6,7 +6,7 @@
 
     count=0
 
-    # echo "Waiting for ${type} ${namespace} to be ready..."
+    echo "Waiting for ${type} ${namespace} to be ready..."
     kubectl get ${type} -n ${namespace} >/dev/null 
 
     while [ $? -ne 0 ]; do
@@ -22,14 +22,14 @@
         kubectl get ${type} -n ${namespace}
     done
 
-    # echo "The ${type} ${namespace} is ready."
+    echo "The ${type} ${namespace} is ready."
 
     if [[ "${type}" == *"deploy"* ]]; then
-        # echo "Waiting for deployment ${name} pods to be ready..."
+        echo "Waiting for deployment ${name} pods to be ready..."
         count=0
         replicas="$(kubectl get deploy -n ${namespace} -o=jsonpath='{.items[*].status.readyReplicas}')"
         readyReplicas="$(kubectl get deploy -n ${namespace} -o=jsonpath='{.items[*].status.replicas}')"
-        # echo "replicas: $replicas,readyReplicas: $readyReplicas; Retry ${count} of ${MAX_RETRIES}."
+        echo "replicas: $replicas,readyReplicas: $readyReplicas; Retry ${count} of ${MAX_RETRIES}."
 
         while true;
         do
@@ -44,7 +44,7 @@
 
             count=$((count+1))
 
-            # echo "replicas: $replicas,readyReplicas: $readyReplicas; Retry ${count} of ${MAX_RETRIES}."
+            echo "replicas: $replicas,readyReplicas: $readyReplicas; Retry ${count} of ${MAX_RETRIES}."
             sleep 5s
             replicas="$(kubectl get deploy -n ${namespace} -o=jsonpath='{.items[*].status.readyReplicas}')"
             readyReplicas="$(kubectl get deploy -n ${namespace} -o=jsonpath='{.items[*].status.replicas}')"

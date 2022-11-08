@@ -137,12 +137,14 @@ main() {
     echo "****** Logging into private registry..."
     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_NAME} -u "${REGISTRY_USER}" --password-stdin
 
-    # sleep for 3 minutes to wait for rook-cepth, knative and cert-manager to start installing, then start monitoring for completion
+    echo "sleep for 3 minutes to wait for rook-cepth, knative and cert-manager to start installing, then start monitoring for completion"
     sleep 3m
+    echo "monitoring knative"
     ./wait.sh deployment knative-serving
     if [[ "$rc" == 0 ]]; then
         echo "knative up"
     fi
+    echo "monitoring rook-ceph"
     ./wait.sh deployment rook-ceph
     if [[ "$rc" == 0 ]]; then
         echo "rook-ceph up"
