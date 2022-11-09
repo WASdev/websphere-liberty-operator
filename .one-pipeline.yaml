@@ -84,9 +84,9 @@ setup:
     export intranetId_PSW=$(get_env ebc_pw)
     export demandId=$wlo_demand_id
 
-    PRE-RELEASE=$(get_env pre-release)
-    PRE-RELEASE="$(echo "$PRE-RELEASE" | tr '[:upper:]' '[:lower:]')"
-    if [[ ! -z "$PRE-RELEASE" && "$PRE-RELEASE" != "false" && "$PRE-RELEASE" != "no"  ]]; then
+    PRE_RELEASE=$(get_env pre-release)
+    PRE_RELEASE="$(echo "$PRE-RELEASE" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"  ]]; then
       rhcos_level=$(get_env pre-release-rhcos-url)
       ocp_level=$(get_env pre-release-ocp-url)
       echo "this is a pre-release OCP cluster build"
