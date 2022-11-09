@@ -526,6 +526,7 @@ acceptance-test:
       for user in "${arr[@]}"; do 
         echo "user=$user"
         curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
+        echo " "
       done
       curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed, the cluster will be retained for 12 hours.  If you need more time to debug ( 72 hours ):"}' $(get_env slack_web_hook_url)
       curl -X POST -H 'Content-type: application/json' --data '{"text":"issue @ebc debug '$wlo_demand_id' in #was-ebc channel to keep cluster for debug"}' $(get_env slack_web_hook_url)
