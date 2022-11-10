@@ -114,6 +114,12 @@ setup:
     export ebc_reasonForEnvironment=$reason
     
     ./ebc_demand.sh
+    if [[ "$rc" == 0 ]]; then
+      "cluster requested"
+    else
+      echo "Outage impacting demand of cluster, try again later"
+      exit 1
+    fi
 
 test:
   dind: true
@@ -479,7 +485,6 @@ acceptance-test:
     echo "token=$token"
     
     if [[ "$rc" == 0 ]]; then
-       #./ebc_complete.sh
        echo "EBC create of id: $wlo_demand_id cluster successful"
     else
       echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
