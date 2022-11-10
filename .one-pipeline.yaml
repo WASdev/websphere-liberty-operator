@@ -445,8 +445,11 @@ acceptance-test:
     #(prod or dev to use dev ebc)
     export ebcEnvironment=dev
     
+    echo "calling ebc_waitForDemand.sh"
     json=$(./ebc_waitForDemand.sh)
     rc=$?
+    echo "return from ebc_waitForDemand.sh"
+    
     
     status=$(jq -c '.status' <<< $json)
     ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
