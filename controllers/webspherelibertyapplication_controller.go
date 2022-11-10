@@ -275,6 +275,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Error(err, message)
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
+	// If semeru compiler is enabled, make sure its ready
+	if instance.GetSemeruCloudCompiler() != nil {
+		err = r.areSemeruResourcesReady(instance)
+		if err != nil {
+			reqLogger.Error(err, message)
+			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+		}
+	}
 
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
 	if err != nil {
