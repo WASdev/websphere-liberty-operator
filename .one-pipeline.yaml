@@ -56,13 +56,13 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
-    # PERIODIC_SCAN=$(get_env periodic-rescan)
-    # PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    # if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-    #   echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-    #   exit 0
-    # fi
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
     SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
@@ -226,8 +226,8 @@ containerize:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
-      #RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
-      RELEASE_TARGET=$(get_env branch)
+      RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
+      #RELEASE_TARGET=$(get_env branch)
     else
       if [[ "$PIPELINE_DEBUG" == 1 ]]; then
         trap env EXIT
@@ -427,13 +427,13 @@ acceptance-test:
     #!/usr/bin/env bash
     echo "acceptance-test"
 
-    # PERIODIC_SCAN=$(get_env periodic-rescan)
-    # PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
-    # if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-    #   echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-    #   exit 0
-    # fi
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
     SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
