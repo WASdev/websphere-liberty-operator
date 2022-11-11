@@ -140,8 +140,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Liveness probe
 	livenessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
 		InitialDelaySeconds: 10,
@@ -151,8 +151,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Readiness probe
 	readinessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "grep -q '#INFO:  StartTime' /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -188,7 +188,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections -Xjit:vlog=/tmp/output.log" +
+						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections" +
 							" -XX:JITServerSSLKey=/etc/x509/certs/tls.key" +
 							" -XX:JITServerSSLCert=/etc/x509/certs/tls.crt"},
 					},
