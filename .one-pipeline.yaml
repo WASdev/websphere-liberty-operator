@@ -100,11 +100,10 @@ setup:
       export ebc_fyre_install_url=${ocp_level}/openshift-install-linux.tar.gz
       export ebc_fyre_client_url=${ocp_level}/openshift-client-linux.tar.gz
     else
-      #(prod or dev to use dev ebc)
       export ebc_plan=svl-onepipeline-ocpplus_x.yml
       export ebc_ocp_version=$(get_env ocp_version)
     fi
-
+    # prod or dev, start out with dev
     export ebcEnvironment=dev
     # priority is 30 to start, prod priority may be 100
     export ebc_priority=30
