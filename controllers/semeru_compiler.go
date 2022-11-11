@@ -379,7 +379,7 @@ func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.W
 	deployment := &appsv1.Deployment{}
 	err := r.GetClient().Get(context.TODO(), namespacedName, deployment)
 	if err != nil {
-		return errors.New("semeru cloud compiler is not ready: deployment is not created")
+		return errors.New("Semeru Cloud Compiler is not ready: Deployment is not created.")
 	}
 
 	// Get replicas
@@ -392,7 +392,7 @@ func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.W
 	if replicas == *expectedReplicas && readyReplicas == *expectedReplicas && updatedReplicas == *expectedReplicas {
 		return nil // Semeru ready
 	} else if replicas > *expectedReplicas {
-		return errors.New("semeru cloud compiler is not ready: replica set is progressing")
+		return errors.New("Semeru Cloud Compiler is not ready: Replica set is progressing.")
 	}
-	return errors.New("semeru cloud compiler is not ready: replica set is not ready")
+	return errors.New("Semeru Cloud Compiler is not ready: Deployment is not ready.")
 }
