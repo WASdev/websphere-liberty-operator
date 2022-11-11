@@ -17,7 +17,12 @@
 package controllers
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	wlutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -26,12 +31,11 @@ import (
 	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -366,4 +370,29 @@ func getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
 		return args
 	}
 	return nil
+}
+func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.WebSphereLibertyApplication) error {
+	var replicas, readyReplicas, updatedReplicas int32
+	namespacedName := types.NamespacedName{Name: wlva.GetName() + SemeruLabelNameSuffix, Namespace: wlva.GetNamespace()}
+
+	// Check if deployment exists
+	deployment := &appsv1.Deployment{}
+	err := r.GetClient().Get(context.TODO(), namespacedName, deployment)
+	if err != nil {
+		return errors.New("Semeru Cloud Compiler is not ready: Deployment is not created.")
+	}
+
+	// Get replicas
+	er := int32(1)
+	expectedReplicas := &er
+	ds := deployment.Status
+	replicas, readyReplicas, updatedReplicas = ds.Replicas, ds.ReadyReplicas, ds.UpdatedReplicas
+
+	// Check if all replicas are equal to the expected replicas
+	if replicas == *expectedReplicas && readyReplicas == *expectedReplicas && updatedReplicas == *expectedReplicas {
+		return nil // Semeru ready
+	} else if replicas > *expectedReplicas {
+		return errors.New("Semeru Cloud Compiler is not ready: Replica set is progressing.")
+	}
+	return errors.New("Semeru Cloud Compiler is not ready: Deployment is not ready.")
 }
