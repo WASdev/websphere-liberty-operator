@@ -30,12 +30,12 @@ import (
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -65,6 +65,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		return nil, ""
 	}
 
+	cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
+
 	// Create the Semeru Service object
 	semsvc := &corev1.Service{ObjectMeta: compilerMeta}
 	tlsSecretName := ""
@@ -92,7 +94,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 	}
 
 	//create certmanager issuer and certificate if necessary
-	if !r.IsOpenShift() {
+	if !r.IsOpenShift() || cmPresent {
 		err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
 		if err != nil {
 			return err, "Failed to reconcile Certificate Issuer"
@@ -261,11 +263,44 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	svcCert.Name = wlva.GetName() + SemeruLabelNameSuffix
 	svcCert.Namespace = wlva.GetNamespace()
 
-	err := r.CreateOrUpdate(svcCert, wlva, func() error {
+	customIssuer := &certmanagerv1.Issuer{ObjectMeta: metav1.ObjectMeta{
+		Name:      "wlo-" + "-custom-issuer",
+		Namespace: svcCert.Namespace,
+	}}
+
+	customIssuerFound := false
+	err := r.GetClient().Get(context.Background(), types.NamespacedName{Name: customIssuer.Name,
+		Namespace: customIssuer.Namespace}, customIssuer)
+	if err == nil {
+		customIssuerFound = true
+	}
+
+	shouldRefreshCertSecret := false
+
+	err = r.CreateOrUpdate(svcCert, wlva, func() error {
 		svcCert.Labels = wlva.GetLabels()
 		svcCert.Spec.IssuerRef = certmanagermetav1.ObjectReference{
 			Name: "wlo-ca-issuer",
 		}
+		if customIssuerFound {
+			svcCert.Spec.IssuerRef.Name = customIssuer.Name
+		}
+
+		rVersion, _ := utils.GetIssuerResourceVersion(r.GetClient(), svcCert)
+		if svcCert.Spec.SecretTemplate == nil {
+			svcCert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{
+				Annotations: map[string]string{},
+			}
+		}
+
+		if svcCert.Spec.SecretTemplate.Annotations[wlva.GetGroupName()+"/cm-issuer-version"] != rVersion {
+			if svcCert.Spec.SecretTemplate.Annotations == nil {
+				svcCert.Spec.SecretTemplate.Annotations = map[string]string{}
+			}
+			svcCert.Spec.SecretTemplate.Annotations[wlva.GetGroupName()+"/cm-issuer-version"] = rVersion
+			shouldRefreshCertSecret = true
+		}
+
 		svcCert.Spec.SecretName = wlva.GetName() + SemeruLabelNameSuffix + "-tls-cm"
 		svcCert.Spec.DNSNames = make([]string, 2)
 		svcCert.Spec.DNSNames[0] = wlva.GetName() + SemeruLabelNameSuffix + "." + wlva.Namespace + ".svc"
@@ -281,6 +316,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	if err != nil {
 		return err
 	}
+
+	if shouldRefreshCertSecret {
+		r.DeleteResource(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: svcCert.Spec.SecretName, Namespace: svcCert.Namespace}})
+	}
+
 	if wlva.Status.SemeruCompiler == nil {
 		wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
 	}
