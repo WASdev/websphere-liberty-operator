@@ -397,7 +397,7 @@ func getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
 			certificateLocation = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 		}
 		jitServerAddress := instance.Status.SemeruCompiler.ServiceHostname
-		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
+		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
 			jitServerAddress, certificateLocation)
 
 		args := []string{
