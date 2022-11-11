@@ -31,8 +31,8 @@ install_dependencies() {
 
   ## Install kubectl
   if ! command -v kubectl &> /dev/null; then
-    echo "****** Installing kubectl v1.19.4..."
-    curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.19.16/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
+    echo "****** Installing kubectl v1.23.12..."
+    curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
   fi
 
   # Install kind
