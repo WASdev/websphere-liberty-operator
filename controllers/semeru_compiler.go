@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,18 +41,22 @@ import (
 )
 
 const (
-	SemeruLabelNameSuffix = "-semeru-compiler"
-	SemeruLabelName       = "semeru-compiler"
-	JitServer             = "jitserver"
+	SemeruLabelNameSuffix                   = "-semeru-compiler"
+	SemeruLabelName                         = "semeru-compiler"
+	JitServer                               = "jitserver"
+	SemeruGenerationLabelName               = "semeru-compiler-generation"
+	StatusReferenceSemeruInstanceGeneration = "semeruInstanceGeneration"
+	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
 func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string) {
-
 	compilerMeta := metav1.ObjectMeta{
-		Name:      wlva.GetName() + SemeruLabelNameSuffix,
+		Name:      getSemeruCompilerName(wlva),
 		Namespace: wlva.GetNamespace(),
 	}
+	// Generation obtained alongside compilerMeta to prevent potential overwrite in subsequent reconcile
+	currentGeneration := getGeneration(wlva)
 
 	if r.isSemeruEnabled(wlva) {
 		cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
@@ -103,6 +108,20 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		if err != nil {
 			return err, "Failed to reconcile Deployment : " + semeruDeployment.Name
 		}
+
+		// Add new generation to .status.reference.semeruInstancesCompleted as a comma-separated string
+		if wlva.Status.References != nil {
+			if completedInstances, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
+				if completedInstances != currentGeneration && !strings.Contains(completedInstances, currentGeneration) {
+					wlva.Status.References[StatusReferenceSemeruInstancesCompleted] += "," + currentGeneration
+					// Delete old semeru instances
+					r.deleteCompletedSemeruCompilerInstances(wlva)
+				}
+			} else {
+				wlva.Status.References[StatusReferenceSemeruInstancesCompleted] = currentGeneration
+			}
+		}
+
 		return nil, ""
 	} else {
 		semsvc := &corev1.Service{ObjectMeta: compilerMeta}
@@ -112,6 +131,83 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		}
 		wlva.Status.SemeruCompiler = nil
 		return nil, ""
+	}
+}
+
+// Returns the one-based index generation indicated by .status.references.semeruInstanceGeneration if it exists, otherwise defaults to 1
+func getGeneration(wlva *wlv1.WebSphereLibertyApplication) string {
+	if wlva.Status.References != nil {
+		if semeruGeneration, ok := wlva.Status.References[StatusReferenceSemeruInstanceGeneration]; ok {
+			return semeruGeneration
+		}
+		wlva.Status.References[StatusReferenceSemeruInstanceGeneration] = fmt.Sprint(1)
+	}
+	return "1"
+}
+
+// Increments the generation number at .status.references.semeruInstanceGeneration if it exists, otherwise if possible, initializes the generation to 1
+func createNewSemeruCompilerGeneration(wlva *wlv1.WebSphereLibertyApplication) {
+	if wlva.Status.References != nil {
+		if semeruGeneration, ok := wlva.Status.References[StatusReferenceSemeruInstanceGeneration]; ok {
+			if generation, err := strconv.Atoi(semeruGeneration); err == nil {
+				wlva.Status.References[StatusReferenceSemeruInstanceGeneration] = fmt.Sprint(generation + 1)
+			} else {
+				wlva.Status.References[StatusReferenceSemeruInstanceGeneration] = fmt.Sprint(1)
+			}
+		} else {
+			wlva.Status.References[StatusReferenceSemeruInstanceGeneration] = fmt.Sprint(1)
+		}
+	}
+}
+
+// Deletes old Semeru Compiler generations that have been marked as completed (a single reconcile succeeded)
+func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruCompilerInstances(wlva *wlv1.WebSphereLibertyApplication) {
+	if semeruInstancesCompleted, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
+		semeruInstancesCompletedList := strings.Split(semeruInstancesCompleted, ",")
+		deletedCompleted := make([]string, 0)
+		cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
+		certificatePresent := !r.IsOpenShift() || cmPresent
+		// For each completed Semeru generation
+		for _, completedSemeruInstance := range semeruInstancesCompletedList {
+			completedGeneration, _ := strconv.Atoi(completedSemeruInstance)
+			currentGeneration, _ := strconv.Atoi(wlva.Status.References[StatusReferenceSemeruInstanceGeneration])
+			// Delete the previous generation's resources and mark the status reference field for deletion
+			if completedGeneration < currentGeneration {
+				semeruLabels := map[string]string{
+					SemeruGenerationLabelName: completedSemeruInstance,
+				}
+				opts := []client.DeleteAllOfOption{
+					client.MatchingLabels(semeruLabels),
+					client.InNamespace(wlva.GetNamespace()),
+				}
+				r.GetClient().DeleteAllOf(context.TODO(), &appsv1.Deployment{}, opts...)
+				r.GetClient().DeleteAllOf(context.TODO(), &corev1.Service{}, opts...)
+				retryDeletion := false
+				// Remove CertManager Certificate if exists
+				if certificatePresent {
+					r.GetClient().DeleteAllOf(context.TODO(), &certmanagerv1.Certificate{}, opts...)
+					cmSecret := &corev1.Secret{}
+					cmSecret.Name = getSemeruCompilerNamePrefix(wlva) + "-" + completedSemeruInstance + "-tls-cm"
+					r.GetClient().Delete(context.TODO(), cmSecret)
+					// Retry deletion if old secret still exists
+					if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: cmSecret.Name, Namespace: wlva.GetNamespace()}, cmSecret); err == nil {
+						retryDeletion = true
+					}
+				}
+				if !retryDeletion {
+					deletedCompleted = append(deletedCompleted, completedSemeruInstance)
+				}
+			}
+		}
+		// Remove deleted generations from status reference field
+		for _, deletedInstance := range deletedCompleted {
+			oldInstancesCompleted := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]
+			wlva.Status.References[StatusReferenceSemeruInstancesCompleted] = strings.Replace(oldInstancesCompleted, deletedInstance+",", "", 1)
+			// Corner case: The new generation completed before the old generation completed
+			if oldInstancesCompleted == wlva.Status.References[StatusReferenceSemeruInstancesCompleted] {
+				wlva.Status.References[StatusReferenceSemeruInstancesCompleted] = strings.Replace(oldInstancesCompleted, ","+deletedInstance, "", 1)
+			}
+		}
 	}
 }
 
@@ -258,9 +354,8 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebSphereLibertyApplication) error {
 	svcCert := &certmanagerv1.Certificate{}
-	svcCert.Name = wlva.GetName() + SemeruLabelNameSuffix
+	svcCert.Name = getSemeruCompilerName(wlva)
 	svcCert.Namespace = wlva.GetNamespace()
-
 	customIssuer := &certmanagerv1.Issuer{ObjectMeta: metav1.ObjectMeta{
 		Name:      "wlo-" + "-custom-issuer",
 		Namespace: svcCert.Namespace,
@@ -277,6 +372,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 
 	err = r.CreateOrUpdate(svcCert, wlva, func() error {
 		svcCert.Labels = wlva.GetLabels()
+		svcCert.Labels[SemeruGenerationLabelName] = getGeneration(wlva)
 		svcCert.Spec.IssuerRef = certmanagermetav1.ObjectReference{
 			Name: "wlo-ca-issuer",
 		}
@@ -299,10 +395,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 			shouldRefreshCertSecret = true
 		}
 
-		svcCert.Spec.SecretName = wlva.GetName() + SemeruLabelNameSuffix + "-tls-cm"
+		svcCert.Spec.SecretName = svcCert.Name + "-tls-cm"
 		svcCert.Spec.DNSNames = make([]string, 2)
-		svcCert.Spec.DNSNames[0] = wlva.GetName() + SemeruLabelNameSuffix + "." + wlva.Namespace + ".svc"
-		svcCert.Spec.DNSNames[1] = wlva.GetName() + SemeruLabelNameSuffix + "." + wlva.Namespace + ".svc.cluster.local"
+		svcCert.Spec.DNSNames[0] = svcCert.Name + "." + wlva.Namespace + ".svc"
+		svcCert.Spec.DNSNames[1] = svcCert.Name + "." + wlva.Namespace + ".svc.cluster.local"
 		svcCert.Spec.CommonName = svcCert.Spec.DNSNames[0]
 		duration, err := time.ParseDuration(common.Config[common.OpConfigCMCertDuration])
 		if err != nil {
@@ -326,6 +422,14 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	return nil
 }
 
+func getSemeruCompilerName(wlva *wlv1.WebSphereLibertyApplication) string {
+	return getSemeruCompilerNamePrefix(wlva) + "-" + getGeneration(wlva)
+}
+
+func getSemeruCompilerNamePrefix(wlva *wlv1.WebSphereLibertyApplication) string {
+	return wlva.GetName() + SemeruLabelNameSuffix
+}
+
 // Create the Selector map for a Semeru Compiler
 func getSelectors(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredSelector := make(map[string]string)
@@ -343,6 +447,7 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels["app.kubernetes.io/managed-by"] = OperatorName
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
+	requiredLabels[SemeruGenerationLabelName] = getGeneration(wlva)
 	return requiredLabels
 }
 
@@ -411,7 +516,7 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 }
 func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.WebSphereLibertyApplication) error {
 	var replicas, readyReplicas, updatedReplicas int32
-	namespacedName := types.NamespacedName{Name: wlva.GetName() + SemeruLabelNameSuffix, Namespace: wlva.GetNamespace()}
+	namespacedName := types.NamespacedName{Name: getSemeruCompilerName(wlva), Namespace: wlva.GetNamespace()}
 
 	// Check if deployment exists
 	deployment := &appsv1.Deployment{}

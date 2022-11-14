@@ -235,6 +235,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if imageReferenceOld != instance.Status.ImageReference {
 		reqLogger.Info("Updating status.imageReference", "status.imageReference", instance.Status.ImageReference)
 		err = r.UpdateStatus(instance)
+		// Trigger a new Semeru Cloud Compiler generation
+		createNewSemeruCompilerGeneration(instance)
 		if err != nil {
 			reqLogger.Error(err, "Error updating WebSphere Liberty application status")
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
