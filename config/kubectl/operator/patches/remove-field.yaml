@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: ServiceAccount
+metadata:
+  name: controller-manager
+  namespace:
+    $patch: delete
+---
+apiVersion: apps/v1
+kind: Role
+metadata:
+  name: manager-role
+  namespace:
+    $patch: delete
+---
+apiVersion: apps/v1
+kind: Role
+metadata:
+  name: leader-election-role
+  namespace:
+    $patch: delete
+---
+apiVersion: apps/v1
+kind: RoleBinding
+metadata:
+  name: manager-rolebinding
+  namespace:
+    $patch: delete
+---
+apiVersion: apps/v1
+kind: RoleBinding
+metadata:
+  name: leader-election-rolebinding
+  namespace:
+    $patch: delete
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace:
+    $patch: delete
+---
+

@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../rbac
+
+namePrefix: wlo-cluster
+
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/instance: websphere-liberty-operator
+  app.kubernetes.io/managed-by: olm
+  app.kubernetes.io/name: websphere-liberty-operator
+
+patchesStrategicMerge:
+- patches/delete-service-account.yaml
+
+patchesJson6902:
+- patch: |-
+    - op: replace
+      path: /kind
+      value: ClusterRole
+  target:
+    group: rbac.authorization.k8s.io
+    kind: Role
+    name: leader-election-role
+    version: v1
+

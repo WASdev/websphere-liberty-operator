@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../rbac
+- ../../manager
+
+namePrefix: wlo-
+  #namespacee: null
+
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/instance: websphere-liberty-operator
+  app.kubernetes.io/managed-by: olm
+  app.kubernetes.io/name: websphere-liberty-operator
+
+#patchesStrategicMerge:
+  #- patches/delete-namespace.yaml
