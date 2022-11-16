@@ -190,7 +190,7 @@ static-scan:
 containerize:
   dind: true
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
   script: |
     #!/usr/bin/env bash
     echo "*** OS release ***"
@@ -215,9 +215,9 @@ containerize:
 
      # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
-      sudo yum -y install skopeo
-      # apt-get update
-      # apt-get -y install skopeo
+      # sudo yum -y install skopeo
+      apt-get update
+      apt-get -y install skopeo
       # PACKAGE_CACHE_URL=$(get_env package-cache-url)
       # wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
       # wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
