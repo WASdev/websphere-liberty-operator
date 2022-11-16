@@ -190,7 +190,7 @@ static-scan:
 containerize:
   dind: true
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.15
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.22
   script: |
     #!/usr/bin/env bash
     echo "*** OS release ***"
