@@ -45,15 +45,15 @@ const (
 	SemeruLabelNameSuffix                   = "-semeru-compiler"
 	SemeruLabelName                         = "semeru-compiler"
 	JitServer                               = "jitserver"
-	SemeruGenerationLabelName               = "semeru-compiler-generation"
+	SemeruGenerationLabelNameSuffix         = "/semeru-compiler-generation"
 	StatusReferenceSemeruGeneration         = "semeruGeneration"
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
-func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string) {
+func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
 	compilerMeta := metav1.ObjectMeta{
-		Name:      getSemeruCompilerName(wlva),
+		Name:      getSemeruCompilerNameWithGeneration(wlva),
 		Namespace: wlva.GetNamespace(),
 	}
 
@@ -85,18 +85,18 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 			return nil
 		})
 		if err != nil {
-			return err, "Failed to reconcile the Semeru Compiler Service"
+			return err, "Failed to reconcile the Semeru Compiler Service", false
 		}
 
 		//create certmanager issuer and certificate if necessary
 		if !r.IsOpenShift() || cmPresent {
 			err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
 			if err != nil {
-				return err, "Failed to reconcile Certificate Issuer"
+				return err, "Failed to reconcile Certificate Issuer", false
 			}
 			err = r.reconcileSemeruCMCertificate(wlva)
 			if err != nil {
-				return err, "Failed to reconcile Semeru Compiler Certificate"
+				return err, "Failed to reconcile Semeru Compiler Certificate", false
 			}
 		}
 
@@ -107,104 +107,40 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 			return nil
 		})
 		if err != nil {
-			return err, "Failed to reconcile Deployment : " + semeruDeployment.Name
+			return err, "Failed to reconcile Deployment : " + semeruDeployment.Name, false
 		}
 
-		// Add new generation to .status.reference.semeruInstancesCompleted as a comma-separated string
+		// Add the new generation number to .status.reference.semeruInstancesCompleted as a comma-separated string
+		areCompletedSemeruInstancesMarkedToBeDeleted := false
 		if wlva.Status.References != nil {
 			if completedInstances, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
-				if completedInstances != currentGeneration && !strings.Contains(completedInstances, currentGeneration) {
-					wlva.Status.References[StatusReferenceSemeruInstancesCompleted] += "," + currentGeneration
-					// Delete old semeru instances
-					r.deleteCompletedSemeruCompilerInstances(wlva)
+				if completedInstances != currentGeneration {
+					// Mark old Semeru Cloud Compiler instances for deletion
+					areCompletedSemeruInstancesMarkedToBeDeleted = true
+					if !strings.Contains(completedInstances, currentGeneration) {
+						wlva.Status.References[StatusReferenceSemeruInstancesCompleted] += "," + currentGeneration
+					}
 				}
 			} else {
 				wlva.Status.References[StatusReferenceSemeruInstancesCompleted] = currentGeneration
 			}
 		}
 
-		return nil, ""
+		return nil, "", areCompletedSemeruInstancesMarkedToBeDeleted
 	} else {
 		semsvc := &corev1.Service{ObjectMeta: compilerMeta}
 		semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
 		if err := r.DeleteResources([]client.Object{semsvc, semeruDeployment}); err != nil {
-			return err, "Failed to delete Semeru Compiler resources"
+			return err, "Failed to delete Semeru Compiler resources", false
 		}
 		wlva.Status.SemeruCompiler = nil
-		return nil, ""
+		return nil, "", false
 	}
-<<<<<<< HEAD
-=======
-
-	cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
-
-	// Create the Semeru Service object
-	semsvc := &corev1.Service{ObjectMeta: compilerMeta}
-	tlsSecretName := ""
-	err := r.CreateOrUpdate(semsvc, wlva, func() error {
-		reconcileSemeruService(semsvc, wlva)
-		if r.IsOpenShift() {
-			if _, ok := semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"]; !ok {
-				if _, ok = semsvc.Annotations["service.alpha.openshift.io/serving-cert-secret-name"]; !ok {
-					if semsvc.Annotations == nil {
-						semsvc.Annotations = map[string]string{}
-					}
-					tlsSecretName = semsvc.GetName() + "-tls-ocp"
-					semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = tlsSecretName
-					if wlva.Status.SemeruCompiler == nil {
-						wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
-					}
-					wlva.Status.SemeruCompiler.TLSSecretName = tlsSecretName
-				}
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err, "Failed to reconcile the Semeru Compiler Service"
-	}
-
-	// Create CertManager Issuer and Certificate if necessary
-	if !r.IsOpenShift() || cmPresent {
-		err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
-		if err != nil {
-			return err, "Failed to reconcile Certificate Issuer"
-		}
-		err = r.reconcileSemeruCMCertificate(wlva)
-		if err != nil {
-			return err, "Failed to reconcile Semeru Compiler Certificate"
-		}
-	}
-
-	// Deployment
-	semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
-	err = r.CreateOrUpdate(semeruDeployment, wlva, func() error {
-		r.reconcileSemeruDeployment(wlva, semeruDeployment)
-		return nil
-	})
-	if err != nil {
-		return err, "Failed to reconcile Deployment : " + semeruDeployment.Name
-	}
-
-	// Add the new generation number to .status.reference.semeruInstancesCompleted as a comma-separated string
-	if wlva.Status.References != nil {
-		if completedInstances, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
-			if completedInstances != currentGeneration && !strings.Contains(completedInstances, currentGeneration) {
-				wlva.Status.References[StatusReferenceSemeruInstancesCompleted] += "," + currentGeneration
-				// Delete old Semeru Cloud Compiler instances
-				r.deleteCompletedSemeruInstances(wlva)
-			}
-		} else {
-			wlva.Status.References[StatusReferenceSemeruInstancesCompleted] = currentGeneration
-		}
-	}
-	return nil, ""
->>>>>>> c9fa7f3 (Fix Semeru Secret deletion and update code formatting)
 }
 
 // Returns the one-based index generation indicated by .status.references.semeruGeneration if it exists, otherwise defaults to 1
 func getGeneration(wlva *wlv1.WebSphereLibertyApplication) string {
-	if wlva.Status.References != nil && wlva.GetSemeruCloudCompiler() != nil {
+	if wlva.Status.References != nil {
 		if semeruGeneration, ok := wlva.Status.References[StatusReferenceSemeruGeneration]; ok {
 			return semeruGeneration
 		}
@@ -228,6 +164,10 @@ func createNewSemeruGeneration(wlva *wlv1.WebSphereLibertyApplication) {
 	}
 }
 
+func getSemeruGenerationLabelName(wlva *wlv1.WebSphereLibertyApplication) string {
+	return wlva.GetGroupName() + SemeruGenerationLabelNameSuffix
+}
+
 // Deletes old Semeru Cloud Compiler instances that have been marked as completed (instances that underwent at least one reconcile)
 func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.WebSphereLibertyApplication) {
 	if semeruInstancesCompleted, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
@@ -243,7 +183,8 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 			// Delete the older generation's resources and mark the status reference field for deletion
 			if completedGeneration < currentGeneration {
 				semeruLabels := map[string]string{
-					SemeruGenerationLabelName: completedGenerationStr,
+					getSemeruGenerationLabelName(wlva): completedGenerationStr,
+					"app.kubernetes.io/name":           getSemeruCompilerName(wlva),
 				}
 				opts := []client.DeleteAllOfOption{
 					client.MatchingLabels(semeruLabels),
@@ -257,7 +198,7 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 				if useCertManager {
 					errCertManager = r.GetClient().DeleteAllOf(context.TODO(), &certmanagerv1.Certificate{}, opts...)
 					cmSecret := &corev1.Secret{}
-					cmSecret.Name = getSemeruCompilerNamePrefix(wlva) + "-" + completedGenerationStr + "-tls-cm"
+					cmSecret.Name = getSemeruCompilerName(wlva) + "-" + completedGenerationStr + "-tls-cm"
 					cmSecret.Namespace = wlva.GetNamespace()
 					errSecret = r.GetClient().Delete(context.TODO(), cmSecret)
 					if errSecret != nil && kerrors.IsNotFound(errSecret) {
@@ -427,7 +368,7 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebSphereLibertyApplication) error {
 	svcCert := &certmanagerv1.Certificate{}
-	svcCert.Name = getSemeruCompilerName(wlva)
+	svcCert.Name = getSemeruCompilerNameWithGeneration(wlva)
 	svcCert.Namespace = wlva.GetNamespace()
 	customIssuer := &certmanagerv1.Issuer{ObjectMeta: metav1.ObjectMeta{
 		Name:      "wlo-" + "-custom-issuer",
@@ -445,7 +386,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 
 	err = r.CreateOrUpdate(svcCert, wlva, func() error {
 		svcCert.Labels = wlva.GetLabels()
-		svcCert.Labels[SemeruGenerationLabelName] = getGeneration(wlva)
+		svcCert.Labels[getSemeruGenerationLabelName(wlva)] = getGeneration(wlva)
 		svcCert.Spec.IssuerRef = certmanagermetav1.ObjectReference{
 			Name: "wlo-ca-issuer",
 		}
@@ -495,11 +436,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	return nil
 }
 
-func getSemeruCompilerName(wlva *wlv1.WebSphereLibertyApplication) string {
-	return getSemeruCompilerNamePrefix(wlva) + "-" + getGeneration(wlva)
+func getSemeruCompilerNameWithGeneration(wlva *wlv1.WebSphereLibertyApplication) string {
+	return getSemeruCompilerName(wlva) + "-" + getGeneration(wlva)
 }
 
-func getSemeruCompilerNamePrefix(wlva *wlv1.WebSphereLibertyApplication) string {
+func getSemeruCompilerName(wlva *wlv1.WebSphereLibertyApplication) string {
 	return wlva.GetName() + SemeruLabelNameSuffix
 }
 
@@ -507,7 +448,7 @@ func getSemeruCompilerNamePrefix(wlva *wlv1.WebSphereLibertyApplication) string 
 func getSelectors(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredSelector := make(map[string]string)
 	requiredSelector["app.kubernetes.io/component"] = SemeruLabelName
-	requiredSelector["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
+	requiredSelector["app.kubernetes.io/instance"] = getSemeruCompilerNameWithGeneration(wlva)
 	requiredSelector["app.kubernetes.io/part-of"] = wlva.GetName()
 	return requiredSelector
 }
@@ -515,12 +456,12 @@ func getSelectors(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 // Create the Labels map for a Semeru Compiler
 func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels := make(map[string]string)
-	requiredLabels["app.kubernetes.io/name"] = wlva.GetName() + SemeruLabelNameSuffix
-	requiredLabels["app.kubernetes.io/instance"] = wlva.GetName() + SemeruLabelNameSuffix
+	requiredLabels["app.kubernetes.io/name"] = getSemeruCompilerName(wlva)
+	requiredLabels["app.kubernetes.io/instance"] = getSemeruCompilerNameWithGeneration(wlva)
 	requiredLabels["app.kubernetes.io/managed-by"] = OperatorName
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
-	requiredLabels[SemeruGenerationLabelName] = getGeneration(wlva)
+	requiredLabels[getSemeruGenerationLabelName(wlva)] = getGeneration(wlva)
 	return requiredLabels
 }
 
@@ -589,7 +530,7 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 }
 func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.WebSphereLibertyApplication) error {
 	var replicas, readyReplicas, updatedReplicas int32
-	namespacedName := types.NamespacedName{Name: getSemeruCompilerName(wlva), Namespace: wlva.GetNamespace()}
+	namespacedName := types.NamespacedName{Name: getSemeruCompilerNameWithGeneration(wlva), Namespace: wlva.GetNamespace()}
 
 	// Check if deployment exists
 	deployment := &appsv1.Deployment{}
