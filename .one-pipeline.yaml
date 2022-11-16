@@ -213,9 +213,11 @@ containerize:
 
      # Download and install skopeo
     if ! command -v skopeo &> /dev/null; then
-      PACKAGE_CACHE_URL=$(get_env package-cache-url)
-      wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
-      wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
+      apt-get update
+      apt-get -y install skopeo
+      # PACKAGE_CACHE_URL=$(get_env package-cache-url)
+      # wget --no-verbose "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
+      # wget --no-verbose "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
       wget --no-verbose http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
       sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
       sudo dpkg -i containers-common_1-22_all.deb
