@@ -233,6 +233,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 	if imageReferenceOld != instance.Status.ImageReference {
+		// Trigger a new Semeru Cloud Compiler generation
+		createNewSemeruGeneration(instance)
+
 		reqLogger.Info("Updating status.imageReference", "status.imageReference", instance.Status.ImageReference)
 		err = r.UpdateStatus(instance)
 		if err != nil {
@@ -270,7 +273,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// Otherwise, delete the Semeru Compiler deployment and service.
 	message := "Start Semeru Compiler reconcile"
 	reqLogger.Info(message)
-	err, message = r.reconcileSemeruCompiler(instance)
+	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(instance)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
@@ -659,6 +662,12 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	} else {
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
+
+	// Delete completed Semeru instances because all pods now point to the newest Semeru service
+	if areCompletedSemeruInstancesMarkedToBeDeleted {
+		r.deleteCompletedSemeruInstances(instance)
+	}
+
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
