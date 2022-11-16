@@ -437,8 +437,11 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Enable the Semeru Cloud Compiler. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	Enable bool `json:"enable,omitempty"`
+	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
+	Replicas *int32 `json:"replicas,omitempty"`
 	// Resource requests and limits for the Semeru Cloud Compiler.
-	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
@@ -1127,9 +1130,18 @@ func (cr *WebSphereLibertyApplication) GetSecurityContext() *corev1.SecurityCont
 	return cr.Spec.SecurityContext
 }
 
-// GetSemeruCloudCompiler returns the semeru cloud compiler configuration
+// GetSemeruCloudCompiler returns the Semeru Cloud Compiler configuration
 func (cr *WebSphereLibertyApplication) GetSemeruCloudCompiler() *WebSphereLibertyApplicationSemeruCloudCompiler {
 	return cr.Spec.SemeruCloudCompiler
+}
+
+// GetReplicas returns the replicas for Semeru Cloud Compiler if specified, otherwise 1
+func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetReplicas() *int32 {
+	if scc.Replicas != nil {
+		return scc.Replicas
+	}
+	one := int32(1)
+	return &one
 }
 
 // Initialize sets default values

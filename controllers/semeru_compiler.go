@@ -228,16 +228,18 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
-	replicas := int32(1)
-	deploy.Spec.Replicas = &replicas
 
 	if deploy.Spec.Selector == nil {
 		deploy.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: getSelectors(wlva),
 		}
 	}
-	// Get Semeru resources config
+
 	semeruCloudCompiler := wlva.GetSemeruCloudCompiler()
+
+	deploy.Spec.Replicas = semeruCloudCompiler.GetReplicas()
+
+	// Get Semeru resources config
 	instanceResources := semeruCloudCompiler.Resources
 
 	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
@@ -266,7 +268,6 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		InitialDelaySeconds: 5,
 		PeriodSeconds:       5,
 	}
-	// Get Semeru resources config
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -540,8 +541,7 @@ func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.W
 	}
 
 	// Get replicas
-	er := int32(1)
-	expectedReplicas := &er
+	expectedReplicas := wlva.GetSemeruCloudCompiler().GetReplicas()
 	ds := deployment.Status
 	replicas, readyReplicas, updatedReplicas = ds.Replicas, ds.ReadyReplicas, ds.UpdatedReplicas
 
