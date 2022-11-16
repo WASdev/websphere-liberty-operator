@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-11-16T11:43:17Z"
+    createdAt: "2022-11-16T16:22:52Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -276,7 +276,7 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
-      - description: Enablement ond resource configuration of the Semeru Cloud Compiler
+      - description: Configures the Semeru Cloud Compiler.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
       - description: Expose the application as a bindable service. Defaults to false.
@@ -430,11 +430,11 @@ spec:
         path: networkPolicy.disable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Enables the Semeru Cloud Compiler. Defaults to false
-        displayName: Enable Semeru Cloud Compiler
+      - description: Enable the Semeru Cloud Compiler. Defaults to false.
+        displayName: Enable
         path: semeruCloudCompiler.enable
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:checkbox
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Specify the labels of namespaces that incoming traffic is allowed from.
         displayName: Namespace Labels
         path: networkPolicy.namespaceLabels
