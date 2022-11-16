@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-11-16T16:35:49Z"
+    createdAt: "2022-11-16T14:25:28Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -440,16 +440,21 @@ spec:
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Resource requests and limits for the Semeru Cloud Compiler.
-        displayName: Resource Requirements
-        path: semeruCloudCompiler.resources
+      - description: Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+        displayName: Replicas
+        path: semeruCloudCompiler.replicas
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+        - urn:alm:descriptor:com.tectonic.ui:podCount
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Resource requests and limits for the Semeru Cloud Compiler.
+        displayName: Resource Requirements
+        path: semeruCloudCompiler.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
         displayName: Edition
         path: license.edition

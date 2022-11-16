@@ -385,16 +385,21 @@ spec:
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Resource requests and limits for the Semeru Cloud Compiler.
-        displayName: Resource Requirements
-        path: semeruCloudCompiler.resources
+      - description: Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+        displayName: Replicas
+        path: semeruCloudCompiler.replicas
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+        - urn:alm:descriptor:com.tectonic.ui:podCount
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Resource requests and limits for the Semeru Cloud Compiler.
+        displayName: Resource Requirements
+        path: semeruCloudCompiler.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
         displayName: Edition
         path: license.edition

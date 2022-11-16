@@ -2402,6 +2402,10 @@ spec:
                   enable:
                     description: Enable the Semeru Cloud Compiler. Defaults to false.
                     type: boolean
+                  replicas:
+                    description: Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+                    format: int32
+                    type: integer
                   resources:
                     description: Resource requests and limits for the Semeru Cloud Compiler.
                     properties:
