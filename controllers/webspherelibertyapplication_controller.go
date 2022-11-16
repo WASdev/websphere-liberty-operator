@@ -476,7 +476,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 			lutils.ConfigureServiceability(&statefulSet.Spec.Template, instance)
 			semeruCertVolume := getSemeruCertVolume(instance)
-			if semeruCertVolume != nil {
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
 				statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, *semeruCertVolume)
 				statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
 					getSemeruCertVolumeMount(instance))
@@ -538,7 +538,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 			lutils.ConfigureServiceability(&deploy.Spec.Template, instance)
 			semeruCertVolume := getSemeruCertVolume(instance)
-			if semeruCertVolume != nil {
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
 				deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *semeruCertVolume)
 				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts,
 					getSemeruCertVolumeMount(instance))
