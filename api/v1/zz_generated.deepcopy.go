@@ -747,6 +747,11 @@ func (in *WebSphereLibertyApplicationSpec) DeepCopyInto(out *WebSphereLibertyApp
 		*out = new(WebSphereLibertyApplicationRoute)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SemeruCloudCompiler != nil {
+		in, out := &in.SemeruCloudCompiler, &out.SemeruCloudCompiler
+		*out = new(WebSphereLibertyApplicationSemeruCloudCompiler)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.NetworkPolicy != nil {
 		in, out := &in.NetworkPolicy, &out.NetworkPolicy
 		*out = new(WebSphereLibertyApplicationNetworkPolicy)
@@ -817,11 +822,6 @@ func (in *WebSphereLibertyApplicationSpec) DeepCopyInto(out *WebSphereLibertyApp
 	if in.SecurityContext != nil {
 		in, out := &in.SecurityContext, &out.SecurityContext
 		*out = new(corev1.SecurityContext)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.SemeruCloudCompiler != nil {
-		in, out := &in.SemeruCloudCompiler, &out.SemeruCloudCompiler
-		*out = new(WebSphereLibertyApplicationSemeruCloudCompiler)
 		(*in).DeepCopyInto(*out)
 	}
 }

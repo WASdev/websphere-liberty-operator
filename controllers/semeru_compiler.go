@@ -17,7 +17,12 @@
 package controllers
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	wlutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -25,9 +30,8 @@ import (
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -49,66 +53,66 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		Namespace: wlva.GetNamespace(),
 	}
 
-	semeruCloudCompiler := wlva.GetSemeruCloudCompiler()
-	if semeruCloudCompiler == nil {
+	if r.isSemeruEnabled(wlva) {
+		cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
+
+		// Create the Semeru Service object
+		semsvc := &corev1.Service{ObjectMeta: compilerMeta}
+		tlsSecretName := ""
+		err := r.CreateOrUpdate(semsvc, wlva, func() error {
+			reconcileSemeruService(semsvc, wlva)
+			if r.IsOpenShift() {
+				if _, ok := semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"]; !ok {
+					if _, ok = semsvc.Annotations["service.alpha.openshift.io/serving-cert-secret-name"]; !ok {
+						if semsvc.Annotations == nil {
+							semsvc.Annotations = map[string]string{}
+						}
+						tlsSecretName = semsvc.GetName() + "-tls-ocp"
+						semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = tlsSecretName
+						if wlva.Status.SemeruCompiler == nil {
+							wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
+						}
+						wlva.Status.SemeruCompiler.TLSSecretName = tlsSecretName
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err, "Failed to reconcile the Semeru Compiler Service"
+		}
+
+		//create certmanager issuer and certificate if necessary
+		if !r.IsOpenShift() || cmPresent {
+			err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
+			if err != nil {
+				return err, "Failed to reconcile Certificate Issuer"
+			}
+			err = r.reconcileSemeruCMCertificate(wlva)
+			if err != nil {
+				return err, "Failed to reconcile Semeru Compiler Certificate"
+			}
+		}
+
+		//Deployment
+		semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
+		err = r.CreateOrUpdate(semeruDeployment, wlva, func() error {
+			r.reconcileSemeruDeployment(wlva, semeruDeployment)
+			return nil
+		})
+		if err != nil {
+			return err, "Failed to reconcile Deployment : " + semeruDeployment.Name
+		}
+		return nil, ""
+	} else {
 		semsvc := &corev1.Service{ObjectMeta: compilerMeta}
 		semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
-		err := r.DeleteResources([]client.Object{semsvc, semeruDeployment})
-		if err != nil {
+		if err := r.DeleteResources([]client.Object{semsvc, semeruDeployment}); err != nil {
 			return err, "Failed to delete Semeru Compiler resources"
 		}
 		wlva.Status.SemeruCompiler = nil
 		return nil, ""
 	}
-
-	// Create the Semeru Service object
-	semsvc := &corev1.Service{ObjectMeta: compilerMeta}
-	tlsSecretName := ""
-	err := r.CreateOrUpdate(semsvc, wlva, func() error {
-		reconcileSemeruService(semsvc, wlva)
-		if r.IsOpenShift() {
-			if _, ok := semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"]; !ok {
-				if _, ok = semsvc.Annotations["service.alpha.openshift.io/serving-cert-secret-name"]; !ok {
-					if semsvc.Annotations == nil {
-						semsvc.Annotations = map[string]string{}
-					}
-					tlsSecretName = semsvc.GetName() + "-tls-ocp"
-					semsvc.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = tlsSecretName
-					if wlva.Status.SemeruCompiler == nil {
-						wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
-					}
-					wlva.Status.SemeruCompiler.TLSSecretName = tlsSecretName
-				}
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err, "Failed to reconcile the Semeru Compiler Service"
-	}
-
-	//create certmanager issuer and certificate if necessary
-	if !r.IsOpenShift() {
-		err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
-		if err != nil {
-			return err, "Failed to reconcile Certificate Issuer"
-		}
-		err = r.reconcileSemeruCMCertificate(wlva)
-		if err != nil {
-			return err, "Failed to reconcile Semeru Compiler Certificate"
-		}
-	}
-
-	//Deployment
-	semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
-	err = r.CreateOrUpdate(semeruDeployment, wlva, func() error {
-		r.reconcileSemeruDeployment(wlva, semeruDeployment)
-		return nil
-	})
-	if err != nil {
-		return err, "Failed to reconcile Deployment : " + semeruDeployment.Name
-	}
-	return nil, ""
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
@@ -134,8 +138,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Liveness probe
 	livenessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "tail -10 /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
 		InitialDelaySeconds: 10,
@@ -145,8 +149,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Readiness probe
 	readinessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/bash", "-c", "grep -q '#INFO:  StartTime' /tmp/output.log*"},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(38400),
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -182,7 +186,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections -Xjit:vlog=/tmp/output.log" +
+						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections" +
 							" -XX:JITServerSSLKey=/etc/x509/certs/tls.key" +
 							" -XX:JITServerSSLCert=/etc/x509/certs/tls.crt"},
 					},
@@ -257,11 +261,44 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	svcCert.Name = wlva.GetName() + SemeruLabelNameSuffix
 	svcCert.Namespace = wlva.GetNamespace()
 
-	err := r.CreateOrUpdate(svcCert, wlva, func() error {
+	customIssuer := &certmanagerv1.Issuer{ObjectMeta: metav1.ObjectMeta{
+		Name:      "wlo-" + "-custom-issuer",
+		Namespace: svcCert.Namespace,
+	}}
+
+	customIssuerFound := false
+	err := r.GetClient().Get(context.Background(), types.NamespacedName{Name: customIssuer.Name,
+		Namespace: customIssuer.Namespace}, customIssuer)
+	if err == nil {
+		customIssuerFound = true
+	}
+
+	shouldRefreshCertSecret := false
+
+	err = r.CreateOrUpdate(svcCert, wlva, func() error {
 		svcCert.Labels = wlva.GetLabels()
 		svcCert.Spec.IssuerRef = certmanagermetav1.ObjectReference{
 			Name: "wlo-ca-issuer",
 		}
+		if customIssuerFound {
+			svcCert.Spec.IssuerRef.Name = customIssuer.Name
+		}
+
+		rVersion, _ := utils.GetIssuerResourceVersion(r.GetClient(), svcCert)
+		if svcCert.Spec.SecretTemplate == nil {
+			svcCert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{
+				Annotations: map[string]string{},
+			}
+		}
+
+		if svcCert.Spec.SecretTemplate.Annotations[wlva.GetGroupName()+"/cm-issuer-version"] != rVersion {
+			if svcCert.Spec.SecretTemplate.Annotations == nil {
+				svcCert.Spec.SecretTemplate.Annotations = map[string]string{}
+			}
+			svcCert.Spec.SecretTemplate.Annotations[wlva.GetGroupName()+"/cm-issuer-version"] = rVersion
+			shouldRefreshCertSecret = true
+		}
+
 		svcCert.Spec.SecretName = wlva.GetName() + SemeruLabelNameSuffix + "-tls-cm"
 		svcCert.Spec.DNSNames = make([]string, 2)
 		svcCert.Spec.DNSNames[0] = wlva.GetName() + SemeruLabelNameSuffix + "." + wlva.Namespace + ".svc"
@@ -277,6 +314,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	if err != nil {
 		return err
 	}
+
+	if shouldRefreshCertSecret {
+		r.DeleteResource(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: svcCert.Spec.SecretName, Namespace: svcCert.Namespace}})
+	}
+
 	if wlva.Status.SemeruCompiler == nil {
 		wlva.Status.SemeruCompiler = &wlv1.SemeruCompilerStatus{}
 	}
@@ -346,14 +388,14 @@ func getSemeruCertVolume(wlva *wlv1.WebSphereLibertyApplication) *corev1.Volume 
 	}
 }
 
-func getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
-	if instance.GetSemeruCloudCompiler() != nil {
+func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
+	if r.isSemeruEnabled(instance) {
 		certificateLocation := "/etc/x509/semeru-certs/ca.crt"
 		if instance.Status.SemeruCompiler != nil && strings.HasSuffix(instance.Status.SemeruCompiler.TLSSecretName, "-ocp") {
 			certificateLocation = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 		}
 		jitServerAddress := instance.Status.SemeruCompiler.ServiceHostname
-		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
+		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
 			jitServerAddress, certificateLocation)
 
 		args := []string{
@@ -366,4 +408,37 @@ func getSemeruJavaOptions(instance *wlv1.WebSphereLibertyApplication) []string {
 		return args
 	}
 	return nil
+}
+func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.WebSphereLibertyApplication) error {
+	var replicas, readyReplicas, updatedReplicas int32
+	namespacedName := types.NamespacedName{Name: wlva.GetName() + SemeruLabelNameSuffix, Namespace: wlva.GetNamespace()}
+
+	// Check if deployment exists
+	deployment := &appsv1.Deployment{}
+	err := r.GetClient().Get(context.TODO(), namespacedName, deployment)
+	if err != nil {
+		return errors.New("Semeru Cloud Compiler is not ready: Deployment is not created.")
+	}
+
+	// Get replicas
+	er := int32(1)
+	expectedReplicas := &er
+	ds := deployment.Status
+	replicas, readyReplicas, updatedReplicas = ds.Replicas, ds.ReadyReplicas, ds.UpdatedReplicas
+
+	// Check if all replicas are equal to the expected replicas
+	if replicas == *expectedReplicas && readyReplicas == *expectedReplicas && updatedReplicas == *expectedReplicas {
+		return nil // Semeru ready
+	} else if replicas > *expectedReplicas {
+		return errors.New("Semeru Cloud Compiler is not ready: Replica set is progressing.")
+	}
+	return errors.New("Semeru Cloud Compiler is not ready: Deployment is not ready.")
+}
+
+func (r *ReconcileWebSphereLiberty) isSemeruEnabled(wlva *wlv1.WebSphereLibertyApplication) bool {
+	if wlva.GetSemeruCloudCompiler() != nil && wlva.GetSemeruCloudCompiler().Enable == true {
+		return true
+	} else {
+		return false
+	}
 }
