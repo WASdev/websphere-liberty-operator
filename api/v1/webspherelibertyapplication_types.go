@@ -99,7 +99,7 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=16,type=spec,displayName="Route"
 	Route *WebSphereLibertyApplicationRoute `json:"route,omitempty"`
 
-	// Configures the Semeru Cloud Compiler.
+	// Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
 	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Semeru Cloud Compiler"
 	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
 

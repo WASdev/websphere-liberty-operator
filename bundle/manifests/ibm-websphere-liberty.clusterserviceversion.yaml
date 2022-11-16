@@ -58,7 +58,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-11-16T16:22:52Z"
+    createdAt: "2022-11-16T16:35:49Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -276,7 +276,7 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
-      - description: Configures the Semeru Cloud Compiler.
+      - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
       - description: Expose the application as a bindable service. Defaults to false.

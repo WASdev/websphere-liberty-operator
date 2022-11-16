@@ -221,7 +221,7 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
-      - description: Configures the Semeru Cloud Compiler.
+      - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
       - description: Expose the application as a bindable service. Defaults to false.

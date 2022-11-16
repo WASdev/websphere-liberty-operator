@@ -2397,7 +2397,7 @@ spec:
                     type: object
                 type: object
               semeruCloudCompiler:
-                description: Configures the Semeru Cloud Compiler.
+                description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
                 properties:
                   enable:
                     description: Enable the Semeru Cloud Compiler. Defaults to false.
