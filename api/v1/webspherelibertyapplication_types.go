@@ -99,61 +99,62 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=16,type=spec,displayName="Route"
 	Route *WebSphereLibertyApplicationRoute `json:"route,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Network Policy"
+	// Enablement ond resource configuration of the Semeru Cloud Compiler
+	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Semeru Cloud Compiler"
+	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Network Policy"
 	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Serviceability"
+	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Serviceability"
 	Serviceability *WebSphereLibertyApplicationServiceability `json:"serviceability,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Single Sign-On"
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Single Sign-On"
 	SSO *WebSphereLibertyApplicationSSO `json:"sso,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Monitoring"
+	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Monitoring"
 	Monitoring *WebSphereLibertyApplicationMonitoring `json:"monitoring,omitempty"`
 
 	// An array of environment variables for the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Environment Variables"
+	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Environment Variables"
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// List of sources to populate environment variables in the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Environment Variables from Sources"
+	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Environment Variables from Sources"
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Represents a volume with data that is accessible to the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Volumes"
+	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Volumes"
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// Represents where to mount the volumes into the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Volume Mounts"
+	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Volume Mounts"
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 
 	// List of containers to run before other containers in a pod.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Init Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Init Containers"
 	InitContainers []corev1.Container `json:"initContainers,omitempty"`
 
 	// List of sidecar containers. These are additional containers to be added to the pods.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Sidecar Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Sidecar Containers"
 	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Affinity"
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Affinity"
 	Affinity *WebSphereLibertyApplicationAffinity `json:"affinity,omitempty"`
 
 	// Security context for the application container.
-	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Security Context"
+	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
-
-	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Semeru Cloud Compiler"
-	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
 }
 
 // License information is required.
@@ -433,8 +434,11 @@ type WebSphereLibertyApplicationRoute struct {
 }
 
 type WebSphereLibertyApplicationSemeruCloudCompiler struct {
+	// Enables the Semeru Cloud Compiler. Defaults to false
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable Semeru Cloud Compiler",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	Enable bool `json:"enable,omitempty"`
 	// Resource requests and limits for the Semeru Cloud Compiler.
-	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 

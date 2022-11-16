@@ -276,13 +276,15 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 	// If semeru compiler is enabled, make sure its ready
-	message = "Check Semeru Compiler resources ready"
-	reqLogger.Info(message)
-	if instance.GetSemeruCloudCompiler() != nil {
-		err = r.areSemeruCompilerResourcesReady(instance)
-		if err != nil {
-			reqLogger.Error(err, message)
-			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+	if r.isSemeruEnabled(instance) {
+		message = "Check Semeru Compiler resources ready"
+		reqLogger.Info(message)
+		if instance.GetSemeruCloudCompiler() != nil {
+			err = r.areSemeruCompilerResourcesReady(instance)
+			if err != nil {
+				reqLogger.Error(err, message)
+				return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+			}
 		}
 	}
 
@@ -503,7 +505,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
-			deploy.Spec.Template.Spec.Containers[0].Args = getSemeruJavaOptions(instance)
+			deploy.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
 
 			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				return err

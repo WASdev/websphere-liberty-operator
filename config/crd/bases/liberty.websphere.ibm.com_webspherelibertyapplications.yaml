@@ -3629,7 +3629,12 @@ spec:
                     type: object
                 type: object
               semeruCloudCompiler:
+                description: Enablement ond resource configuration of the Semeru Cloud
+                  Compiler
                 properties:
+                  enable:
+                    description: Enables the Semeru Cloud Compiler. Defaults to false
+                    type: boolean
                   resources:
                     description: Resource requests and limits for the Semeru Cloud
                       Compiler.
