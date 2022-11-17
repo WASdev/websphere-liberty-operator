@@ -137,8 +137,22 @@ main() {
     echo "****** Logging into private registry..."
     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_NAME} -u "${REGISTRY_USER}" --password-stdin
 
-    # sleep for 10 minutes to wait for rook-cepth, knative and cert-manager to be fully installed
-    sleep 10m
+    echo "sleep for 3 minutes to wait for rook-cepth, knative and cert-manager to start installing, then start monitoring for completion"
+    sleep 3m
+    echo "monitoring knative"
+    ./wait.sh deployment knative-serving
+    rc_kn=$?
+    echo "rc_kn=$rc_kn"
+    if [[ "$rc_kn" == 0 ]]; then
+        echo "knative up"
+    fi
+    echo "monitoring rook-ceph"
+    ./wait.sh deployment rook-ceph
+    rc_rk=$?
+    echo "rc_rk=$rc_rk"
+    if [[ "$rc_rk" == 0 ]]; then
+        echo "rook-ceph up"
+    fi
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator
 
