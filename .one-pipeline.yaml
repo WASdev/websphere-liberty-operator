@@ -85,7 +85,7 @@ setup:
     export demandId=$wlo_demand_id
 
     PRE_RELEASE=$(get_env pre-release)
-    PRE_RELEASE="$(echo "$PRE-RELEASE" | tr '[:upper:]' '[:lower:]')"
+    PRE_RELEASE="$(echo "$PRE_RELEASE" | tr '[:upper:]' '[:lower:]')"
     if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"  ]]; then
       rhcos_level=$(get_env pre-release-rhcos-url)
       ocp_level=$(get_env pre-release-ocp-url)
