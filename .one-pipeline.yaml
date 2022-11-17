@@ -115,7 +115,7 @@ setup:
     ./ebc_demand.sh
     rc=$?
     if [[ "$rc" == 0 ]]; then
-      "cluster requested"
+      echo "cluster requested"
     else
       echo "Outage impacting demand of cluster, try again later"
       exit 1
