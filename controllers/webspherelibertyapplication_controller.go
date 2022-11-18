@@ -282,12 +282,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if r.isSemeruEnabled(instance) {
 		message = "Check Semeru Compiler resources ready"
 		reqLogger.Info(message)
-		if instance.GetSemeruCloudCompiler() != nil {
-			err = r.areSemeruCompilerResourcesReady(instance)
-			if err != nil {
-				reqLogger.Error(err, message)
-				return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
-			}
+        err = r.areSemeruCompilerResourcesReady(instance)
+        if err != nil {
+            reqLogger.Error(err, message)
+            return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
 		}
 	}
 
