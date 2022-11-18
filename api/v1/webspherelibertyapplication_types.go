@@ -164,7 +164,7 @@ type License struct {
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
 	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
-	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
+	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
 	// I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding

@@ -57,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-09-21T09:06:29Z"
+    createdAt: "2022-11-18T12:08:09Z"
     description: Deploy and manage containerized Liberty applications
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
@@ -444,6 +444,8 @@ spec:
       - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
         displayName: Metric
         path: license.metric
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
