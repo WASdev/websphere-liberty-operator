@@ -31,14 +31,14 @@ install_dependencies() {
 
   ## Install kubectl
   if ! command -v kubectl &> /dev/null; then
-    echo "****** Installing kubectl v1.19.4..."
-    curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.19.16/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
+    echo "****** Installing kubectl v1.23.12..."
+    curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
   fi
 
   # Install kind
   if ! command -v kind &> /dev/null; then
     echo "****** Installing kind..."
-    curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.14.0/kind-linux-amd64
+    curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.16.0/kind-linux-amd64
     chmod +x /usr/local/bin/kind
   fi
 }
@@ -77,7 +77,7 @@ create_kind_cluster() {
 
   if [[ -z "$(kind get clusters | grep e2e-cluster)" ]]; then
     # Create a cluster with the local registry enabled in containerd
-    cat << EOF | kind create cluster --name e2e-cluster --image kindest/node:v1.19.16 --config=-
+    cat << EOF | kind create cluster --name e2e-cluster --image kindest/node:v1.23.12 --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:

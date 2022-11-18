@@ -57,8 +57,8 @@ setup_env() {
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io sshpass jq
 
     if ! command -v kubectl &> /dev/null; then
-      echo "****** Installing kubectl v1.19.4..."
-      curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.19.4/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
+      echo "****** Installing kubectl v1.23.12..."
+      curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
     fi
 
     # Create a remote Kind cluster
@@ -149,6 +149,11 @@ setup_test() {
     mv bundle/tests/scorecard/kuttl/routes bundle/tests/scorecard/kind-kuttl/
     mv bundle/tests/scorecard/kuttl/route-certificate bundle/tests/scorecard/kind-kuttl/
     mv bundle/tests/scorecard/kuttl/image-stream bundle/tests/scorecard/kind-kuttl/
+    mv bundle/tests/scorecard/kuttl/manage-tls bundle/tests/scorecard/kind-kuttl/
+
+    #disable these tests for kind tests (mount permission issue)
+    mv bundle/tests/scorecard/kuttl/dump bundle/tests/scorecard/kind-kuttl/
+    mv bundle/tests/scorecard/kuttl/trace bundle/tests/scorecard/kind-kuttl/
 
     for image in "${IMAGES[@]}"; do
         files=($(grep -rwl 'bundle/tests/scorecard/kuttl/' -e $APPIMAGE$image))
@@ -223,7 +228,10 @@ cleanup() {
     mv bundle/tests/scorecard/kind-kuttl/routes bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/route-certificate bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/image-stream bundle/tests/scorecard/kuttl/
-    mv bundle/tests/scorecard/kind-kuttl/stream bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/manage-tls bundle/tests/scorecard/kuttl/
+
+    mv bundle/tests/scorecard/kind-kuttl/dump bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/trace bundle/tests/scorecard/kuttl/
 
     git checkout bundle/tests/scorecard internal/deploy
 }

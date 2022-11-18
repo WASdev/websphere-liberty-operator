@@ -45,10 +45,10 @@ import (
 
 var log = logf.Log.WithName("websphereliberty_utils")
 
-//Constant Values
+// Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.0.0"
+const OperandVersion = "1.1.0"
 
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
@@ -171,7 +171,7 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 	return nil
 }
 
-func addSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
+func AddSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
 	secret := &corev1.Secret{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
 	if err != nil {

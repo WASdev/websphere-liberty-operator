@@ -59,6 +59,7 @@ metadata:
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
     createdAt: "2022-11-18T12:08:09Z"
     description: Deploy and manage containerized Liberty applications
+    olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -67,7 +68,7 @@ metadata:
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/os.linux: supported
-  name: ibm-websphere-liberty.v1.0.0
+  name: ibm-websphere-liberty.v1.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -274,24 +275,27 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
-      - displayName: Network Policy
-        path: networkPolicy
+      - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
+        displayName: Semeru Cloud Compiler
+        path: semeruCloudCompiler
       - description: Expose the application as a bindable service. Defaults to false.
         displayName: Bindable
         path: service.bindable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Network Policy
+        path: networkPolicy
       - displayName: Serviceability
         path: serviceability
       - displayName: Single Sign-On
         path: sso
-      - displayName: Monitoring
-        path: monitoring
       - description: Specifies the strategy to replace old deployment pods with new pods.
         displayName: Deployment Update Strategy
         path: deployment.updateStrategy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
+      - displayName: Monitoring
+        path: monitoring
       - description: An array of environment variables for the application container.
         displayName: Environment Variables
         path: env
@@ -301,45 +305,45 @@ spec:
       - description: Specifies the strategy to replace old StatefulSet pods with new pods.
         displayName: StatefulSet Update Strategy
         path: statefulSet.updateStrategy
+      - displayName: Storage
+        path: statefulSet.storage
       - description: Represents a volume with data that is accessible to the application container.
         displayName: Volumes
         path: volumes
-      - displayName: Storage
-        path: statefulSet.storage
+      - description: A convenient field to set the size of the persisted storage.
+        displayName: Storage Size
+        path: statefulSet.storage.size
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Represents where to mount the volumes into the application container.
         displayName: Volume Mounts
         path: volumeMounts
       - description: List of containers to run before other containers in a pod.
         displayName: Init Containers
         path: initContainers
-      - description: A convenient field to set the size of the persisted storage.
-        displayName: Storage Size
-        path: statefulSet.storage.size
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: List of sidecar containers. These are additional containers to be added to the pods.
-        displayName: Sidecar Containers
-        path: sidecarContainers
       - description: A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
         displayName: Storage Class Name
         path: statefulSet.storage.className
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Affinity
-        path: affinity
+      - description: List of sidecar containers. These are additional containers to be added to the pods.
+        displayName: Sidecar Containers
+        path: sidecarContainers
       - description: The directory inside the container where this persisted storage will be bound to.
         displayName: Storage Mount Path
         path: statefulSet.storage.mountPath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Security context for the application container.
-        displayName: Security Context
-        path: securityContext
+      - displayName: Affinity
+        path: affinity
       - description: A YAML object that represents a volumeClaimTemplate component of a StatefulSet.
         displayName: Storage Volume Claim Template
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - description: Security context for the application container.
+        displayName: Security Context
+        path: securityContext
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
@@ -425,16 +429,31 @@ spec:
         path: networkPolicy.disable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Enable the Semeru Cloud Compiler. Defaults to false.
+        displayName: Enable
+        path: semeruCloudCompiler.enable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Specify the labels of namespaces that incoming traffic is allowed from.
         displayName: Namespace Labels
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+        displayName: Replicas
+        path: semeruCloudCompiler.replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podCount
       - description: Specify the labels of pod(s) that incoming traffic is allowed from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Resource requests and limits for the Semeru Cloud Compiler.
+        displayName: Resource Requirements
+        path: semeruCloudCompiler.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
         displayName: Edition
         path: license.edition
@@ -1021,4 +1040,4 @@ spec:
   relatedImages:
   - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-  version: 1.0.0
+  version: 1.1.0

@@ -3,13 +3,13 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.17
 
 require (
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20220721111305-3815a3152368
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221117174943-84c52c5b5811
 	github.com/go-logr/logr v1.2.2
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220630204433-c71d40c7de49
 	github.com/pkg/errors v0.9.1
-	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
+	k8s.io/api v0.23.12
+	k8s.io/apimachinery v0.23.12
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/serving v0.32.0
 	sigs.k8s.io/controller-runtime v0.11.2
@@ -53,9 +53,9 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
@@ -83,11 +83,11 @@ replace (
 	github.com/otiai10/mint => github.com/otiai10/mint v1.3.0
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
 	golang.org/x/net => golang.org/x/net v0.0.0-20220225172249-27dd8689420f
-	golang.org/x/text => golang.org/x/text v0.3.7
+	golang.org/x/text => golang.org/x/text v0.4.0
 
-	k8s.io/api => k8s.io/api v0.23.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.23.0
-	k8s.io/client-go => k8s.io/client-go v0.23.0
+	k8s.io/api => k8s.io/api v0.23.12
+	k8s.io/apimachinery => k8s.io/apimachinery v0.23.12
+	k8s.io/client-go => k8s.io/client-go v0.23.12
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.11.2
 
 )

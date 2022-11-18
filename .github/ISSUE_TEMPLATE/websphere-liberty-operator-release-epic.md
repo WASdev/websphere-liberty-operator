@@ -7,6 +7,7 @@ assignees: ''
 
 ---
 
+- [ ] Schedule any UFOs for new Features
 - [ ] Enable and verify the upgrade support for this release version (Using catalog image produced by One Pipeline)
 - [ ] Scans(Done for each release build): 
   - [ ] VA
@@ -38,3 +39,4 @@ assignees: ''
 - [ ] Certification: create a new cert item in the tool as well as the GH repo, answer any questions
 - [ ] Work with ID to refresh upgrade instructions (use WebSphere Automation Operator docs)
 - [ ] Publish assessment (CASE will get published when this happens)
+- [ ] Are any patentable ideas delivered with this release?

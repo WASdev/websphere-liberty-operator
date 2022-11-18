@@ -137,17 +137,22 @@ main() {
     echo "****** Logging into private registry..."
     echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_NAME} -u "${REGISTRY_USER}" --password-stdin
 
-    echo "****** Creating pull secret..."
-    oc create secret docker-registry regcred --docker-server=${REGISTRY_NAME} "--docker-username=${REGISTRY_USER}" "--docker-password=${REGISTRY_PASSWORD}" --docker-email=unused 
-
-    oc get secret/regcred -o jsonpath='{.data.\.dockerconfigjson}' | base64 --decode > /tmp/pull-secret-new.yaml
-    oc get secret/pull-secret -n openshift-config -o jsonpath='{.data.\.dockerconfigjson}' | base64 --decode > /tmp/pull-secret-global.yaml
-
-    jq -s '.[1] * .[0]' /tmp/pull-secret-new.yaml /tmp/pull-secret-global.yaml > /tmp/pull-secret-merged.yaml
-
-    echo "Updating global pull secret"
-    oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=/tmp/pull-secret-merged.yaml
-
+    echo "sleep for 3 minutes to wait for rook-cepth, knative and cert-manager to start installing, then start monitoring for completion"
+    sleep 3m
+    echo "monitoring knative"
+    ./wait.sh deployment knative-serving
+    rc_kn=$?
+    echo "rc_kn=$rc_kn"
+    if [[ "$rc_kn" == 0 ]]; then
+        echo "knative up"
+    fi
+    echo "monitoring rook-ceph"
+    ./wait.sh deployment rook-ceph
+    rc_rk=$?
+    echo "rc_rk=$rc_rk"
+    if [[ "$rc_rk" == 0 ]]; then
+        echo "rook-ceph up"
+    fi
     echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
     install_operator
 
