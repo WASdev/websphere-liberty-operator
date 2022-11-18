@@ -276,25 +276,10 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementStandalone})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementWSHE})
-
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementStandalone})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementWSHE})
-
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementStandalone})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementWSHE})
-
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementStandalone})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
-	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementWSHE})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementStandalone})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
