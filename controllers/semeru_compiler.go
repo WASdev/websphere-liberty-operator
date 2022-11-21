@@ -30,7 +30,6 @@ import (
 	utils "github.com/application-stacks/runtime-component-operator/utils"
 	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -169,7 +168,7 @@ func getSemeruGenerationLabelName(wlva *wlv1.WebSphereLibertyApplication) string
 }
 
 // Deletes old Semeru Cloud Compiler instances that have been marked as completed (instances that underwent at least one reconcile)
-func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.WebSphereLibertyApplication) {
+func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.WebSphereLibertyApplication) error {
 	if semeruInstancesCompleted, ok := wlva.Status.References[StatusReferenceSemeruInstancesCompleted]; ok {
 		generationsMarkedForDeletion := make([]string, 0)
 		cmPresent, _ := r.IsGroupVersionSupported(certmanagerv1.SchemeGroupVersion.String(), "Certificate")
@@ -182,34 +181,55 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 
 			// Delete the older generation's resources and mark the status reference field for deletion
 			if completedGeneration < currentGeneration {
-				semeruLabels := map[string]string{
+				resourceName := getSemeruCompilerName(wlva) + "-" + completedGenerationStr
+				resourceNamespace := wlva.GetNamespace()
+				resourceLabels := map[string]string{
 					getSemeruGenerationLabelName(wlva): completedGenerationStr,
 					"app.kubernetes.io/name":           getSemeruCompilerName(wlva),
 				}
-				opts := []client.DeleteAllOfOption{
-					client.MatchingLabels(semeruLabels),
-					client.InNamespace(wlva.GetNamespace()),
+
+				// Delete Deployment
+				deployment := &appsv1.Deployment{}
+				deployment.Name = resourceName
+				deployment.Namespace = resourceNamespace
+				deployment.Labels = resourceLabels
+				err := r.DeleteResource(deployment)
+				if err != nil {
+					return err
 				}
-				errDeployment := r.GetClient().DeleteAllOf(context.TODO(), &appsv1.Deployment{}, opts...)
-				errService := r.GetClient().DeleteAllOf(context.TODO(), &corev1.Service{}, opts...)
-				var errCertManager, errSecret error = nil, nil
+
+				// Delete Service
+				service := &corev1.Service{}
+				service.Name = resourceName
+				service.Namespace = resourceNamespace
+				service.Labels = resourceLabels
+				err = r.DeleteResource(service)
+				if err != nil {
+					return err
+				}
 
 				// Remove CertManager Certificate and Secret if necessary
 				if useCertManager {
-					errCertManager = r.GetClient().DeleteAllOf(context.TODO(), &certmanagerv1.Certificate{}, opts...)
+					cmCertificate := &certmanagerv1.Certificate{}
+					cmCertificate.Name = resourceName
+					cmCertificate.Namespace = resourceNamespace
+					cmCertificate.Labels = resourceLabels
+					err = r.DeleteResource(cmCertificate)
+					if err != nil {
+						return err
+					}
+
 					cmSecret := &corev1.Secret{}
-					cmSecret.Name = getSemeruCompilerName(wlva) + "-" + completedGenerationStr + "-tls-cm"
-					cmSecret.Namespace = wlva.GetNamespace()
-					errSecret = r.GetClient().Delete(context.TODO(), cmSecret)
-					if errSecret != nil && kerrors.IsNotFound(errSecret) {
-						errSecret = nil
+					cmSecret.Name = resourceName + "-tls-cm"
+					cmSecret.Namespace = resourceNamespace
+					err = r.DeleteResource(cmSecret)
+					if err != nil {
+						return err
 					}
 				}
 
 				// On successful cleanup, mark the generation for deletion from the status reference field
-				if errDeployment == nil && errService == nil && errCertManager == nil && errSecret == nil {
-					generationsMarkedForDeletion = append(generationsMarkedForDeletion, completedGenerationStr)
-				}
+				generationsMarkedForDeletion = append(generationsMarkedForDeletion, completedGenerationStr)
 			}
 		}
 
@@ -223,6 +243,7 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 			}
 		}
 	}
+	return nil
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {

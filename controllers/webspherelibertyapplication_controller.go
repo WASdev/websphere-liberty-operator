@@ -282,10 +282,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if r.isSemeruEnabled(instance) {
 		message = "Check Semeru Compiler resources ready"
 		reqLogger.Info(message)
-        err = r.areSemeruCompilerResourcesReady(instance)
-        if err != nil {
-            reqLogger.Error(err, message)
-            return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+		err = r.areSemeruCompilerResourcesReady(instance)
+		if err != nil {
+			reqLogger.Error(err, message)
+			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
 		}
 	}
 
@@ -659,7 +659,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	// Delete completed Semeru instances because all pods now point to the newest Semeru service
 	if areCompletedSemeruInstancesMarkedToBeDeleted {
-		r.deleteCompletedSemeruInstances(instance)
+		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
+			reqLogger.Error(err, "Failed to delete completed Semeru instance")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
 	}
 
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
