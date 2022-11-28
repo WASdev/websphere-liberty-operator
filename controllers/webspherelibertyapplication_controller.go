@@ -673,11 +673,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 }
 
 func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
-	s := ba.GetStatus()
-	statusCondition := s.GetCondition(common.StatusConditionTypeReady)
-	readyStatus := r.CheckApplicationStatus(ba)
-	if readyStatus == corev1.ConditionTrue {
-		return statusCondition != nil && statusCondition.GetType() == common.StatusConditionTypeReady && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
+	if r.CheckApplicationStatus(ba) == corev1.ConditionTrue {
+		statusCondition := ba.GetStatus().GetCondition(common.StatusConditionTypeReady)
+		return statusCondition != nil && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
 	}
 	return false
 }
