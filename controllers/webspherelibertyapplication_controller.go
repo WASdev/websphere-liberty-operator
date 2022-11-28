@@ -657,17 +657,29 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
 
-	// Delete completed Semeru instances because all pods now point to the newest Semeru service
-	if areCompletedSemeruInstancesMarkedToBeDeleted {
-		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
-			reqLogger.Error(err, "Failed to delete completed Semeru instance")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	if r.isWebSphereLibertyApplicationReady(instance) {
+		// Delete completed Semeru instances because all pods now point to the newest Semeru service
+		if areCompletedSemeruInstancesMarkedToBeDeleted {
+			if err := r.deleteCompletedSemeruInstances(instance); err != nil {
+				reqLogger.Error(err, "Failed to delete completed Semeru instance")
+				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			}
 		}
 	}
 
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
+}
+
+func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
+	s := ba.GetStatus()
+	statusCondition := s.GetCondition(common.StatusConditionTypeReady)
+	readyStatus := r.CheckApplicationStatus(ba)
+	if readyStatus == corev1.ConditionTrue {
+		return statusCondition != nil && statusCondition.GetType() == common.StatusConditionTypeReady && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
+	}
+	return false
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
