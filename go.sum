@@ -109,10 +109,6 @@ github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kd
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
-github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221111164016-8dd923439e31 h1:1U9mtK7ouUToxEW+YQMe9QdaFY54yH7X4YnKfwLOeCQ=
-github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221111164016-8dd923439e31/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
-github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221117174943-84c52c5b5811 h1:ZIEnxrpQwPqx3m8dthlsNkYrQZuZKvgBrO/6Q1XoFtw=
-github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221117174943-84c52c5b5811/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221128195542-ff532354d3c5 h1:Favuu6WDY7+ZmlGV7bjvvKVJO9Bm7sE00ezJ4ZX+86Y=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221128195542-ff532354d3c5/go.mod h1:uEH7jLgM16Fa2yrM2tzHH+7EAALTK1c49zoKwbCm2ng=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
