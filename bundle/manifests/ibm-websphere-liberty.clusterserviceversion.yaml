@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
@@ -57,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-11-18T12:08:09Z"
+    createdAt: "2022-11-29T10:35:44Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -1038,6 +1038,6 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 1.1.0

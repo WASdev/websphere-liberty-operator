@@ -525,6 +525,6 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 0.0.0
