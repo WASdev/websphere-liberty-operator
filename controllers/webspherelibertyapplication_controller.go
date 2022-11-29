@@ -657,13 +657,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
 
-	if r.isWebSphereLibertyApplicationReady(instance) {
-		// Delete completed Semeru instances because all pods now point to the newest Semeru service
-		if areCompletedSemeruInstancesMarkedToBeDeleted {
-			if err := r.deleteCompletedSemeruInstances(instance); err != nil {
-				reqLogger.Error(err, "Failed to delete completed Semeru instance")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-			}
+	// Delete completed Semeru instances because all pods now point to the newest Semeru service
+	if areCompletedSemeruInstancesMarkedToBeDeleted && r.isWebSphereLibertyApplicationReady(instance) {
+		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
+			reqLogger.Error(err, "Failed to delete completed Semeru instance")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
 
