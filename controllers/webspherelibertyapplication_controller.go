@@ -480,7 +480,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
 					getSemeruCertVolumeMount(instance))
 				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
-				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
+				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(),
 					semeruTLSSecretName, "SEMERU_TLS")
 				if err != nil {
 					return err
