@@ -57,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-11-29T10:35:44Z"
+    createdAt: "2022-12-06T09:20:39Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -449,7 +449,7 @@ spec:
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Resource requests and limits for the Semeru Cloud Compiler.
+      - description: Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
         displayName: Resource Requirements
         path: semeruCloudCompiler.resources
         x-descriptors:
@@ -460,7 +460,7 @@ spec:
       - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+      - description: Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
         displayName: Metric
         path: license.metric
         x-descriptors:

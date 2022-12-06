@@ -43,7 +43,6 @@ import (
 const (
 	SemeruLabelNameSuffix                   = "-semeru-compiler"
 	SemeruLabelName                         = "semeru-compiler"
-	JitServer                               = "jitserver"
 	SemeruGenerationLabelNameSuffix         = "/semeru-compiler-generation"
 	StatusReferenceSemeruGeneration         = "semeruGeneration"
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
@@ -263,10 +262,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Get Semeru resources config
 	instanceResources := semeruCloudCompiler.Resources
 
-	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
+	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "800Mi")
+	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "100m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "2000m")
 
 	// Liveness probe
 	livenessProbe := corev1.Probe{
@@ -292,12 +291,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: getLabels(wlva),
+			Labels:      getLabels(wlva),
+			Annotations: wlutils.GetWLOLicenseAnnotations(),
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:            JitServer,
+					Name:            "compiler",
 					Image:           wlva.Status.GetImageReference(),
 					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
