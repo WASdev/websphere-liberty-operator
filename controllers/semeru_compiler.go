@@ -43,7 +43,6 @@ import (
 const (
 	SemeruLabelNameSuffix                   = "-semeru-compiler"
 	SemeruLabelName                         = "semeru-compiler"
-	JitServer                               = "jitserver"
 	SemeruGenerationLabelNameSuffix         = "/semeru-compiler-generation"
 	StatusReferenceSemeruGeneration         = "semeruGeneration"
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
@@ -298,7 +297,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:            JitServer,
+					Name:            "compiler",
 					Image:           wlva.Status.GetImageReference(),
 					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
