@@ -292,7 +292,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: getLabels(wlva),
+			Labels:      getLabels(wlva),
+			Annotations: wlutils.GetWLOLicenseAnnotations(),
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{

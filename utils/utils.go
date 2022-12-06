@@ -576,3 +576,12 @@ func Remove(list []string, s string) []string {
 	}
 	return list
 }
+
+func GetWLOLicenseAnnotations() map[string]string {
+	annotations := make(map[string]string)
+	annotations["productID"] = "cb1747ecb831410f88006195f024183f"
+	annotations["productName"] = "WebSphere Liberty Operator"
+	annotations["productMetric"] = "FREE"
+	annotations["productChargedContainers"] = "ALL"
+	return annotations
+}
