@@ -57,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-12-05T17:50:01Z"
+    createdAt: "2022-12-06T09:20:39Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -460,7 +460,7 @@ spec:
       - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+      - description: Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
         displayName: Metric
         path: license.metric
         x-descriptors:

@@ -1541,7 +1541,7 @@ spec:
                     - IBM WebSphere Application Server Network Deployment
                     type: string
                   metric:
-                    description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+                    description: Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
                     enum:
                     - Virtual Processor Core (VPC)
                     - Processor Value Unit (PVU)

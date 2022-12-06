@@ -167,7 +167,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
-	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
+	// Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
 	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
