@@ -263,10 +263,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Get Semeru resources config
 	instanceResources := semeruCloudCompiler.Resources
 
-	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
+	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "800Mi")
+	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "100m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "2000m")
 
 	// Liveness probe
 	livenessProbe := corev1.Probe{

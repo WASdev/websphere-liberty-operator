@@ -395,7 +395,7 @@ spec:
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Resource requests and limits for the Semeru Cloud Compiler.
+      - description: Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
         displayName: Resource Requirements
         path: semeruCloudCompiler.resources
         x-descriptors:
