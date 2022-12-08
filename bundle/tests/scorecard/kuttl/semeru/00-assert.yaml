@@ -127,15 +127,16 @@ spec:
       containers:
         - resources: {}
           image: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
-          args:
-            - /bin/bash
-            - '-c'
-            - >-
-              export OPENJ9_JAVA_OPTIONS="$OPENJ9_JAVA_OPTIONS -XX:+UseJITServer
-              -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses
-              -XX:JITServerAddress=my-wsliberty-app-semeru-compiler-1.websphere-liberty.svc
-              -XX:JITServerSSLRootCerts=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-              && server run
+          # TODO: Need test coverage to verify jit server connection & certs
+          #args:
+          #  - /bin/bash
+          #  - '-c'
+          #  - >-
+          #    export OPENJ9_JAVA_OPTIONS="$OPENJ9_JAVA_OPTIONS -XX:+UseJITServer
+          #    -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses
+          #    -XX:JITServerAddress=my-wsliberty-app-semeru-compiler-1.websphere-liberty.svc
+          #    -XX:JITServerSSLRootCerts=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+          #    && server run
       serviceAccount: my-wsliberty-app
 status:
   observedGeneration: 1

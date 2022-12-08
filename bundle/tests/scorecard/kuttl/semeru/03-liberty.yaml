@@ -3,7 +3,7 @@ kind: WebSphereLibertyApplication
 metadata:
   name: my-wsliberty-app
 spec:
-  applicationImage: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi
   license:
     accept: true
     edition: IBM WebSphere Application Server
