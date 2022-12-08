@@ -395,7 +395,7 @@ spec:
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Resource requests and limits for the Semeru Cloud Compiler.
+      - description: Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
         displayName: Resource Requirements
         path: semeruCloudCompiler.resources
         x-descriptors:
@@ -406,7 +406,7 @@ spec:
       - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+      - description: Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
         displayName: Metric
         path: license.metric
         x-descriptors:
@@ -525,6 +525,6 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
     name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 0.0.0

@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.17
 
 require (
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221117174943-84c52c5b5811
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20221201221837-d3127f543e64
 	github.com/go-logr/logr v1.2.2
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220630204433-c71d40c7de49
@@ -16,12 +16,12 @@ require (
 )
 
 require (
-	github.com/jetstack/cert-manager v1.5.0
+	github.com/cert-manager/cert-manager v1.8.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.50.0
 )
 
 require (
-	cloud.google.com/go v0.98.0 // indirect
+	cloud.google.com/go v0.99.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
@@ -72,6 +72,7 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	knative.dev/networking v0.0.0-20220524205304-22d1b933cf73 // indirect
 	knative.dev/pkg v0.0.0-20220524202603-19adf798efb8 // indirect
+	sigs.k8s.io/gateway-api v0.4.1 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

@@ -28,8 +28,8 @@ import (
 	wlutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"github.com/application-stacks/runtime-component-operator/common"
 	utils "github.com/application-stacks/runtime-component-operator/utils"
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	certmanagermetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,7 +43,6 @@ import (
 const (
 	SemeruLabelNameSuffix                   = "-semeru-compiler"
 	SemeruLabelName                         = "semeru-compiler"
-	JitServer                               = "jitserver"
 	SemeruGenerationLabelNameSuffix         = "/semeru-compiler-generation"
 	StatusReferenceSemeruGeneration         = "semeruGeneration"
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
@@ -263,10 +262,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Get Semeru resources config
 	instanceResources := semeruCloudCompiler.Resources
 
-	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "1000m")
+	requestsMemory := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceMemory, "800Mi")
+	requestsCPU := getQuantityFromRequestsOrDefault(instanceResources, corev1.ResourceCPU, "100m")
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
-	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "8000m")
+	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "2000m")
 
 	// Liveness probe
 	livenessProbe := corev1.Probe{
@@ -292,12 +291,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: getLabels(wlva),
+			Labels:      getLabels(wlva),
+			Annotations: wlutils.GetWLOLicenseAnnotations(),
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:            JitServer,
+					Name:            "compiler",
 					Image:           wlva.Status.GetImageReference(),
 					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
@@ -435,7 +435,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 		svcCert.Spec.DNSNames = make([]string, 2)
 		svcCert.Spec.DNSNames[0] = svcCert.Name + "." + wlva.Namespace + ".svc"
 		svcCert.Spec.DNSNames[1] = svcCert.Name + "." + wlva.Namespace + ".svc.cluster.local"
-		svcCert.Spec.CommonName = svcCert.Spec.DNSNames[0]
+		svcCert.Spec.CommonName = svcCert.Name
 		duration, err := time.ParseDuration(common.Config[common.OpConfigCMCertDuration])
 		if err != nil {
 			return err

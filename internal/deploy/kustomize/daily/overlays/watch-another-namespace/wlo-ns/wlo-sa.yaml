@@ -2,4 +2,4 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: websphere-liberty-controller-manager
-  namespace: wlo-ns2
+  namespace: default

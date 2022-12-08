@@ -167,7 +167,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
-	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
+	// Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
 	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
@@ -440,7 +440,7 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
 	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
-	// Resource requests and limits for the Semeru Cloud Compiler.
+	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
 	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
