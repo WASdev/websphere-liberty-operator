@@ -1,13 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
-- ../../base
-
-patchesStrategicMerge:
-- wlo-deployment.yaml
-- wlo-roles.yaml
-- wlo-sa.yaml
-
 resources:
-- watched-roles.yaml
+- wlo-watched-ns
+- wlo-ns
