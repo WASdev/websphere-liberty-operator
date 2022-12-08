@@ -123,7 +123,7 @@ acceptance-test:
     fi
 
 finish:
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  image: icr.io/continuous-delivery/toolchains/devsecops/baseimage@sha256:2132bf3187b63496d119f61d375bbb656d0b3e4a664970478c44b527c4c058c5
   script: |
     #!/usr/bin/env bash
     echo "finish stage"
