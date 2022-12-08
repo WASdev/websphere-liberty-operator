@@ -12,4 +12,3 @@ spec:
   pullPolicy: IfNotPresent
   semeruCloudCompiler:
     enable: true
-    replicas: 1

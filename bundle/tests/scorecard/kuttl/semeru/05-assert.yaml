@@ -1,32 +1,26 @@
-# Basic semeru functional verification. Verifies when the semeruCloudCompiler is enabled, that:
-# 1. Semeru deployment is created with all correct default values.
-# 2. Semeru service is create wtih the all correct default values.
-# 3. Application deployment is created with all correct default values (including certs and jitserver config properties being set)  
+# Builds off variation 04, by removing statefulset and by changing the application image.  This causes a new versioned deployment, service and application deployment
+# to be created.  ie. my-wsliberty-app-semeru-compiler-1 -> my-wsliberty-app-semeru-compiler-2.  
 
-apiVersion: kuttl.dev/v1beta1
-kind: TestAssert
-timeout: 60
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-wsliberty-app-semeru-compiler-1
+  name: my-wsliberty-app-semeru-compiler-2
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/component: semeru-compiler
-      app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-1
+      app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
       app.kubernetes.io/part-of: my-wsliberty-app
   template:
     metadata:
       labels:
         app.kubernetes.io/component: semeru-compiler
-        app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-1
+        app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
         app.kubernetes.io/managed-by: websphere-liberty-operator
         app.kubernetes.io/name: my-wsliberty-app-semeru-compiler
         app.kubernetes.io/part-of: my-wsliberty-app
-        liberty.websphere.ibm.com/semeru-compiler-generation: '1'
+        liberty.websphere.ibm.com/semeru-compiler-generation: '2'
     spec:
       restartPolicy: Always
       serviceAccountName: my-wsliberty-app
@@ -84,12 +78,12 @@ spec:
               readOnly: true
               mountPath: /etc/x509/certs
           terminationMessagePolicy: File
-          image: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
+          image: 'icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi'
       serviceAccount: my-wsliberty-app
       volumes:
         - name: certs
           secret:
-            secretName: my-wsliberty-app-semeru-compiler-1-tls-ocp
+            secretName: my-wsliberty-app-semeru-compiler-2-tls-ocp
             defaultMode: 420
       dnsPolicy: ClusterFirst
   strategy:
@@ -98,14 +92,14 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: my-wsliberty-app-semeru-compiler-1
+  name: my-wsliberty-app-semeru-compiler-2
   labels:
     app.kubernetes.io/component: semeru-compiler
-    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-1
+    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
     app.kubernetes.io/managed-by: websphere-liberty-operator
     app.kubernetes.io/name: my-wsliberty-app-semeru-compiler
     app.kubernetes.io/part-of: my-wsliberty-app
-    liberty.websphere.ibm.com/semeru-compiler-generation: '1'
+    liberty.websphere.ibm.com/semeru-compiler-generation: '2'
 spec:
   ports:
     - protocol: TCP
@@ -114,7 +108,7 @@ spec:
   sessionAffinity: ClientIP
   selector:
     app.kubernetes.io/component: semeru-compiler
-    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-1
+    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
     app.kubernetes.io/part-of: my-wsliberty-app
 ---
 kind: Deployment
@@ -126,20 +120,4 @@ spec:
     spec:
       containers:
         - resources: {}
-          image: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
-          args:
-            - /bin/bash
-            - '-c'
-            - >-
-              export OPENJ9_JAVA_OPTIONS="$OPENJ9_JAVA_OPTIONS -XX:+UseJITServer
-              -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses
-              -XX:JITServerAddress=my-wsliberty-app-semeru-compiler-1.websphere-liberty.svc
-              -XX:JITServerSSLRootCerts=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-              && server run
-      serviceAccount: my-wsliberty-app
-status:
-  observedGeneration: 1
-  replicas: 1
-  updatedReplicas: 1
-  readyReplicas: 1
-  availableReplicas: 1
+          image: 'icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi'

@@ -1,18 +1,12 @@
-# Basic semeru functional verification. Verifies when the semeruCloudCompiler is enabled, that:
-# 1. Semeru deployment is created with all correct default values.
-# 2. Semeru service is create wtih the all correct default values.
-# 3. Application deployment is created with all correct default values (including certs and jitserver config properties being set)  
+# Builds off variation 03, by changing the configuration to a statefulSet: {}, and reverifies
+# the Semeru deployment & service, and the application deployment (as in variation 00) 
 
-apiVersion: kuttl.dev/v1beta1
-kind: TestAssert
-timeout: 60
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-wsliberty-app-semeru-compiler-1
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/component: semeru-compiler
@@ -117,7 +111,7 @@ spec:
     app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-1
     app.kubernetes.io/part-of: my-wsliberty-app
 ---
-kind: Deployment
+kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: my-wsliberty-app
@@ -127,15 +121,6 @@ spec:
       containers:
         - resources: {}
           image: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
-          args:
-            - /bin/bash
-            - '-c'
-            - >-
-              export OPENJ9_JAVA_OPTIONS="$OPENJ9_JAVA_OPTIONS -XX:+UseJITServer
-              -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses
-              -XX:JITServerAddress=my-wsliberty-app-semeru-compiler-1.websphere-liberty.svc
-              -XX:JITServerSSLRootCerts=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-              && server run
       serviceAccount: my-wsliberty-app
 status:
   observedGeneration: 1

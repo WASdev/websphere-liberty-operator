@@ -11,5 +11,4 @@ spec:
     productEntitlementSource: Standalone
   pullPolicy: IfNotPresent
   semeruCloudCompiler:
-    enable: true
-    replicas: 1
+    enable: false

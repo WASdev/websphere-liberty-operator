@@ -1,13 +1,8 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestAssert
-timeout: 60
----
+# Builds off variation 00 configuration and changes replicas to 3 and verifies configuration is updated
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-wsliberty-app-semeru-compiler-1
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: my-wsliberty-app-semeru-compiler-1
+spec:
+  replicas: 3

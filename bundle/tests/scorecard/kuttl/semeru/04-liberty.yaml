@@ -4,6 +4,7 @@ metadata:
   name: my-wsliberty-app
 spec:
   applicationImage: 'icr.io/appcafe/websphere-liberty:kernel-java17-openj9-ubi'
+  statefulSet: {}
   license:
     accept: true
     edition: IBM WebSphere Application Server
@@ -12,4 +13,3 @@ spec:
   pullPolicy: IfNotPresent
   semeruCloudCompiler:
     enable: true
-    replicas: 1
