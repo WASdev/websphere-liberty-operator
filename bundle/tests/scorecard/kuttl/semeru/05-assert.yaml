@@ -1,0 +1,123 @@
+# Builds off variation 04, by removing statefulset and by changing the application image.  This causes a new versioned deployment, service and application deployment
+# to be created.  ie. my-wsliberty-app-semeru-compiler-1 -> my-wsliberty-app-semeru-compiler-2.  
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-wsliberty-app-semeru-compiler-2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: semeru-compiler
+      app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
+      app.kubernetes.io/part-of: my-wsliberty-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: semeru-compiler
+        app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
+        app.kubernetes.io/managed-by: websphere-liberty-operator
+        app.kubernetes.io/name: my-wsliberty-app-semeru-compiler
+        app.kubernetes.io/part-of: my-wsliberty-app
+        liberty.websphere.ibm.com/semeru-compiler-generation: '2'
+    spec:
+      restartPolicy: Always
+      serviceAccountName: my-wsliberty-app
+      schedulerName: default-scheduler
+      containers:
+        - resources:
+            limits:
+              cpu: '8'
+              memory: 1200Mi
+            requests:
+              cpu: '1'
+              memory: 1200Mi
+          readinessProbe:
+            tcpSocket:
+              port: 38400
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: jitserver
+          command:
+            - jitserver
+          livenessProbe:
+            tcpSocket:
+              port: 38400
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: OPENJ9_JAVA_OPTIONS
+              value: >-
+                -XX:+JITServerLogConnections
+                -XX:JITServerSSLKey=/etc/x509/certs/tls.key
+                -XX:JITServerSSLCert=/etc/x509/certs/tls.crt
+            - name: SA_RESOURCE_VERSION
+            - name: TLS_SECRET_RESOURCE_VERSION
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: 38400
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: certs
+              readOnly: true
+              mountPath: /etc/x509/certs
+          terminationMessagePolicy: File
+          image: 'icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi'
+      serviceAccount: my-wsliberty-app
+      volumes:
+        - name: certs
+          secret:
+            secretName: my-wsliberty-app-semeru-compiler-2-tls-ocp
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: Recreate
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-wsliberty-app-semeru-compiler-2
+  labels:
+    app.kubernetes.io/component: semeru-compiler
+    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
+    app.kubernetes.io/managed-by: websphere-liberty-operator
+    app.kubernetes.io/name: my-wsliberty-app-semeru-compiler
+    app.kubernetes.io/part-of: my-wsliberty-app
+    liberty.websphere.ibm.com/semeru-compiler-generation: '2'
+spec:
+  ports:
+    - protocol: TCP
+      port: 38400
+      targetPort: 38400
+  sessionAffinity: ClientIP
+  selector:
+    app.kubernetes.io/component: semeru-compiler
+    app.kubernetes.io/instance: my-wsliberty-app-semeru-compiler-2
+    app.kubernetes.io/part-of: my-wsliberty-app
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: my-wsliberty-app
+spec:
+  template:
+    spec:
+      containers:
+        - resources: {}
+          image: 'icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi'
