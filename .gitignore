@@ -80,3 +80,4 @@ bin
 vendor
 testbin
 linter-tool
+bundle/tests/scorecard/kuttl/kubeconfig

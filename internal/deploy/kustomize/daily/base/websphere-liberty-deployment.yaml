@@ -17,6 +17,7 @@ spec:
   template:
     metadata:
       annotations:
+        kubectl.kubernetes.io/default-container: manager
         productChargedContainers: ALL
         productID: cb1747ecb831410f88006195f024183f
         productMetric: FREE

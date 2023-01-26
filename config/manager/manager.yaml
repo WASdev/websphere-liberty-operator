@@ -26,6 +26,7 @@ spec:
         productName: "WebSphere Liberty Operator"
         productMetric: "FREE"
         productChargedContainers: "ALL"
+        kubectl.kubernetes.io/default-container: manager
     spec:
       hostIPC: false
       hostPID: false
