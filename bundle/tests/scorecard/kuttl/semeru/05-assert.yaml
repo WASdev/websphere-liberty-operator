@@ -26,14 +26,7 @@ spec:
       serviceAccountName: my-wsliberty-app
       schedulerName: default-scheduler
       containers:
-        - resources:
-            limits:
-              cpu: '8'
-              memory: 1200Mi
-            requests:
-              cpu: '1'
-              memory: 1200Mi
-          readinessProbe:
+        - readinessProbe:
             tcpSocket:
               port: 38400
             initialDelaySeconds: 5
@@ -42,7 +35,7 @@ spec:
             successThreshold: 1
             failureThreshold: 3
           terminationMessagePath: /dev/termination-log
-          name: jitserver
+          name: compiler
           command:
             - jitserver
           livenessProbe:
@@ -83,7 +76,7 @@ spec:
       volumes:
         - name: certs
           secret:
-            secretName: my-wsliberty-app-semeru-compiler-2-tls-ocp
+            secretName: my-wsliberty-app-semeru-compiler-2-tls-cm
             defaultMode: 420
       dnsPolicy: ClusterFirst
   strategy:
