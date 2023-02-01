@@ -112,6 +112,7 @@ main() {
      install_rook
      install_serverless
      setup_knative_serving
+     install_cert_manager
      add_affinity_label_to_node
      create_image_content_source_policy
   elif [[ "$COMMAND" == "scorecard" ]]; then
@@ -323,8 +324,8 @@ install_rook() {
     tmp_dir=$(mktemp -d -t ceph-XXXXXXXXXX)
     cd "$tmp_dir"
 
-    git clone --single-branch -b v1.5.11 https://github.com/rook/rook.git
-    cd rook/cluster/examples/kubernetes/ceph
+    git clone --single-branch --branch master https://github.com/rook/rook.git
+    cd rook/deploy/examples
 
     oc create -f crds.yaml
     oc create -f common.yaml
@@ -402,6 +403,16 @@ EOF
     echo
   else
     echo "Knative Serving instance is already created."
+  fi
+}
+
+install_cert_manager() {
+  if ! oc get deployments -n cert-manager 2>/dev/null | grep cert-manager >/dev/null; then
+    echo "Installing cert-manager..."
+    oc apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+    echo
+  else
+    echo "cert-manager is already installed."
   fi
 }
 
