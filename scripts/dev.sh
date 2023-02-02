@@ -31,6 +31,10 @@ set -Eeo pipefail
 
 readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
 
+warn() {
+  echo -e "${yel}Warning:${end} $1"
+}
+
 main() {
 
   parse_args "$@"
