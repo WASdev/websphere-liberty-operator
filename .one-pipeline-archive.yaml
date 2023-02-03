@@ -4,8 +4,6 @@ setup:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-   
-    BRANCH=$(get_env branch)
     GHE_TOKEN=$(get_env git-token)
     ARCHIVE_DESTINATION_REPO=$(get_env archive-destination-repo)
     REPO=$(get_env repository)
