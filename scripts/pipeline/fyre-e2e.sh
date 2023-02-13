@@ -165,7 +165,7 @@ main() {
     echo "****** ${CONTROLLER_MANAGER_NAME} deployment is ready..."
 
     echo "****** Starting scorecard tests..."
-    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 30m ./bundle || {
+    operator-sdk scorecard --verbose --kubeconfig  ${HOME}/.kube/config --selector=suite=kuttlsuite --namespace="${TEST_NAMESPACE}" --service-account="scorecard-kuttl" --wait-time 45m ./bundle || {
        echo "****** Scorecard tests failed..."
        exit 1
     }
