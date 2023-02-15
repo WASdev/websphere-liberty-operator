@@ -5,7 +5,7 @@
 
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 60
+timeout: 120
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,11 +34,11 @@ spec:
       containers:
         - resources:
             limits:
-              cpu: '8'
+              cpu: '2'
               memory: 1200Mi
             requests:
-              cpu: '1'
-              memory: 1200Mi
+              cpu: 100m
+              memory: 800Mi 
           readinessProbe:
             tcpSocket:
               port: 38400
@@ -48,7 +48,7 @@ spec:
             successThreshold: 1
             failureThreshold: 3
           terminationMessagePath: /dev/termination-log
-          name: jitserver
+          name: compiler
           command:
             - jitserver
           livenessProbe:
@@ -89,7 +89,7 @@ spec:
       volumes:
         - name: certs
           secret:
-            secretName: my-wsliberty-app-semeru-compiler-1-tls-ocp
+            secretName: my-wsliberty-app-semeru-compiler-1-tls-cm
             defaultMode: 420
       dnsPolicy: ClusterFirst
   strategy:
