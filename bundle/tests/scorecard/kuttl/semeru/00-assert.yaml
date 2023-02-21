@@ -5,7 +5,7 @@
 
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 60
+timeout: 120
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,7 +32,14 @@ spec:
       serviceAccountName: my-wsliberty-app
       schedulerName: default-scheduler
       containers:
-        - readinessProbe:
+        - resources:
+            limits:
+              cpu: '2'
+              memory: 1200Mi
+            requests:
+              cpu: 100m
+              memory: 800Mi 
+          readinessProbe:
             tcpSocket:
               port: 38400
             initialDelaySeconds: 5
