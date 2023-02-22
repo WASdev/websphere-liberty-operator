@@ -2574,6 +2574,10 @@ spec:
                           - key
                           type: object
                           x-kubernetes-map-type: atomic
+                        followRedirects:
+                          description: FollowRedirects configures whether scrape requests
+                            follow HTTP 3xx redirects.
+                          type: boolean
                         honorLabels:
                           description: HonorLabels chooses the metric's labels on
                             collisions with target labels.
@@ -2584,6 +2588,9 @@ spec:
                           type: boolean
                         interval:
                           description: Interval at which metrics should be scraped
+                            If not specified Prometheus' global scrape interval is
+                            used.
+                          pattern: ^(0|(([0-9]+)y)?(([0-9]+)w)?(([0-9]+)d)?(([0-9]+)h)?(([0-9]+)m)?(([0-9]+)s)?(([0-9]+)ms)?)$
                           type: string
                         metricRelabelings:
                           description: MetricRelabelConfigs to apply to samples before
@@ -2595,8 +2602,17 @@ spec:
                               configuration. More info: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs'
                             properties:
                               action:
+                                default: replace
                                 description: Action to perform based on regex matching.
                                   Default is 'replace'
+                                enum:
+                                - replace
+                                - keep
+                                - drop
+                                - hashmod
+                                - labelmap
+                                - labeldrop
+                                - labelkeep
                                 type: string
                               modulus:
                                 description: Modulus to take of the hash of the source
@@ -2623,6 +2639,10 @@ spec:
                                   configured regular expression for the replace, keep,
                                   and drop actions.
                                 items:
+                                  description: LabelName is a valid Prometheus label
+                                    name which may only contain ASCII letters, numbers,
+                                    as well as underscores.
+                                  pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                   type: string
                                 type: array
                               targetLabel:
@@ -2745,9 +2765,9 @@ spec:
                         relabelings:
                           description: 'RelabelConfigs to apply to samples before
                             scraping. Prometheus Operator automatically adds relabelings
-                            for a few standard Kubernetes fields and replaces original
-                            scrape job name with __tmp_prometheus_job_name. More info:
-                            https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config'
+                            for a few standard Kubernetes fields. The original scrape
+                            job''s name is available via the `__tmp_prometheus_job_name`
+                            label. More info: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config'
                           items:
                             description: 'RelabelConfig allows dynamic rewriting of
                               the label set, being applied to samples before ingestion.
@@ -2755,8 +2775,17 @@ spec:
                               configuration. More info: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs'
                             properties:
                               action:
+                                default: replace
                                 description: Action to perform based on regex matching.
                                   Default is 'replace'
+                                enum:
+                                - replace
+                                - keep
+                                - drop
+                                - hashmod
+                                - labelmap
+                                - labeldrop
+                                - labelkeep
                                 type: string
                               modulus:
                                 description: Modulus to take of the hash of the source
@@ -2783,6 +2812,10 @@ spec:
                                   configured regular expression for the replace, keep,
                                   and drop actions.
                                 items:
+                                  description: LabelName is a valid Prometheus label
+                                    name which may only contain ASCII letters, numbers,
+                                    as well as underscores.
+                                  pattern: ^[a-zA-Z_][a-zA-Z0-9_]*$
                                   type: string
                                 type: array
                               targetLabel:
@@ -2796,7 +2829,11 @@ spec:
                           description: HTTP scheme to use for scraping.
                           type: string
                         scrapeTimeout:
-                          description: Timeout after which the scrape is ended
+                          description: Timeout after which the scrape is ended If
+                            not specified, the Prometheus global scrape timeout is
+                            used unless it is less than `Interval` in which the latter
+                            is used.
+                          pattern: ^(0|(([0-9]+)y)?(([0-9]+)w)?(([0-9]+)d)?(([0-9]+)h)?(([0-9]+)m)?(([0-9]+)s)?(([0-9]+)ms)?)$
                           type: string
                         targetPort:
                           anyOf:
