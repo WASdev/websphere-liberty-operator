@@ -109,6 +109,7 @@ acceptance-test:
       list_artifacts | while IFS= read -r artifact; do
         image_name="$(load_artifact "$artifact" "name")"
         type="$(load_artifact "$artifact" "type")"
+        echo "type="$type
         if [[ "$type" == "image" ]]; then
           echo "Verifying image ${image_name}"
           skopeo copy --src-creds $(get_env dest-user):$(get_env dest-key) docker://${image_name} dir:./images
