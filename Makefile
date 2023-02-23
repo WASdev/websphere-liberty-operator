@@ -174,10 +174,6 @@ install-podman:
 install-opm:
 	./scripts/installers/install-opm.sh
 
-# Setup Minikube cluster.
-setup-minikube:
-	./scripts/installers/install-minikube.sh
-
 ##@ Development
 
 .PHONY: generate
@@ -332,9 +328,6 @@ catalog-push: ## Push a catalog image.
 
 build-manifest: setup-manifest
 	./scripts/build-manifest.sh --image "${PUBLISH_REGISTRY}/${OPERATOR_IMAGE}" --target "${RELEASE_TARGET}"
-
-minikube-test-e2e:
-	./scripts/e2e-minikube.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
 
 kind-e2e-test:
 	./scripts/e2e-kind.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
