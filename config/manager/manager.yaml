@@ -71,6 +71,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.annotations['olm.targetNamespaces']
+          - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+            value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false

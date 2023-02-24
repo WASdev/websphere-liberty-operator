@@ -589,7 +589,4 @@ spec:
   maturity: stable
   provider:
     name: IBM
-  relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
-    name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
   version: 0.0.0
