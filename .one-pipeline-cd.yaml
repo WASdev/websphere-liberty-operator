@@ -81,7 +81,7 @@ deploy:
     done
 
 sign-artifact:
-  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/csso-image-sign:1.0.0@sha256:cb22e6ad6b3469155719f6bf09bde641208a1e349e5ccc09407204bb069f7b4e
+  image: docker-eu-public.artifactory.swg-devops.com/wcp-compliance-automation-team-docker-local/csso-image-sign:6.0.0@sha256:3499f75eb669416536f0d680104e7e9e37147c168459152d716a1fbf9b1af5a2
   script: |
     #!/usr/bin/env bash
     echo "sign-artifact stage"
@@ -89,25 +89,27 @@ sign-artifact:
     set_env IMAGE_SIGNING_TASK_NAME "build-sign-artifact"
     set_env IMAGE_SIGNING_STEP_NAME "run-stage"
     "${COMMONS_PATH}"/ciso/sign_icr.sh
-    gpg2 --armor --output wlo.gpg --export $(get_env signing-alias)
-    save_file gpg_file wlo.gpg
+    fingerprint=$(/opt/Garantir/bin/gpg --homedir $HOME/.gnupggrs/ --fingerprint --with-colons | grep fpr | tr -d 'fpr:')
+    echo "GNUPGHOME="$GNUPGHOME
+    gpg2 --homedir $HOME/.gnupggrs --output wlo.pub --armor --export $fingerprint
+    save_file pub_file wlo.pub
+    cat wlo.pub
 
 acceptance-test:
-  image: wcp-compliance-automation-team-docker-local.artifactory.swg-devops.com/csso-image-sign:1.0.0@sha256:cb22e6ad6b3469155719f6bf09bde641208a1e349e5ccc09407204bb069f7b4e
+  image: docker-eu-public.artifactory.swg-devops.com/wcp-compliance-automation-team-docker-local/csso-image-sign:6.0.0@sha256:3499f75eb669416536f0d680104e7e9e37147c168459152d716a1fbf9b1af5a2
   script: |
     #!/usr/bin/env bash
     echo "acceptance-test stage"
-    load_file gpg_file > wlo.gpg
-    gpg2 --import wlo.gpg
-    fingerprint=$(gpg2 -k)
-    fingerprint=${fingerprint#*"[SCEA]"}
-    fingerprint=$(echo "$fingerprint"  | tail -2 | head -1 | xargs)
+    load_file pub_file > wlo.pub
+    gpg2 --import wlo.pub
+    export fingerprint=$(gpg --fingerprint --with-colons | grep fpr | tr -d 'fpr:')
     echo "fingerprint=$fingerprint"
     mkdir -p images
     if which list_artifacts >/dev/null; then
       list_artifacts | while IFS= read -r artifact; do
         image_name="$(load_artifact "$artifact" "name")"
         type="$(load_artifact "$artifact" "type")"
+        echo "type="$type
         if [[ "$type" == "image" ]]; then
           echo "Verifying image ${image_name}"
           skopeo copy --src-creds $(get_env dest-user):$(get_env dest-key) docker://${image_name} dir:./images
