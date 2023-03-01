@@ -213,6 +213,7 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    # flags for P and/or Z
 
     
     echo "skopeo version"
@@ -250,11 +251,12 @@ containerize:
 
         echo "Running with artifactory disabled."
 
-        # Build amd64 image
+        # Build amd64 image, build operator images
         make build-pipeline-releases
 
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
+        # if a P and Z flag call out to CI Orchestrator to build them
         #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
         # Build manifest
@@ -267,6 +269,7 @@ containerize:
         # Build catalog image
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+        # if a P and Z flag call out to CI Orchestrator to build catalog
         make catalog-pipeline-build
         make catalog-pipeline-push
 
@@ -288,6 +291,7 @@ containerize:
 
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
+         # if a P and Z flag call out to CI Orchestrator to build them
         #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
 
         # Build manifest
@@ -303,7 +307,7 @@ containerize:
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-
+        # if a P and Z flag call out to CI Orchestrator to build them
         make catalog-all-build
         make catalog-all-push
 

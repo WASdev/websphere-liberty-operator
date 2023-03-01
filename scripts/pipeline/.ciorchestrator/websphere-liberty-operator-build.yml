@@ -1,0 +1,34 @@
+type: pipeline_definition
+product: Liberty
+name: Websphere Liberty Operator Docker Container Build
+description: A build to run the websphere-liberty operator docker container build
+triggers:
+- type: manual
+  triggerName: "wlodocker"
+  propertyDefinitions:
+  - name: scriptBranch
+    defaultValue: multi-arch           
+  - name: scriptOrg
+    defaultValue: "WASdev"
+  - name: command
+    defaultValue: "make build-pipeline-releases"
+
+steps:
+- stepName: Z Build
+  workType: Jenkins
+  projectName: ebcDockerBuilderWLO
+  timeoutInMinutes: 1440
+  # Need properties for Makefile or build script for WLO
+  properties:  
+    WHAT: Ask Leo for props
+    ebcPlan: Plan Name from Chris W
+    
+
+- stepName: P Build
+  workType: Jenkins
+  projectName: ebcDockerBuilderWLO
+  timeoutInMinutes: 1440
+  # Need properties for Makefile or build script for WLO
+  properties:  
+    WHAT: Ask Leo for props
+    ebcPlan: Plan Name from Chris W
