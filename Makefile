@@ -394,4 +394,4 @@ push-catalog: docker-login
 	podman push --format=docker "${CATALOG_IMG}"
 
 dev: 
-	./scripts/dev.sh all
+	./scripts/dev.sh all -channel ${DEFAULT_CHANNEL}
