@@ -29,7 +29,7 @@
 set -Eeo pipefail
 
 
-readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
+readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> -channel <channel> ]"
 
 warn() {
   echo -e "${yel}Warning:${end} $1"
@@ -88,6 +88,7 @@ main() {
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
   MAKEFILE_DIR=${MAKEFILE_DIR:=$SCRIPT_DIR/..}
   TEMP_DIR=${TEMP_DIR:=/tmp}
+  CHANNEL=${CHANNEL:="v1.1"}
   
   if [[ "$COMMAND" == "all" ]]; then
      login_registry
@@ -186,7 +187,7 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $NAMESPACE
 spec:
-  channel:  v1.1
+  channel: $CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $NAMESPACE
@@ -305,7 +306,10 @@ parse_args() {
     -tempdir)
       shift
       TEMP_DIR="${1}"
-      ;;         
+      ;;
+    -channel)
+       CHANNEL="${1}"
+      ;;            
     esac
     shift
   done
