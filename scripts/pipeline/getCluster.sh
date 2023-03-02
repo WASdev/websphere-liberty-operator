@@ -3,7 +3,6 @@ arch=$1
 timestamp=$(date +%s)
 echo $timestamp
 wlo_demand_id="wlo_$timestamp"_"$arch"
-set_env WLO_DEMAND_ID "$wlo_demand_id"
 echo "wlo_demand_id=$wlo_demand_id"
     
 git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
@@ -15,12 +14,20 @@ export intranetId_PSW=$(get_env ebc_pw)
 export demandId=$wlo_demand_id
 if [[ "$arch" == "X" ]]; then
     export ebc_plan=svl-onepipeline-ocpplus_x_custom.yml
+    set_env WLO_DEMAND_ID "$wlo_demand_id"
+    echo "wlo_demand_id=$wlo_demand_id"
 fi
 if [[ "$arch" == "Z" ]]; then
     export ebc_plan=svl-onepipeline-ocpplus_z_custom.yml
+    wlo_demand_id="wlo_$timestamp"_"$arch"
+    set_env WLO_DEMAND_ID_Z "$wlo_demand_id"
+    echo "wlo_demand_id_z=$wlo_demand_id"
 fi
 if [[ "$arch" == "P" ]]; then
     export ebc_plan=svl-onepipeline-ocpplus_p_custom.yml
+    wlo_demand_id="wlo_$timestamp"_"$arch"
+    set_env WLO_DEMAND_ID_P "$wlo_demand_id"
+    echo "wlo_demand_id_p=$wlo_demand_id"
 fi
 
 PRE_RELEASE=$(get_env pre-release)

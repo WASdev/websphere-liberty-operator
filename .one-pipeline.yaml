@@ -72,8 +72,8 @@ setup:
     fi
 
     export arch=$(get_env architecture)
-    if [[ ! -z "$arch" ]]; then
-      ./scripts/pipeline/getCluster.sh $arch
+    if [[ "$arch" == "X" ]]; then
+      ./scripts/pipeline/getCluster.sh "X""
     else
       ./scripts/pipeline/getCluster.sh "Z"
       ./scripts/pipeline/getCluster.sh "X" 
@@ -270,12 +270,12 @@ containerize:
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
         # if a P and Z flag call out to CI Orchestrator to build them
-        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make build-pipeline-manifest"
 
-        # Build manifest
+        # Build manifest (P and Z here too?)
         make build-pipeline-manifest
 
-        # Build bundle image
+        # Build bundle image (P and Z here too?)
         make setup
         make bundle-pipeline
 
@@ -283,7 +283,9 @@ containerize:
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         # if a P and Z flag call out to CI Orchestrator to build catalog
+        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make catalog-pipeline-build"
         make catalog-pipeline-build
+        # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
         make catalog-pipeline-push
 
       else
@@ -304,13 +306,13 @@ containerize:
 
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
-         # if a P and Z flag call out to CI Orchestrator to build them
-        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+        # if a P and Z flag call out to CI Orchestrator to build them
+        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make build-pipeline-manifest"
 
-        # Build manifest
+        # Build manifest (P and Z here too?)
         make build-all-manifest
 
-        # Build bundle image
+        # Build bundle image (P and Z here too?)
         make setup
         make bundle-all
 
@@ -320,9 +322,11 @@ containerize:
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-        # if a P and Z flag call out to CI Orchestrator to build them
-        make catalog-all-build
-        make catalog-all-push
+        # if a P and Z flag call out to CI Orchestrator to build catalog
+        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make catalog-pipeline-build"
+        make catalog-pipeline-build
+        # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
+        make catalog-pipeline-push
 
         echo "Completed pushing to artifactory."
       fi
@@ -460,18 +464,32 @@ acceptance-test:
     
     export intranetId_USR=$(get_env ebc_id)
     export intranetId_PSW=$(get_env ebc_pw)
-    
-    # run block 3 times for Z, P and X
+    export ebcEnvironment=prod
+
+    # --------- X ---------------
     wlo_demand_id=$(get_env WLO_DEMAND_ID)
     export demandId=$wlo_demand_id
-
-    #(prod or dev to use dev ebc)
-    export ebcEnvironment=dev
-    
-    echo "calling ebc_waitForDemand.sh"
+    echo "calling ebc_waitForDemand.sh for X"
     json=$(./ebc_waitForDemand.sh)
     rc=$?
-    echo "return from ebc_waitForDemand.sh"
+    echo "return from ebc_waitForDemand.sh for X"
+
+    # --------- Z ---------------
+    wlo_demand_id=$(get_env WLO_DEMAND_ID_Z)
+    export demandId=$wlo_demand_id
+    echo "calling ebc_waitForDemand.sh for Z"
+    json=$(./ebc_waitForDemand.sh)
+    rc=$?
+    echo "return from ebc_waitForDemand.sh for Z"
+
+    # --------- P ---------------
+    wlo_demand_id=$(get_env WLO_DEMAND_ID_P)
+    export demandId=$wlo_demand_id
+    export ebcEnvironment=prod
+    echo "calling ebc_waitForDemand.sh for P"
+    json=$(./ebc_waitForDemand.sh)
+    rc=$?
+    echo "return from ebc_waitForDemand.sh for Z"
     
     
     status=$(jq -c '.status' <<< $json)
@@ -549,8 +567,6 @@ acceptance-test:
     export FYRE_KEY=$(get_env fyre-key)
     export FYRE_PASS=$(get_env fyre-pass)
     export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
-
-
 
     scripts/acceptance-test.sh
     rc=$?
