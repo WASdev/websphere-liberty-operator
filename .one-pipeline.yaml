@@ -71,6 +71,14 @@ setup:
       exit 0
     fi
 
+    export arch=$(get_env architecture)
+    if [[ ! -z "$arch" ]]; then
+      ./scripts/pipeline/getCluster.sh $arch
+    else
+      ./scripts/pipeline/getCluster.sh "Z"
+      ./scripts/pipeline/getCluster.sh "X" 
+      ./scripts/pipeline/getCluster.sh "P"
+    fi
 
     
     # timestamp=$(date +%s)

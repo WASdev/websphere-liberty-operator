@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+arch=$1
 timestamp=$(date +%s)
 echo $timestamp
 wlo_demand_id="wlo_$timestamp"_"$arch"
