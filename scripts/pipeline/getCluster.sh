@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-plan=$1
-arch=$2
 timestamp=$(date +%s)
 echo $timestamp
 wlo_demand_id="wlo_$timestamp"_"$arch"
@@ -10,9 +8,19 @@ echo "wlo_demand_id=$wlo_demand_id"
 git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
 cd ebc-gateway-http
 
+export arch=$(get_env architecture)
 export intranetId_USR=$(get_env ebc_id)
 export intranetId_PSW=$(get_env ebc_pw)
 export demandId=$wlo_demand_id
+if [[ "$arch" == "X" ]]; then
+    export ebc_plan=svl-onepipeline-ocpplus_x_custom.yml
+fi
+if [[ "$arch" == "Z" ]]; then
+    export ebc_plan=svl-onepipeline-ocpplus_z_custom.yml
+fi
+if [[ "$arch" == "P" ]]; then
+    export ebc_plan=svl-onepipeline-ocpplus_p_custom.yml
+fi
 
 PRE_RELEASE=$(get_env pre-release)
 PRE_RELEASE="$(echo "$PRE_RELEASE" | tr '[:upper:]' '[:lower:]')"
@@ -22,16 +30,30 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
     echo "this is a pre-release OCP cluster build"
     echo "ocp level: $ocp_level"
     echo "core os level: $rhcos_level"
-    export ebc_plan=$plan
-    # need appropriate P and Z urls here
-    export ebc_fyre_kernel_url=${rhcos_level}/rhcos-live-kernel-x86_64
-    export ebc_fyre_initramfs_url=${rhcos_level}/rhcos-live-initramfs.x86_64.img
-    export ebc_fyre_metal_url=${rhcos_level}/rhcos-metal.x86_64.raw.gz
-    export ebc_fyre_rootfs_url=${rhcos_level}/rhcos-live-rootfs.x86_64.img
     export ebc_fyre_install_url=${ocp_level}/openshift-install-linux.tar.gz
     export ebc_fyre_client_url=${ocp_level}/openshift-client-linux.tar.gz
+    if [[ "$arch" == "X" ]]; then
+        # X values
+        export ebc_fyre_kernel_url=${rhcos_level}/rhcos-live-kernel-x86_64
+        export ebc_fyre_initramfs_url=${rhcos_level}/rhcos-live-initramfs.x86_64.img
+        export ebc_fyre_metal_url=${rhcos_level}/rhcos-metal.x86_64.raw.gz
+        export ebc_fyre_rootfs_url=${rhcos_level}/rhcos-live-rootfs.x86_64.img
+    fi
+    if [[ "$arch" == "Z" ]]; then
+        # Z values
+        export ebc_fyre_kernel_url=${rhcos_level_z}/rhcos-live-kernel-s390x
+        export ebc_fyre_initramfs_url=${rhcos_level_z}/rhcos-live-initramfs.s390x.img
+        export ebc_fyre_metal_url=${rhcos_level_z}/rhcos-metal.s390x.raw.gz
+        export ebc_fyre_rootfs_url=${rhcos_level_z}/rhcos-live-rootfs.s390x.img
+    fi
+    if [[ "$arch" == "P" ]]; then
+        # P
+        export ebc_fyre_kernel_url=${rhcos_level_p}/rhcos-live-kernel-ppc64le
+        export ebc_fyre_initramfs_url=${rhcos_level_p}/rhcos-live-initramfs.ppc64le.img
+        export ebc_fyre_metal_url=${rhcos_level_p}/rhcos-metal.ppc64le.raw.gz
+        export ebc_fyre_rootfs_url=${rhcos_level_p}/rhcos-live-rootfs.ppc64le.img
+    fi
 else
-    export ebc_plan=$plan
     export ebc_ocp_version=$(get_env ocp_version)
 fi
 # prod or dev, start out with dev
