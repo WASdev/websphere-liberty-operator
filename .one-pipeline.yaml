@@ -227,6 +227,7 @@ containerize:
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
     # flags for P and/or Z
+    export arch=$(get_env architecture)
 
     
     echo "skopeo version"
@@ -264,30 +265,43 @@ containerize:
 
         echo "Running with artifactory disabled."
 
+        # if a P and Z flag call out to CI Orchestrator to build them
+        
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-pipeline-releases" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
+        
         # Build amd64 image, build operator images
         make build-pipeline-releases
+        if [[ "$arch" == "ZXP" ]]; then
+          # wait for build ppc64le and s390x images
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
+        
 
-        # Build ppc64le and s390x images
-        # Disabled for Liberty Operator builds for now
-        # if a P and Z flag call out to CI Orchestrator to build them
-        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make build-pipeline-manifest"
-
-        # Build manifest (P and Z here too?)
+        # Build manifest 
         make build-pipeline-manifest
 
-        # Build bundle image (P and Z here too?)
+        # Build bundle image 
         make setup
         make bundle-pipeline
 
         # Build catalog image
+        # if a P and Z flag call out to CI Orchestrator to build catalog
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-        # if a P and Z flag call out to CI Orchestrator to build catalog
-        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make catalog-pipeline-build"
         make catalog-pipeline-build
         # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
         make catalog-pipeline-push
-
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
+        echo "completed pushing catalog"
       else
         # Push to the staging registry and artifactory
 
@@ -301,8 +315,19 @@ containerize:
         export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
         export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
 
-        # Build amd64 image
-        make build-all-releases
+       # if a P and Z flag call out to CI Orchestrator to build them
+        
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-pipeline-releases" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
+        
+        # Build amd64 image, build operator images
+        make build-pipeline-releases
+        if [[ "$arch" == "ZXP" ]]; then
+          # wait for build ppc64le and s390x images
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
 
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
@@ -319,16 +344,21 @@ containerize:
         # Build catalog image
         echo "Connecting to docker..."
 
-        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-        echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
-        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
+         # Build catalog image
         # if a P and Z flag call out to CI Orchestrator to build catalog
-        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make catalog-pipeline-build"
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
+        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
         # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
         make catalog-pipeline-push
-
-        echo "Completed pushing to artifactory."
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
+        echo "completed pushing catalog"
       fi
     fi
 
@@ -466,62 +496,65 @@ acceptance-test:
     export intranetId_PSW=$(get_env ebc_pw)
     export ebcEnvironment=prod
 
-    # --------- X ---------------
-    wlo_demand_id=$(get_env WLO_DEMAND_ID)
-    export demandId=$wlo_demand_id
-    echo "calling ebc_waitForDemand.sh for X"
-    json=$(./ebc_waitForDemand.sh)
-    rc=$?
-    echo "return from ebc_waitForDemand.sh for X"
+    # # --------- X ---------------
+    # wlo_demand_id=$(get_env WLO_DEMAND_ID)
+    # export demandId=$wlo_demand_id
+    # echo "calling ebc_waitForDemand.sh for X"
+    # json=$(./ebc_waitForDemand.sh)
+    # rc=$?
+    # echo "return from ebc_waitForDemand.sh for X"
 
-    # --------- Z ---------------
-    wlo_demand_id=$(get_env WLO_DEMAND_ID_Z)
-    export demandId=$wlo_demand_id
-    echo "calling ebc_waitForDemand.sh for Z"
-    json=$(./ebc_waitForDemand.sh)
-    rc=$?
-    echo "return from ebc_waitForDemand.sh for Z"
+    # # --------- Z ---------------
+    # wlo_demand_id=$(get_env WLO_DEMAND_ID_Z)
+    # export demandId=$wlo_demand_id
+    # echo "calling ebc_waitForDemand.sh for Z"
+    # json=$(./ebc_waitForDemand.sh)
+    # rc=$?
+    # echo "return from ebc_waitForDemand.sh for Z"
 
-    # --------- P ---------------
-    wlo_demand_id=$(get_env WLO_DEMAND_ID_P)
-    export demandId=$wlo_demand_id
-    export ebcEnvironment=prod
-    echo "calling ebc_waitForDemand.sh for P"
-    json=$(./ebc_waitForDemand.sh)
-    rc=$?
-    echo "return from ebc_waitForDemand.sh for Z"
+    # # --------- P ---------------
+    # wlo_demand_id=$(get_env WLO_DEMAND_ID_P)
+    # export demandId=$wlo_demand_id
+    # export ebcEnvironment=prod
+    # echo "calling ebc_waitForDemand.sh for P"
+    # json=$(./ebc_waitForDemand.sh)
+    # rc=$?
+    # echo "return from ebc_waitForDemand.sh for Z"
     
     
-    status=$(jq -c '.status' <<< $json)
-    ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
-    ip=$(echo "$ip" | tr -d '"')
+    # status=$(jq -c '.status' <<< $json)
+    # ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
+    # ip=$(echo "$ip" | tr -d '"')
     
-    PRIVATE_KEY="$(get_env private_key "")"
-    echo -n "${PRIVATE_KEY}" | base64 -d > id_rsa
+    # PRIVATE_KEY="$(get_env private_key "")"
+    # echo -n "${PRIVATE_KEY}" | base64 -d > id_rsa
     
-    chmod 600 id_rsa
-    pwd
-    ls -l id_rsa
+    # chmod 600 id_rsa
+    # pwd
+    # ls -l id_rsa
     
-    echo "oc version:"
-    oc version
+    # echo "oc version:"
+    # oc version
     
-    token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    # token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
     
-    echo "demand_id=$wlo_demand_id"
-    echo "*** results from EBC wait:"
-    echo "ip=$ip"
-    echo "status=$status"
-    echo "json=$json"
-    echo "token=$token"
+    # echo "demand_id=$wlo_demand_id"
+    # echo "*** results from EBC wait:"
+    # echo "ip=$ip"
+    # echo "status=$status"
+    # echo "json=$json"
+    # echo "token=$token"
     
-    if [[ "$rc" == 0 ]]; then
-       echo "EBC create of id: $wlo_demand_id cluster successful"
-    else
-      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
-      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
-      exit 1
-    fi
+    # if [[ "$rc" == 0 ]]; then
+    #    echo "EBC create of id: $wlo_demand_id cluster successful"
+    # else
+    #   echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
+    #   echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+    #   exit 1
+    # fi
+    source ../scripts/pipeline/clusterWait.sh Z
+    source ../scripts/pipeline/clusterWait.sh X
+    source ../scripts/pipeline/clusterWait.sh P
 
     cd ..
 

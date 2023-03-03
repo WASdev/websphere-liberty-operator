@@ -1,23 +1,11 @@
 #!/usr/bin/env bash
 arch=$1
 
-if [[ "$arch" == "X" ]]; then
-    wlo_demand_id=$(get_env WLO_DEMAND_ID)
-    export demandId=$wlo_demand_id
-    echo "calling ebc_waitForDemand.sh for X"
-    
-fi
-if [[ "$arch" == "Z" ]]; then
-    wlo_demand_id=$(get_env WLO_DEMAND_ID_Z)
-    export demandId=$wlo_demand_id
-    echo "calling ebc_waitForDemand.sh for Z"
-fi
-if [[ "$arch" == "P" ]]; then
-    wlo_demand_id=$(get_env WLO_DEMAND_ID_P)
-    export demandId=$wlo_demand_id
-    echo "calling ebc_waitForDemand.sh for P"
-fi
 
+wlo_demand_id=$(get_env WLO_DEMAND_ID_$arch)
+export demandId=$wlo_demand_id
+echo "calling ebc_waitForDemand.sh for $arch"
+   
 export ebcEnvironment=prod
 
 json=$(./ebc_waitForDemand.sh)
@@ -27,7 +15,8 @@ echo "return from ebc_waitForDemand.sh for $arch"
 if [[ "$rc" == 0 ]]; then
     echo "EBC create of id: $wlo_demand_id cluster successful"
 else
-    echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug, issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel"
+    echo "EBC create of id: $wlo_demand_id cluster failed, ask #was-ebc slack channel for help mentioning your demand id: $wlo_demand_id"
+    exit 1
 fi
 
 status=$(jq -c '.status' <<< $json)
@@ -51,4 +40,3 @@ echo "status=$status"
 echo "token=$token"
 echo $ip
 
-printf '%s,%s\n' "$ip" "$token"
