@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
@@ -57,7 +57,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-02-24T10:00:52Z"
+    createdAt: "2023-03-02T11:18:01Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -838,7 +838,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
+                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69
                 image: icr.io/cpopen/websphere-liberty-operator:daily
                 livenessProbe:
                   failureThreshold: 3
@@ -1111,6 +1111,6 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69
     name: liberty-sample-app
   version: 1.1.0

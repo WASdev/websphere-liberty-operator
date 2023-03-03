@@ -53,7 +53,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-          value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:baf8bc7b21628da64d207d6ee6950dea8c5566317c8b9882e83222edcb9ef235
+          value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69
         image: cp.stg.icr.io/cp/websphere-liberty-operator:main
         livenessProbe:
           failureThreshold: 3
