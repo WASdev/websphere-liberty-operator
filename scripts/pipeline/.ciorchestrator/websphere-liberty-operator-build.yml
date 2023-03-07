@@ -21,7 +21,7 @@ steps:
   # Need properties for Makefile or build script for WLO
   properties:  
     WHAT: Ask Leo for props
-    ebcPlan: Plan Name from Chris W
+    ebcPlan: svl-dockerJenkins-ubuntu20_s390x.yml
     
 
 - stepName: P Build
@@ -31,4 +31,4 @@ steps:
   # Need properties for Makefile or build script for WLO
   properties:  
     WHAT: Ask Leo for props
-    ebcPlan: Plan Name from Chris W
+    ebcPlan: svl-dockerJenkins-ubuntu20_ppcle.yml
