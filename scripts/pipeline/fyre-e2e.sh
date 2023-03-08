@@ -16,15 +16,13 @@ setup_env() {
     oc login "${CLUSTER_URL}" -u "${CLUSTER_USER:-kubeadmin}" -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
 
     # Set variables for rest of script to use
+    readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
     if [[ $INSTALL_MODE = "SingleNamespace" ]]; then
-      readonly INSTALL_NAMESPACE="wlo-test-${TEST_TAG}"
-      readonly TEST_NAMESPACE="wlo-test-single-namespace-${TEST_TAG}"
+      readonly INSTALL_NAMESPACE="wlo-test-single-namespace-${TEST_TAG}"
     elif [[ $INSTALL_MODE = "AllNamespaces" ]]; then
       readonly INSTALL_NAMESPACE="openshift-operators"
-      readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
     else
       readonly INSTALL_NAMESPACE="wlo-test-${TEST_TAG}"
-      readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
     fi
 
     if [ $INSTALL_MODE != "AllNamespaces" ]; then
