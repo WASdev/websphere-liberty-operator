@@ -239,7 +239,7 @@ containerize:
           ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
-        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
         # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
@@ -296,7 +296,7 @@ containerize:
           ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
-        echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+        echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
         # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?

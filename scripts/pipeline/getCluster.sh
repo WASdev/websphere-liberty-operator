@@ -5,7 +5,7 @@ echo $timestamp
 wlo_demand_id="wlo_$timestamp"_"$arch"
 echo "wlo_demand_id=$wlo_demand_id"
     
-git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+#git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
 cd ebc-gateway-http
 
 export arch=$(get_env architecture)

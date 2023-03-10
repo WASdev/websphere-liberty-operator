@@ -14,8 +14,16 @@ properties([
       string(name: 'OPM_VERSION', defaultValue: "4.10", description: 'Redhat CLI OPM version'),
       string(name: 'PIPELINE_PRODUCTION_IMAGE', defaultValue: "icr.io/cpopen/websphere-liberty-operator", description: 'namespace in prod registry'),
       string(name: 'REDHAT_BASE_IMAGE', defaultValue: "registry.redhat.io/openshift4/ose-operator-registry", description: 'base image for operator'),
-      string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login')
+      string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login'),
       string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to')
+      // DOCKER_USERNAME           docker-username            ("iamapikey")  ??
+      // DOCKER_PASSWORD           docker-password            (<docker password>) ??
+      // ARTIFACTORY_USERNAME      artifactorybackup          ("AppPlatform.Ops@ibm.com")
+      // ARTIFACTORY_TOKEN         artifactorybackup          (<artifactory password>)
+      // ARTIFACTORY_REPO_URL      artifactorybackup          ("hyc-taas-onepipeline-team-docker-local.artifactory.swg-devops.com")
+      // OPM_VERSION               opm-version               ("4.10")
+      // GO_RELEASE_VERSION        go-version                ("1.19.5")
+      // DISABLE_ARTIFACTORY       disable-artifactory       ("true" or "false")
    ])
 ])
 timestamps {
@@ -48,8 +56,9 @@ timestamps {
 
       node(label: "ebc_${executionId}"){
          stage("Running Job"){
-            withCredentials([usernamePassword(credentialsId: 'icrId', usernameVariable: 'PIPELINE_USERNAME', passwordVariable: 'PIPELINE_PASSWORD'),
-                             usernamePassword(credentialsId: 'operatorRH_REG_ID', usernameVariable: 'REDHAT_USERNAME', passwordVariable: 'REDHAT_PASSWORD')]) {
+            withCredentials([usernamePassword(credentialsId: 'operator_icrId', usernameVariable: 'PIPELINE_USERNAME', passwordVariable: 'PIPELINE_PASSWORD'),
+                             usernamePassword(credentialsId: 'operatorRH_REG_ID', usernameVariable: 'REDHAT_USERNAME', passwordVariable: 'REDHAT_PASSWORD').
+                             usernamePassword(credentialsId: 'dockerId', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                //This is executing on ebc dynamic machine
                doWork();
             } // withCredentials() end
@@ -95,6 +104,12 @@ def void doWork(){
    //sh "ssh-keyscan "+fileserverPrivate+" >> ~/.ssh/known_hosts"
    sh 'echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin'
    sh 'echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin'
+   def PIPELINE_OPERATOR_IMAGE = "${params.PIPELINE_OPERATOR_IMAGE}"
+   def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
+   def PIPELINE_REGISTRY = "${params.PIPELINE_REGISTRY}"
+   def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
+   def RELEASE_TARGET = "${params.RELEASE_TARGET}"
+   
    // Run the full build
    sh ${command}
 }
