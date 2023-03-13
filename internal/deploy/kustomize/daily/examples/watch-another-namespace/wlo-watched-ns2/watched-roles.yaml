@@ -1,0 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wlo-watched-role
+  namespace: wlo-watched-ns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wlo-watched-rolebinding
+  namespace: wlo-watched-ns
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: wlo-ns2
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wlo-leader-election-watched-role
+  namespace: wlo-watched-ns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wlo-leader-election-watched-rolebinding
+  namespace: wlo-watched-ns
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: wlo-ns2

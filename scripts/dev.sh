@@ -29,7 +29,11 @@
 set -Eeo pipefail
 
 
-readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
+readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> -channel <channel> ]"
+
+warn() {
+  echo -e "${yel}Warning:${end} $1"
+}
 
 main() {
 
@@ -84,6 +88,7 @@ main() {
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
   MAKEFILE_DIR=${MAKEFILE_DIR:=$SCRIPT_DIR/..}
   TEMP_DIR=${TEMP_DIR:=/tmp}
+  CHANNEL=${CHANNEL:="v1.1"}
   
   if [[ "$COMMAND" == "all" ]]; then
      login_registry
@@ -112,6 +117,7 @@ main() {
      install_rook
      install_serverless
      setup_knative_serving
+     install_cert_manager
      add_affinity_label_to_node
      create_image_content_source_policy
   elif [[ "$COMMAND" == "scorecard" ]]; then
@@ -181,7 +187,7 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $NAMESPACE
 spec:
-  channel:  v1.1
+  channel: $CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $NAMESPACE
@@ -300,7 +306,10 @@ parse_args() {
     -tempdir)
       shift
       TEMP_DIR="${1}"
-      ;;         
+      ;;
+    -channel)
+       CHANNEL="${1}"
+      ;;            
     esac
     shift
   done
@@ -323,8 +332,8 @@ install_rook() {
     tmp_dir=$(mktemp -d -t ceph-XXXXXXXXXX)
     cd "$tmp_dir"
 
-    git clone --single-branch -b v1.5.11 https://github.com/rook/rook.git
-    cd rook/cluster/examples/kubernetes/ceph
+    git clone --single-branch --branch master https://github.com/rook/rook.git
+    cd rook/deploy/examples
 
     oc create -f crds.yaml
     oc create -f common.yaml
@@ -402,6 +411,16 @@ EOF
     echo
   else
     echo "Knative Serving instance is already created."
+  fi
+}
+
+install_cert_manager() {
+  if ! oc get deployments -n cert-manager 2>/dev/null | grep cert-manager >/dev/null; then
+    echo "Installing cert-manager..."
+    oc apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+    echo
+  else
+    echo "cert-manager is already installed."
   fi
 }
 

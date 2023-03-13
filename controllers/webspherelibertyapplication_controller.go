@@ -233,6 +233,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 	if imageReferenceOld != instance.Status.ImageReference {
+		// Trigger a new Semeru Cloud Compiler generation
+		createNewSemeruGeneration(instance)
+
 		reqLogger.Info("Updating status.imageReference", "status.imageReference", instance.Status.ImageReference)
 		err = r.UpdateStatus(instance)
 		if err != nil {
@@ -258,19 +261,32 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 	}
-	// Reconcile the Semeru Compiler deployment and service
-	message := "Start Semeru Compiler reconcile"
-	reqLogger.Info(message)
-	err, message = r.reconcileSemeruCompiler(instance)
-	if err != nil {
-		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-	}
+
 	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
 	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
 	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
 	if saErr != nil {
 		return r.ManageError(saErr, common.StatusConditionTypeReconciled, instance)
+	}
+
+	// Check if SemeruCloudCompiler is enabled before reconciling the Semeru Compiler deployment and service.
+	// Otherwise, delete the Semeru Compiler deployment and service.
+	message := "Start Semeru Compiler reconcile"
+	reqLogger.Info(message)
+	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(instance)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+	// If semeru compiler is enabled, make sure its ready
+	if r.isSemeruEnabled(instance) {
+		message = "Check Semeru Compiler resources ready"
+		reqLogger.Info(message)
+		err = r.areSemeruCompilerResourcesReady(instance)
+		if err != nil {
+			reqLogger.Error(err, message)
+			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+		}
 	}
 
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
@@ -442,13 +458,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
+
+			statefulSet.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
+
 			if err := oputils.CustomizePodWithSVCCertificate(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
-			if err := lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance); err != nil {
-				return err
-			}
+			lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -457,7 +474,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 			}
 			lutils.ConfigureServiceability(&statefulSet.Spec.Template, instance)
-
+			semeruCertVolume := getSemeruCertVolume(instance)
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
+				statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, *semeruCertVolume)
+				statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
+					getSemeruCertVolumeMount(instance))
+				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
+				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(),
+					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		})
 		if err != nil {
@@ -490,13 +518,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
+			deploy.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
+
 			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
-			if err := lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance); err != nil {
-				return err
-			}
+			lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -506,6 +534,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 
 			lutils.ConfigureServiceability(&deploy.Spec.Template, instance)
+			semeruCertVolume := getSemeruCertVolume(instance)
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
+				deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *semeruCertVolume)
+				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts,
+					getSemeruCertVolumeMount(instance))
+				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
+				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
+					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		})
 		if err != nil {
@@ -634,9 +674,26 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	} else {
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
+
+	// Delete completed Semeru instances because all pods now point to the newest Semeru service
+	if areCompletedSemeruInstancesMarkedToBeDeleted && r.isWebSphereLibertyApplicationReady(instance) {
+		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
+			reqLogger.Error(err, "Failed to delete completed Semeru instance")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	}
+
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
+}
+
+func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
+	if r.CheckApplicationStatus(ba) == corev1.ConditionTrue {
+		statusCondition := ba.GetStatus().GetCondition(common.StatusConditionTypeReady)
+		return statusCondition != nil && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
+	}
+	return false
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
