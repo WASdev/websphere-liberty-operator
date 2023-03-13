@@ -17,17 +17,53 @@ setup_env() {
 
     # Set variables for rest of script to use
     readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
+    if [[ $INSTALL_MODE = "SingleNamespace" ]]; then
+      readonly INSTALL_NAMESPACE="wlo-test-single-namespace-${TEST_TAG}"
+    elif [[ $INSTALL_MODE = "AllNamespaces" ]]; then
+      readonly INSTALL_NAMESPACE="openshift-operators"
+    else
+      readonly INSTALL_NAMESPACE="wlo-test-${TEST_TAG}"
+    fi
+
+    if [ $INSTALL_MODE != "AllNamespaces" ]; then
+      echo "****** Creating install namespace: ${INSTALL_NAMESPACE} for release ${RELEASE}"
+      oc new-project "${INSTALL_NAMESPACE}" || oc project "${INSTALL_NAMESPACE}"
+    fi
 
     echo "****** Creating test namespace: ${TEST_NAMESPACE} for release ${RELEASE}"
     oc new-project "${TEST_NAMESPACE}" || oc project "${TEST_NAMESPACE}"
 
     ## Create service account for Kuttl tests
-    oc apply -f config/rbac/kuttl-rbac.yaml
+    oc -n $TEST_NAMESPACE apply -f config/rbac/kuttl-rbac.yaml
 }
 
-## cleanup_env : Delete generated resources that are not bound to a test TEST_NAMESPACE.
+## cleanup_env : Delete generated resources that are not bound to a test INSTALL_NAMESPACE.
 cleanup_env() {
+  ## Delete CRDs
+  WLO_CRD_NAMES=$(oc get crd -o name | grep liberty.websphere | cut -d/ -f2)
+  echo "*** Deleting CRDs ***"
+  echo "*** ${WLO_CRD_NAMES}"
+  oc delete crd $WLO_CRD_NAMES
+
+  ## Delete Subscription
+  WLO_SUBSCRIPTION_NAME=$(oc -n $INSTALL_NAMESPACE get subscription -o name | grep websphere-liberty | cut -d/ -f2)
+  echo "*** Deleting Subscription ***"
+  echo "*** ${WLO_SUBSCRIPTION_NAME}"
+  oc -n $INSTALL_NAMESPACE delete subscription $WLO_SUBSCRIPTION_NAME
+
+  ## Delete CSVs
+  WLO_CSV_NAME=$(oc -n $INSTALL_NAMESPACE get csv -o name | grep websphere-liberty | cut -d/ -f2)
+  echo "*** Deleting CSVs ***"
+  echo "*** ${WLO_CSV_NAME}"
+  oc -n $INSTALL_NAMESPACE delete csv $WLO_CSV_NAME
+
+  echo "*** Deleting project ${TEST_NAMESPACE}"
   oc delete project "${TEST_NAMESPACE}"
+
+  if [ $INSTALL_MODE != "AllNamespaces" ]; then
+    echo "*** Deleting project ${INSTALL_NAMESPACE}"
+    oc delete project "${INSTALL_NAMESPACE}"
+  fi
 }
 
 ## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
@@ -115,6 +151,12 @@ main() {
         exit 1
     fi
 
+    if [[ -z "${INSTALL_MODE}" ]]; then
+        echo "****** Missing install-mode, see usage"
+        echo "${usage}"
+        exit 1
+    fi
+
     echo "****** Setting up test environment..."
     setup_env
 
@@ -125,7 +167,7 @@ main() {
         echo "WARNING: --debug-failure is set. If e2e tests fail, any created resources will remain"
         echo "on the cluster for debugging/troubleshooting. YOU MUST DELETE THESE RESOURCES when"
         echo "you're done, or else they will cause future tests to fail. To cleanup manually, just"
-        echo "delete the namespace \"${TEST_NAMESPACE}\": oc delete project \"${TEST_NAMESPACE}\" "
+        echo "delete the namespace \"${INSTALL_NAMESPACE}\": oc delete project \"${INSTALL_NAMESPACE}\" "
         echo "#####################################################################################"
     fi
 
@@ -153,11 +195,12 @@ main() {
     if [[ "$rc_rk" == 0 ]]; then
         echo "rook-ceph up"
     fi
-    echo "****** Installing operator from catalog: ${CATALOG_IMAGE}"
+    echo "****** Installing operator from catalog: ${CATALOG_IMAGE} using install mode of ${INSTALL_MODE}"
+    echo "****** Install namespace is ${INSTALL_NAMESPACE}.  Test namespace is ${TEST_NAMESPACE}"    
     install_operator
 
     # Wait for operator deployment to be ready
-    while [[ $(oc get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
+    while [[ $(oc -n $INSTALL_NAMESPACE get deploy "${CONTROLLER_MANAGER_NAME}" -o jsonpath='{ .status.readyReplicas }') -ne "1" ]]; do
         echo "****** Waiting for ${CONTROLLER_MANAGER_NAME} to be ready..."
         sleep 10
     done
@@ -185,7 +228,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
   name: websphere-liberty-catalog
-  namespace: $TEST_NAMESPACE
+  namespace: openshift-marketplace
 spec:
   sourceType: grpc
   image: $CATALOG_IMAGE
@@ -193,17 +236,19 @@ spec:
   publisher: IBM
 EOF
 
+if [ $INSTALL_MODE != "AllNamespaces" ]; then
     echo "****** Applying the operator group..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: websphere-operator-group
-  namespace: $TEST_NAMESPACE
+  namespace: $INSTALL_NAMESPACE
 spec:
   targetNamespaces:
     - $TEST_NAMESPACE
 EOF
+fi
 
     echo "****** Applying the subscription..."
     cat <<EOF | oc apply -f -
@@ -211,12 +256,12 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: websphere-liberty-operator-subscription
-  namespace: $TEST_NAMESPACE
+  namespace: $INSTALL_NAMESPACE
 spec:
   channel: $DEFAULT_CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
-  sourceNamespace: $TEST_NAMESPACE
+  sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic
 EOF
 }
@@ -278,6 +323,10 @@ parse_args() {
     --channel)
       shift
       readonly CHANNEL="${1}"
+      ;;
+    --install-mode)
+      shift
+      readonly INSTALL_MODE="${1}"
       ;;
     *)
       echo "Error: Invalid argument - $1"

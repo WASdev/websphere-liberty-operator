@@ -342,7 +342,7 @@ build-artifactory-manifest: setup-manifest
 build-all-manifest: build-pipeline-manifest build-artifactory-manifest
 
 bundle-pipeline:
-	./scripts/bundle-release.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
+	./scripts/bundle-release.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
 
 bundle-artifactory:
 	./scripts/bundle-release.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"

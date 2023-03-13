@@ -164,8 +164,6 @@ containerize:
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
     export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
     export REDHAT_USERNAME=$(get_env redhat-user-id)
     export REDHAT_PASSWORD=$(get_env redhat-password)
     export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
@@ -234,11 +232,14 @@ containerize:
         make bundle-pipeline
 
         # Build catalog image
+<<<<<<< HEAD
         # if a P and Z flag call out to CI Orchestrator to build catalog
         if [[ "$arch" == "ZXP" ]]; then
           ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
+=======
+>>>>>>> 5f1f3702cbb8a6dfaa69c1a98827c42504ca3c9c
         echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
@@ -290,6 +291,7 @@ containerize:
         # Build catalog image
         echo "Connecting to docker..."
 
+<<<<<<< HEAD
          # Build catalog image
         # if a P and Z flag call out to CI Orchestrator to build catalog
         if [[ "$arch" == "ZXP" ]]; then
@@ -297,6 +299,10 @@ containerize:
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
         echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
+=======
+        echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
+        echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
+>>>>>>> 5f1f3702cbb8a6dfaa69c1a98827c42504ca3c9c
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
         # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
@@ -311,7 +317,7 @@ containerize:
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
     # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
-    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+    echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
     echo "**** Saving Artifacts ****"
     declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
     for i in "${tags[@]}"
