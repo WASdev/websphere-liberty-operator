@@ -104,11 +104,11 @@ def void doWork(){
    //sh "ssh-keyscan "+fileserverPrivate+" >> ~/.ssh/known_hosts"
    sh 'echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin'
    sh 'echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin'
-   def PIPELINE_OPERATOR_IMAGE = "${params.PIPELINE_OPERATOR_IMAGE}"
-   def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
-   def PIPELINE_REGISTRY = "${params.PIPELINE_REGISTRY}"
-   def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
-   def RELEASE_TARGET = "${params.RELEASE_TARGET}"
+   // def PIPELINE_OPERATOR_IMAGE = "${params.PIPELINE_OPERATOR_IMAGE}"
+   // def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
+   // def PIPELINE_REGISTRY = "${params.PIPELINE_REGISTRY}"
+   // def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
+   // def RELEASE_TARGET = "${params.RELEASE_TARGET}"
    
    // Run the full build
    sh ${command}
