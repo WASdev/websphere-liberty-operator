@@ -5,17 +5,12 @@ setup:
   script: |
     #!/usr/bin/env bash
    
-    echo "setup"
-    apt-get update
-    apt-get -y install build-essential
+    echo $STAGE
 
-    # Download Go
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+    ## Setup required tooling
+    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
     export PATH=$PATH:/usr/local/go/bin
+    yum -y -q update
 
     go mod vendor
 
@@ -128,6 +123,8 @@ test:
   script: |
     #!/usr/bin/env bash
 
+    echo $STAGE
+
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
 
@@ -137,17 +134,9 @@ test:
     fi
 
     ## Setup required tooling
-
-    # Download Go
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
     export PATH=$PATH:/usr/local/go/bin
-
-    apt-get update
-    apt-get -y install build-essential
+    yum -y -q update
 
     make unit-test
 
@@ -157,6 +146,8 @@ static-scan:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
@@ -194,6 +185,9 @@ containerize:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
+
     echo "*** OS release ***"
     cat /etc/os-release
 
@@ -212,7 +206,6 @@ containerize:
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
 
-    
     echo "skopeo version"
     skopeo --version || exit 1
 
@@ -227,46 +220,39 @@ containerize:
         set -x
       fi
 
-      # Download and configure golang
-      GO_VERSION=$(get_env go-version)
-      if [[ -z "${GO_VERSION}" ]]; then
-        GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-      fi
-      rm -rf /usr/local/go && wget --no-verbose --header "Accept: application/octet-stream" "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O - | tar -xz -C /usr/local/
+      ## Setup required tooling
+      make setup-go GO_RELEASE_VERSION=$(get_env go-version)
       export PATH=$PATH:/usr/local/go/bin
+      yum -y -q update
 
-      apt-get update
-      apt-get -qq -y install build-essential software-properties-common uidmap
       #  Build images
       export RELEASE_TARGET=$(get_env branch)
       
       if [[ -z $DISABLE_ARTIFACTORY ]]; then
-        DISABLE_ARTIFACTORY="false"
+        export DISABLE_ARTIFACTORY="false"
       fi
       if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
         # Only push to the staging registry
 
         echo "Running with artifactory disabled."
 
-        # Build amd64 image
-        make build-pipeline-releases
+        # Docker login and setup build configurations
+        scripts/build/build-initialize.sh
 
-        # Build ppc64le and s390x images
-        # Disabled for Liberty Operator builds for now
-        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+        # Build operator image
+        make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
 
-        # Build manifest
-        make build-pipeline-manifest
+        # Build operator manifest (after 3 arch operator builds)
+        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
         # Build bundle image
-        make setup
-        make bundle-pipeline
+        make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
 
-        # Build catalog image
-        echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
-        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-        make catalog-pipeline-build
-        make catalog-pipeline-push
+        # Build catalog image for amd64 first - then p and z
+        make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
+
+        # Build catalog manifest
+        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
 
       else
         # Push to the staging registry and artifactory
@@ -281,29 +267,28 @@ containerize:
         export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
         export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
 
-        # Build amd64 image
-        make build-all-releases
+        # Docker login and setup build configurations
+        scripts/build/build-initialize.sh
 
-        # Build ppc64le and s390x images
-        # Disabled for Liberty Operator builds for now
-        #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+        # Build operator image
+        make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
+        make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
-        # Build manifest
-        make build-all-manifest
+        # Build operator manifest (after 3 arch operator builds)
+        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
+        make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
         # Build bundle image
-        make setup
-        make bundle-all
+        make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
+        make build-bundle-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
-        # Build catalog image
-        echo "Connecting to docker..."
+        # Build catalog image for amd64 first - then p and z
+        make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
+        make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
-        echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
-        echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
-        echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-
-        make catalog-all-build
-        make catalog-all-push
+        # Build catalog manifest
+        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
+        make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
 
         echo "Completed pushing to artifactory."
       fi
@@ -311,10 +296,10 @@ containerize:
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
     echo "**** Saving Artifacts ****"
-    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
@@ -329,8 +314,8 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-     ARCH=amd64
+     # ARCH=amd64
+     ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
      save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
@@ -340,8 +325,8 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-     ARCH=amd64
+     # ARCH=amd64
+     ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
      echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
      save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
@@ -361,7 +346,8 @@ sign-artifact:
   image: icr.io/continuous-delivery/pipeline/image-signing:1.0.0@sha256:e9d8e354668ba3d40be2aaee08298d2aa7f0e1c8a1829cca4094ec93830e3e6a
   script: |
     #!/usr/bin/env bash
-    echo "sign-artifact"
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
@@ -375,6 +361,8 @@ deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
@@ -396,7 +384,8 @@ dynamic-scan:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "dynamic-scan"
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
@@ -417,7 +406,8 @@ acceptance-test:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "acceptance-test"
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
@@ -502,12 +492,10 @@ acceptance-test:
     echo "*** after issuing oc login"
     ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
     
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    if [[ -z "${GO_VERSION}" ]]; then
-      GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-    fi
-    export GO_VERSION
+    ## Setup required tooling
+    export GO_VERSION=$(get_env go-version)
+    make setup-go GO_RELEASE_VERSION=$GO_VERSION
+    export PATH=$PATH:/usr/local/go/bin
 
     # OCP test
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
@@ -567,6 +555,9 @@ scan-artifact:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
+
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
@@ -575,6 +566,8 @@ release:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"

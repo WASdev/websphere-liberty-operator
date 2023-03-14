@@ -23,6 +23,7 @@ usage() {
     echo "  -i, --image-name         [REQUIRED] The bundle image name"
     echo "  -p, --prod-image         [REQUIRED] The name of the production image the bundle should point to"
     echo "  -a, --catalog-image-name [REQUIRED] the catalog image name"
+    echo "  -r, --registry           Registry to push the image to"
     echo "  -c, --container-tool     Tool to build image [docker, podman] (default 'docker')"
     echo "  -o, --opm-tool           Name of the opm tool (default 'opm')"
     echo "  -h, --help               Display this help and exit"
@@ -46,7 +47,7 @@ function parse_arguments() {
         -o | --opm-tool)
             shift
             OPM_TOOL=$1
-            ;;    
+            ;;   
         -n | --opm-version)
             shift
             OPM_VERSION=$1
@@ -58,6 +59,10 @@ function parse_arguments() {
         -d | --directory)
             shift
             BASE_MANIFESTS_DIR=$1
+            ;;
+        -r | --registry)
+            shift
+            REGISTRY=$1
             ;;
         -i | --image-name)
             shift
@@ -85,6 +90,45 @@ function parse_arguments() {
             ;;
         esac
         shift
+    done
+}
+
+function determineAndPullOlderBundles() {
+    createExcludeVersionsArray $excludeVersionsFile
+    imageInspection=$(skopeo list-tags docker://$PROD_IMAGE)
+    echo "Image Inspection Results:"
+    echo $imageInspection
+
+    ## Count version tags in image inspection file
+    versionCount=$(echo $imageInspection | jq '.Tags | length')
+    echo "Found ${versionCount} image tags"
+
+    ## Iterate image tags
+    for (( versionIdx=0; versionIdx<versionCount; versionIdx++ ));
+    do
+        jqQuery=".Tags[${versionIdx}]"
+        temp=$(echo $imageInspection | jq $jqQuery)
+        temp="${temp%\"}"
+        version="${temp#\"}"
+
+        ## Check to see if we need to exclude this version
+        index=-1
+        for i in "${!arrExcludeVersions[@]}";
+        do
+            if [[ "${arrExcludeVersions[$i]}" = "${version}" ]];
+            then
+                index=$i
+                break
+            fi
+        done
+    
+        ## If version is not in excludes list, add it to the versions array
+        if [ $index -lt 0 ]; then
+            echo "Including tag '${version}'"
+            arrVersions[${#arrVersions[@]}]=$version
+        else
+            echo "Excluding tag '${version}'"
+        fi
     done
 }
 
@@ -132,51 +176,8 @@ function createExcludeVersionsArray() {
     arrExcludeVersions[${#arrExcludeVersions[@]}]=$CURRENT_VERSION
 }
 
-function determineAndPullOlderBundles() {
-    createExcludeVersionsArray $excludeVersionsFile
-    imageInspection=$(skopeo list-tags docker://$PROD_IMAGE)
-    echo "Image Inspection Results:"
-    echo $imageInspection
-
-    ## Count version tags in image inspection file
-    versionCount=$(echo $imageInspection | jq '.Tags | length')
-    echo "Found ${versionCount} image tags"
-
-    ## Iterate image tags
-    for (( versionIdx=0; versionIdx<versionCount; versionIdx++ ));
-    do
-        jqQuery=".Tags[${versionIdx}]"
-        temp=$(echo $imageInspection | jq $jqQuery)
-        temp="${temp%\"}"
-        version="${temp#\"}"
-
-        ## Check to see if we need to exclude this version
-        index=-1
-        for i in "${!arrExcludeVersions[@]}";
-        do
-            if [[ "${arrExcludeVersions[$i]}" = "${version}" ]];
-            then
-                index=$i
-                break
-            fi
-        done
-    
-        ## If version is not in excludes list, add it to the versions array
-        if [ $index -lt 0 ]; then
-            echo "Including tag '${version}'"
-            arrVersions[${#arrVersions[@]}]=$version
-        else
-            echo "Excluding tag '${version}'"
-        fi
-    done
-}
-
-
 function build_catalog() {
     echo "------------ Start of catalog-build ----------------"
-
-    mkdir -p "${TMP_DIR}"
-    chmod 777 "${TMP_DIR}"
     
     ##################################################################################
     ## The catalog index build will eventually require building a bundles.db file that
@@ -187,17 +188,53 @@ function build_catalog() {
     ## for an example on how this is done.
     ##################################################################################
 
+    ## Define current arch variable
+    case "$(uname -p)" in
+    "ppc64le")
+        readonly arch="ppc64le"
+        ;;
+    "s390x")
+        readonly arch="s390x"
+        ;;
+    *)
+        readonly arch="amd64"
+        ;;
+    esac
+
     echo "Building Catalog Index Database..."
 
-    create_empty_db
-    add_historical_versions_to_db
-    add_current_version_to_db "${BUNDLE_IMAGE}" "${PROD_IMAGE}"
+    if [[ "$arch" = "s390x" || "$arch" = "ppc64le" ]]; then
+        # use x86 catalog image
+        docker create -ti --name dummy ${REGISTRY}/${CATALOG_IMAGE}-amd64 bash
+        docker cp dummy:/database/index.db ./bundles.db
+        docker rm -f dummy
+    else
+        mkdir -p "${TMP_DIR}"
+        chmod 777 "${TMP_DIR}"
 
-    # Copy bundles.db local prior to building the image
-    cp "${TMP_DIR}/bundles.db" .
+        create_empty_db
+        add_historical_versions_to_db
+        add_current_version_to_db "${REGISTRY}/${BUNDLE_IMAGE}" "${PROD_IMAGE}"
+
+        # Copy bundles.db local prior to building the image
+        cp "${TMP_DIR}/bundles.db" .
+    fi
+
+    CATALOG_IMAGE_ARCH="${REGISTRY}/${CATALOG_IMAGE}-$arch"
 
     # Build catalog image 
-    "${CONTAINER_TOOL}" build -t "${CATALOG_IMAGE}" -f index.Dockerfile . 
+    "${CONTAINER_TOOL}" build -t "${CATALOG_IMAGE_ARCH}" -f index.Dockerfile . 
+    if [ "$?" != "0" ]; then
+        echo "Error building catalog image: $CATALOG_IMAGE_ARCH"
+        exit 1
+    fi 
+
+    # Push catalog image
+    make catalog-push CATALOG_IMG="${CATALOG_IMAGE_ARCH}"
+    if [ "$?" != "0" ]; then
+        echo "Error pushing catalog image: $CATALOG_IMAGE_ARCH"
+        exit 1
+    fi 
 }
 
 

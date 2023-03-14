@@ -150,17 +150,20 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 	test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
-KUSTOMIZE_VERSION ?= 3.8.7
-KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/release-kustomize-v3.8/hack/install_kustomize.sh"
+KUSTOMIZE_VERSION ?= 4.5.5
+KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/kustomize/v${KUSTOMIZE_VERSION}/hack/install_kustomize.sh"
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	test -s $(LOCALBIN)/kustomize || curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s $(KUSTOMIZE_VERSION) $(LOCALBIN)
 
-
 .PHONY: setup
 setup: ## Ensure Operator SDK is installed.
 	./scripts/installers/install-operator-sdk.sh ${OPERATOR_SDK_RELEASE_VERSION}
+
+.PHONY: setup-go
+setup-go: ## Ensure Go is installed.
+	./scripts/installers/install-go.sh ${GO_RELEASE_VERSION}
 
 .PHONY: setup-manifest
 setup-manifest: ## Install manifest tool.
@@ -275,14 +278,9 @@ bundle-build: ## Build the bundle image.
 bundle-push: ## Push the bundle image.
 	$(CONTAINER_COMMAND) push $(PODMAN_SKIP_TLS_VERIFY) $(BUNDLE_IMG)
 
-build-pipeline-releases:
-	./scripts/build-releases.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
-
-build-artifactory-releases:
-	./scripts/build-releases.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
-
-build-all-releases: build-pipeline-releases build-artifactory-releases
-
+.PHONY: catalog-push
+catalog-push: ## Push a catalog image.
+	$(MAKE) docker-push IMG=$(CATALOG_IMG)
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -322,48 +320,23 @@ endif
 catalog-build: opm ## Build a catalog image.
 	$(OPM) index add $(SKIP_TLS_VERIFY) --container-tool $(CONTAINER_COMMAND)  --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
 
-# Push the catalog image.
-.PHONY: catalog-push
-catalog-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG=$(CATALOG_IMG)
-
-build-manifest: setup-manifest
-	./scripts/build-manifest.sh --image "${PUBLISH_REGISTRY}/${OPERATOR_IMAGE}" --target "${RELEASE_TARGET}"
-
 kind-e2e-test:
 	./scripts/e2e-kind.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
 
-build-pipeline-manifest: setup-manifest
-	./scripts/build-manifest.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
+build-manifest: setup-manifest
+	./scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
-build-artifactory-manifest: setup-manifest
-	./scripts/build-manifest.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}"	--target "${RELEASE_TARGET}"
+build-operator-pipeline:
+	./scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
-build-all-manifest: build-pipeline-manifest build-artifactory-manifest
+build-manifest-pipeline:
+	./scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"
 
-bundle-pipeline:
-	./scripts/bundle-release.sh -u "${PIPELINE_USERNAME}" -p "${PIPELINE_PASSWORD}" --registry "${PIPELINE_REGISTRY}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
+build-bundle-pipeline:
+	./scripts/build/build-bundle.sh --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
-bundle-artifactory:
-	./scripts/bundle-release.sh -u "${ARTIFACTORY_USERNAME}" -p "${ARTIFACTORY_TOKEN}" --registry "${ARTIFACTORY_REPO_URL}" --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --image "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}" --release "${RELEASE_TARGET}"
-
-bundle-all: bundle-pipeline bundle-artifactory
-
-catalog-pipeline-build: opm ## Build a catalog image.
-	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build" -v "${VERSION}"
-
-catalog-artifactory-build: opm ## Build a catalog image.
-	./scripts/catalog-build.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -i "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build"
-
-catalog-all-build: opm catalog-pipeline-build catalog-artifactory-build ## Build a catalog image
-
-catalog-pipeline-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
-
-catalog-artifactory-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG="${ARTIFACTORY_REPO_URL}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
-
-catalog-all-push: catalog-pipeline-push catalog-artifactory-push ## Push a catalog image.
+build-catalog-pipeline: opm ## Build a catalog image.
+	./scripts/build/build-catalog.sh -n "v${OPM_VERSION}" -b "${REDHAT_BASE_IMAGE}" -o "${OPM}" --container-tool "docker" -r "${REGISTRY}" -i "${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}" -p "${PIPELINE_PRODUCTION_IMAGE}-bundle" -a "${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}" -t "${PWD}/operator-build" -v "${VERSION}"
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
@@ -375,12 +348,6 @@ test-pipeline-e2e:
                      --registry-name "${PIPELINE_REGISTRY}" --registry-image "${PIPELINE_OPERATOR_IMAGE}" \
                      --registry-user "${PIPELINE_USERNAME}" --registry-password "${PIPELINE_PASSWORD}" \
                      --test-tag "${TRAVIS_BUILD_NUMBER}" --release "${RELEASE_TARGET}" --channel "${DEFAULT_CHANNEL}"
-
-build-releases:
-	./scripts/build-releases.sh --image "${PUBLISH_REGISTRY}/${OPERATOR_IMAGE}" --target "${RELEASE_TARGET}"
-
-bundle-releases:
-	./scripts/bundle-releases.sh --image "${PUBLISH_REGISTRY}/${OPERATOR_IMAGE}" --target "${RELEASE_TARGET}"
 
 bundle-build-podman:
 	podman build -f bundle.Dockerfile -t "${BUNDLE_IMG}"
