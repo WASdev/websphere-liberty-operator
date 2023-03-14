@@ -3,7 +3,7 @@ properties([
       // EBC relevant properties
       string(name: 'executionId', defaultValue: UUID.randomUUID().toString(), description: 'Unique execution id'),
       string(name: 'ebcPriority', defaultValue: '200', description: 'EBC Priority'),
-      string(name: 'ebcPlan', defaultValue: 'managed-pool-jenkins-macosx_arm.yml', description: 'EBC plan to use when provisioning a Jenkins node'),
+      string(name: 'ebcPlan', defaultValue: 'svl-dockerJenkins-ubuntu20_ppcle.yml', description: 'EBC plan to use when provisioning a Jenkins node'),
       string(name: 'ebcBranch', defaultValue: "${env.ecosystem_branch}", description: 'Git branch used for ebc code'),
       // Container build relevant properties
       string(name: 'scriptBranch', defaultValue: "multi-arch", description: 'Git branch containing docker build scripts'),
