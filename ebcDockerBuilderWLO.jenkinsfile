@@ -111,7 +111,7 @@ def void doWork(){
    // def RELEASE_TARGET = "${params.RELEASE_TARGET}"
    
    // Run the full build
-   sh ${command}
+   sh $command
 }
 
 // EBC Functions
