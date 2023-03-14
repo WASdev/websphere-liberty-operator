@@ -111,9 +111,10 @@ def void doWork(){
    // def RELEASE_TARGET = "${params.RELEASE_TARGET}"
 
    echo "in do work(), value of: ${command}"
-   
+   sh "./build.sh"
    // Run the full build
-   ${command}
+   # ${command}
+   sh "make build-pipeline-releases"
 }
 
 // EBC Functions
