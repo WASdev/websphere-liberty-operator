@@ -109,9 +109,11 @@ def void doWork(){
    // def PIPELINE_REGISTRY = "${params.PIPELINE_REGISTRY}"
    // def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
    // def RELEASE_TARGET = "${params.RELEASE_TARGET}"
+
+   echo "in do work(), value of: ${command}"
    
    // Run the full build
-   sh $command
+   ${command}
 }
 
 // EBC Functions
