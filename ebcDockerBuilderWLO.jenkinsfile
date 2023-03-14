@@ -88,7 +88,7 @@ timestamps {
 
 // Clone the git repo and stash it, so that the jenkins agent machine can grab it later
 def gitCloneAndStash() {
-   git branch: scriptBranch, url: "git@github.ibm.com:${scriptOrg}/websphere-liberty-operator.git"
+   git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
    // Run the submodule downloading script
    stash(name: 'websphere-liberty-operator')
 }
