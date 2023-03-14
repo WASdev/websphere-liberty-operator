@@ -113,7 +113,7 @@ def void doWork(){
    echo "in do work(), value of: ${command}"
    sh "./build.sh"
    // Run the full build
-   # ${command}
+   // ${command}
    sh "make build-pipeline-releases"
 }
 
