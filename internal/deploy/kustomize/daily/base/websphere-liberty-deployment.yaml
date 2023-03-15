@@ -36,6 +36,8 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - ppc64le
+                - s390x
       containers:
       - args:
         - --health-probe-bind-address=:8081
