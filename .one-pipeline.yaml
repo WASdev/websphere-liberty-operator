@@ -513,6 +513,7 @@ acceptance-test:
     export CLUSTER_TOKEN=$token
     export RELEASE_TARGET=$(get_env branch)
     export DEBUG_FAILURE=$(get_env debug-failure)
+    export INSTALL_MODE=$(get_env install-mode)
 
     # Kind test
     export FYRE_USER=$(get_env fyre-user)
