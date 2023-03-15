@@ -234,33 +234,30 @@ containerize:
       if [[ -z $DISABLE_ARTIFACTORY ]]; then
         export DISABLE_ARTIFACTORY="false"
       fi
-      if [[ "$DISABLE_ARTIFACTORY" != "false" ]]; then
-        # Only push to the staging registry
 
-        echo "Running with artifactory disabled."
+      # Staging registry build
+      echo "Running builds for staging registry."
 
-        # Docker login and setup build configurations
-        scripts/build/build-initialize.sh
+      # Docker login and setup build configurations
+      scripts/build/build-initialize.sh
 
-        # Build operator image
-        make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
+      # Build operator image
+      make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
 
-        # Build operator manifest (after 3 arch operator builds)
-        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
+      # Build operator manifest (after 3 arch operator builds)
+      make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
-        # Build bundle image
-        make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
+      # Build bundle image
+      make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
 
-        # Build catalog image for amd64 first - then p and z
-        make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
+      # Build catalog image for amd64 first - then p and z
+      make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
 
-        # Build catalog manifest
-        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
+      # Build catalog manifest
+      make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
 
-      else
-        # Push to the staging registry and artifactory
-
-        echo "Running with artifactory enabled."
+      if [[ "$DISABLE_ARTIFACTORY" == "false" ]]; then
+        echo "Running builds for artifactory repository."
 
         read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
         read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
@@ -274,23 +271,18 @@ containerize:
         scripts/build/build-initialize.sh
 
         # Build operator image
-        make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
         # Build operator manifest (after 3 arch operator builds)
-        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
         make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
         # Build bundle image
-        make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
         make build-bundle-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
         # Build catalog image for amd64 first - then p and z
-        make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
 
         # Build catalog manifest
-        make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
         make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
 
         echo "Completed pushing to artifactory."
