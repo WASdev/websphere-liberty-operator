@@ -16,7 +16,6 @@ properties([
       string(name: 'REDHAT_BASE_IMAGE', defaultValue: "registry.redhat.io/openshift4/ose-operator-registry", description: 'base image for operator'),
       string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login'),
       string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to')
-      string(name: 'GO_VERSION', defaultValue: "1.20.1", description: 'GO Version for install')
       // DOCKER_USERNAME           docker-username            ("iamapikey")  ??
       // DOCKER_PASSWORD           docker-password            (<docker password>) ??
       // ARTIFACTORY_USERNAME      artifactorybackup          ("AppPlatform.Ops@ibm.com")
