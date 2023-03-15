@@ -205,6 +205,9 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    export GITHUB_ACCESS_TOKEN=$(get_env git-token)
+
+    ./scripts/build/get-build-scripts.sh
 
     echo "skopeo version"
     skopeo --version || exit 1
