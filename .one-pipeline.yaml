@@ -232,10 +232,13 @@ containerize:
         make bundle-pipeline
 
         # Build catalog image
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
-        # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
         make catalog-pipeline-push
         if [[ "$arch" == "ZXP" ]]; then
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
@@ -271,8 +274,7 @@ containerize:
         # Build ppc64le and s390x images
         # Disabled for Liberty Operator builds for now
         # if a P and Z flag call out to CI Orchestrator to build them
-        ./scripts/pipeline/request-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" --command "make build-pipeline-manifest"
-
+       
         # Build manifest (P and Z here too?)
         make build-all-manifest
 
@@ -281,13 +283,17 @@ containerize:
         make bundle-all
 
         # Build catalog image
+        if [[ "$arch" == "ZXP" ]]; then
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make catalog-pipeline-build;make catalog-pipeline-push" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
         echo "Connecting to docker..."
 
         echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
         echo "${ARTIFACTORY_TOKEN}" | docker login "${ARTIFACTORY_REPO_URL}" -u "${ARTIFACTORY_USERNAME}" --password-stdin
         echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
         make catalog-pipeline-build
-        # do we need a second call out to ./scripts/pipeline/request-ciorchestrator.sh for the push too?
+       
         make catalog-pipeline-push
         if [[ "$arch" == "ZXP" ]]; then
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
