@@ -1,6 +1,6 @@
 type: pipeline_definition
 product: Liberty
-name: Websphere Liberty Operator Docker Container Build
+name: Websphere Liberty Operator Docker Build
 description: A build to run the websphere-liberty operator docker container build
 triggers:
 - type: manual

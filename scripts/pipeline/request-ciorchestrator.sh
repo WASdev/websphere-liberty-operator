@@ -1,11 +1,12 @@
 #!/bin/bash
 
-GH_BRANCH=ciorch-integration
-GH_REPOSITORY=build-liberty-images-ubi
-GH_ORG=WEBSTEC1
-CI_TRIGGER=wldocker
-CI_CONFIG_FILE=.ci-orchestrator/websphere-liberty-build.yml
-pipelineName=Websphere Liberty Docker Container Build
+GH_BRANCH="ciorch-integration"
+GH_REPOSITORY="websphere-liberty-operator"
+GH_ORG="multi-arch"
+CI_TRIGGER="wlodocker"
+CI_CONFIG_FILE=".ci-orchestrator/websphere-liberty-operator-build.yml"
+pipelineName="Websphere Liberty Operator Docker Build"
+command="make build-pipeline-releases"
 
 
 function main() {
@@ -27,6 +28,7 @@ function print_usage() {
     echo "   --org            string  Github Organisation containing repository"
     echo "   --trigger        string  Name of trigger within CI Orchestrator config file"
     echo "   --configFile     string  Location of CI Orchestrator config file"
+    echo "   --command        string  Command to execute on remote machine"
     echo "   -h, --help               Print usage information"
     echo ""
 }
@@ -68,7 +70,11 @@ function parse_arguments() {
         --configFile)
             shift
             CI_CONFIG_FILE=$1
-            ;;                        
+            ;;
+        --command)
+            shift
+            COMMAND=$1
+            ;;                         
         -h | --help)
             print_usage
             exit 1
@@ -91,7 +97,8 @@ function request_ciorchestrator() {
         "requestor": "${USER}",
         "properties": {
             "scriptBranch": "${GH_BRANCH}",
-            "scriptOrg": "${GH_ORG}"
+            "scriptOrg": "${GH_ORG}",
+            "command": "${COMMAND}"
         },
         "configMetadata": {
             "apiRoot": "https://github.ibm.com/api/v3",
@@ -101,7 +108,7 @@ function request_ciorchestrator() {
             "filePath": "${CI_CONFIG_FILE}"
         }
     }
-    EOL
+EOL
 
     echo "${pipelineId}" >ciorchestrator-submit.id
 
@@ -109,7 +116,7 @@ function request_ciorchestrator() {
     curl -v -X POST \
         -H "Content-Type: application/json"  \
         -d @ciorchestrator-submit.json \
-        -u "${USER}:${PASSWORD}"
+        -u "${USER}:${PASSWORD}" \
         https://libh-proxy1.fyre.ibm.com/eventPublish/rawCIData/${pipelineId}
 
 }
