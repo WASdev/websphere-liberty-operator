@@ -86,7 +86,7 @@ timestamps {
 def gitCloneAndStash() {
    git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
    git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
-   sh "cp operators/scripts/build websphere-liberty-operator/scripts/"
+   sh "cp -rf operators/scripts/build websphere-liberty-operator/scripts/"
    // Run the submodule downloading script
    stash(name: 'websphere-liberty-operator')
 }
