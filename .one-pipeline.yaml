@@ -474,37 +474,37 @@ release:
       exit 0
     fi
 
-    SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
-    ./scripts/pipeline/evaluator.sh      
-    if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
-      if [[  $SKIP_ALL_CHECKS == "true" ]]; then
-        echo "Skipping image scan checks"
-      fi
-      APP_REPO=$(pwd)
-      echo "Application Repository: $APP_REPO"
-      INVENTORY_REPO=$(get_env inventory-repo)
-      echo "Cloning inventory repository: $INVENTORY_REPO"
-      cd "$WORKSPACE"
-      APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
-      . "${ONE_PIPELINE_PATH}"/git/clone_repo \
-        "$INVENTORY_REPO" \
-        "master"  \
-        "" \
-        "$APP_TOKEN_PATH"
-      REPO=${INVENTORY_REPO##*/}
-      NAME=${REPO%.*}
-      echo "Inventory name: $NAME"
-      cd $WORKSPACE/$NAME
-      if [ "$(ls )" ]; then
-        echo "Clearing inventory repository: $INVENTORY_REPO"
-        git config --global user.email "tekton@example.com"
-        git config --global user.name "Tekton"
-        git rm *
-        git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
-        git push origin master
-      fi
-      cd $APP_REPO
-      ./scripts/pipeline/release.sh
-    else
-      echo "Errors found.  images will not be released"
-    fi
+    # SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
+    # ./scripts/pipeline/evaluator.sh      
+    # if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
+    #   if [[  $SKIP_ALL_CHECKS == "true" ]]; then
+    #     echo "Skipping image scan checks"
+    #   fi
+    #   APP_REPO=$(pwd)
+    #   echo "Application Repository: $APP_REPO"
+    #   INVENTORY_REPO=$(get_env inventory-repo)
+    #   echo "Cloning inventory repository: $INVENTORY_REPO"
+    #   cd "$WORKSPACE"
+    #   APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
+    #   . "${ONE_PIPELINE_PATH}"/git/clone_repo \
+    #     "$INVENTORY_REPO" \
+    #     "master"  \
+    #     "" \
+    #     "$APP_TOKEN_PATH"
+    #   REPO=${INVENTORY_REPO##*/}
+    #   NAME=${REPO%.*}
+    #   echo "Inventory name: $NAME"
+    #   cd $WORKSPACE/$NAME
+    #   if [ "$(ls )" ]; then
+    #     echo "Clearing inventory repository: $INVENTORY_REPO"
+    #     git config --global user.email "tekton@example.com"
+    #     git config --global user.name "Tekton"
+    #     git rm *
+    #     git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
+    #     git push origin master
+    #   fi
+    #   cd $APP_REPO
+    #   ./scripts/pipeline/release.sh
+    # else
+    #   echo "Errors found.  images will not be released"
+    # fi
