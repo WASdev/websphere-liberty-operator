@@ -67,7 +67,7 @@ setup:
     else
       export arch=$(get_env architecture)
       if [[ "$arch" == "X" ]]; then
-        ./scripts/pipeline/getCluster.sh "X""
+        ./scripts/pipeline/getCluster.sh "X"
       else
         ./scripts/pipeline/getCluster.sh "Z"
         ./scripts/pipeline/getCluster.sh "X" 
