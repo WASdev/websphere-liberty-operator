@@ -84,14 +84,17 @@ timestamps {
 
 // Clone the git repo and stash it, so that the jenkins agent machine can grab it later
 def gitCloneAndStash() {
-   git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
-   git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
-   sh "pwd"
+  dir('websphere-liberty-operator') {
+      git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
+  }
+  dir('operators') {
+      git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
+  }
+  sh "cp -rf operators/scripts/build websphere-liberty-operator/scripts/"
+  dir('websphere-liberty-operator') {
+      stash(name: 'websphere-liberty-operator')
+   }
    sh "ls -l"
-    sh "ls -l scripts"
-   sh "cp -rf scripts/build websphere-liberty-operator/scripts/"
-   // Run the submodule downloading script
-   stash(name: 'websphere-liberty-operator')
 }
   
 // Job Specific Functions
