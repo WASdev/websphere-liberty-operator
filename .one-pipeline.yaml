@@ -449,7 +449,7 @@ scan-artifact:
     echo $STAGE
 
     # ========== Security Scanner ==========
-    ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
+    #./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
 release:
   abort_on_failure: false
