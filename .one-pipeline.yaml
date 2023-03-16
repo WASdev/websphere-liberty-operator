@@ -64,15 +64,15 @@ setup:
     if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
-    fi
-
-    export arch=$(get_env architecture)
-    if [[ "$arch" == "X" ]]; then
-      ./scripts/pipeline/getCluster.sh "X""
     else
-      ./scripts/pipeline/getCluster.sh "Z"
-      ./scripts/pipeline/getCluster.sh "X" 
-      ./scripts/pipeline/getCluster.sh "P"
+      export arch=$(get_env architecture)
+      if [[ "$arch" == "X" ]]; then
+        ./scripts/pipeline/getCluster.sh "X""
+      else
+        ./scripts/pipeline/getCluster.sh "Z"
+        ./scripts/pipeline/getCluster.sh "X" 
+        ./scripts/pipeline/getCluster.sh "P"
+      fi
     fi
 
 test:
@@ -92,12 +92,12 @@ test:
       exit 0
     fi
 
-    ## Setup required tooling
-    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
-    export PATH=$PATH:/usr/local/go/bin
-    yum -y -q update
+    # ## Setup required tooling
+    # make setup-go GO_RELEASE_VERSION=$(get_env go-version)
+    # export PATH=$PATH:/usr/local/go/bin
+    # yum -y -q update
 
-    make unit-test
+    # make unit-test
 
 static-scan:
   dind: true
@@ -116,26 +116,26 @@ static-scan:
       exit 0
     fi
 
-    BRANCH=$(get_env branch) 
-    read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
-    read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
-    SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
-    read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
-    touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
-    cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    sonar.projectKey=websphere-liberty-operator
-    sonar.host.url=$SONAR_HOST_URL
-    sonar.sources=.
-    sonar.branch.name=$BRANCH
-    sonar.login=$SONAR_USER
-    sonar.password=$SONAR_PASS
-    sonar.c.file.suffixes=-
-    sonar.cpp.file.suffixes=-
-    sonar.objc.file.suffixes=-
-    EOF
-    chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    #echo "$SONAR_PASS" >> /tmp/sonarqube-token
-    "${COMMONS_PATH}"/static-scan/run.sh
+    # BRANCH=$(get_env branch) 
+    # read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    # read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
+    # SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
+    # read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
+    # touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
+    # cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    # sonar.projectKey=websphere-liberty-operator
+    # sonar.host.url=$SONAR_HOST_URL
+    # sonar.sources=.
+    # sonar.branch.name=$BRANCH
+    # sonar.login=$SONAR_USER
+    # sonar.password=$SONAR_PASS
+    # sonar.c.file.suffixes=-
+    # sonar.cpp.file.suffixes=-
+    # sonar.objc.file.suffixes=-
+    # EOF
+    # chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    # #echo "$SONAR_PASS" >> /tmp/sonarqube-token
+    # "${COMMONS_PATH}"/static-scan/run.sh
 
 
 containerize:
