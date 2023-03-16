@@ -15,15 +15,10 @@ properties([
       string(name: 'PIPELINE_PRODUCTION_IMAGE', defaultValue: "icr.io/cpopen/websphere-liberty-operator", description: 'namespace in prod registry'),
       string(name: 'REDHAT_BASE_IMAGE', defaultValue: "registry.redhat.io/openshift4/ose-operator-registry", description: 'base image for operator'),
       string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login'),
-      string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to')
-      // DOCKER_USERNAME           docker-username            ("iamapikey")  ??
-      // DOCKER_PASSWORD           docker-password            (<docker password>) ??
-      // ARTIFACTORY_USERNAME      artifactorybackup          ("AppPlatform.Ops@ibm.com")
-      // ARTIFACTORY_TOKEN         artifactorybackup          (<artifactory password>)
-      // ARTIFACTORY_REPO_URL      artifactorybackup          ("hyc-taas-onepipeline-team-docker-local.artifactory.swg-devops.com")
+      string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to'),
+      string(name: 'ARTIFACTORY_REPO_URL', defaultValue: "hyc-taas-onepipeline-team-docker-local.artifactory.swg-devops.com", description: 'artifactory repo url [only used if disable artifactory is false]]')
       // OPM_VERSION               opm-version               ("4.10")
       // GO_RELEASE_VERSION        go-version                ("1.19.5")
-      // DISABLE_ARTIFACTORY       disable-artifactory       ("true" or "false")
    ])
 ])
 timestamps {
@@ -58,6 +53,7 @@ timestamps {
          stage("Running Job"){
             withCredentials([usernamePassword(credentialsId: 'operator_icrId', usernameVariable: 'PIPELINE_USERNAME', passwordVariable: 'PIPELINE_PASSWORD'),
                              usernamePassword(credentialsId: 'operatorRH_REG_ID', usernameVariable: 'REDHAT_USERNAME', passwordVariable: 'REDHAT_PASSWORD'),
+                             usernamePassword(credentialsId: 'operator_artifactory_ID', usernameVariable: 'ARTIFACTORY_USERNAME', passwordVariable: 'ARTIFACTORY_TOKEN'),
                              usernamePassword(credentialsId: 'dockerId', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                //This is executing on ebc dynamic machine
                doWork();
@@ -89,6 +85,8 @@ timestamps {
 // Clone the git repo and stash it, so that the jenkins agent machine can grab it later
 def gitCloneAndStash() {
    git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
+   git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
+   sh "cp operators/scripts/build websphere-liberty-operator/scripts/"
    // Run the submodule downloading script
    stash(name: 'websphere-liberty-operator')
 }
@@ -99,22 +97,7 @@ def void doWork(){
    
    // Unstash the git repo
    unstash(name: 'websphere-liberty-operator')
-
-   // Download and install required software to the machine.
-   //sh "ssh-keyscan "+fileserverPrivate+" >> ~/.ssh/known_hosts"
-   sh 'echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin'
-   sh 'echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin'
-   // def PIPELINE_OPERATOR_IMAGE = "${params.PIPELINE_OPERATOR_IMAGE}"
-   // def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
-   // def PIPELINE_REGISTRY = "${params.PIPELINE_REGISTRY}"
-   // def PIPELINE_PRODUCTION_IMAGE = "${params.PIPELINE_PRODUCTION_IMAGE}"
-   // def RELEASE_TARGET = "${params.RELEASE_TARGET}"
-
-   // echo "in do work(), value of: ${command}"
-   // sh "./build.sh"
-   // Run the full build
-   // ${command}
-   //sh "make build-pipeline-releases"
+   sh "DISABLE_ARTIFACTORY=false ./scripts/build/build-initialize.sh"
    sh "${command}"
 }
 
