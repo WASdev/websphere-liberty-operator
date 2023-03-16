@@ -17,12 +17,11 @@ echo $console
 echo "*** after issuing oc login"
 ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
 
-# Download and configure golang
-GO_VERSION=$(get_env go-version)
-if [[ -z "${GO_VERSION}" ]]; then
-    GO_VERSION="$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2)"
-fi
-export GO_VERSION
+
+export GO_VERSION=$(get_env go-version)
+make setup-go GO_RELEASE_VERSION=$GO_VERSION
+export PATH=$PATH:/usr/local/go/bin
+export INSTALL_MODE=$(get_env install-mode)
 
 # OCP test
 export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)

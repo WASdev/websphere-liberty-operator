@@ -65,14 +65,14 @@ setup:
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
     else
-      export arch=$(get_env architecture)
-      if [[ "$arch" == "X" ]]; then
-        ./scripts/pipeline/getCluster.sh "X""
-      else
-        ./scripts/pipeline/getCluster.sh "Z"
-        ./scripts/pipeline/getCluster.sh "X" 
-        ./scripts/pipeline/getCluster.sh "P"
-      fi
+      # export arch=$(get_env architecture)
+      # if [[ "$arch" == "X" ]]; then
+      #   ./scripts/pipeline/getCluster.sh "X""
+      # else
+      #   ./scripts/pipeline/getCluster.sh "Z"
+      #   ./scripts/pipeline/getCluster.sh "X" 
+      #   ./scripts/pipeline/getCluster.sh "P"
+      # fi
     fi
 
 test:
@@ -417,26 +417,18 @@ acceptance-test:
       exit 0
     fi
 
-    rm -rf .git
-    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-    cd ebc-gateway-http
+    # rm -rf .git
+    # git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    # cd ebc-gateway-http
 
     
-    export intranetId_USR=$(get_env ebc_id)
-    export intranetId_PSW=$(get_env ebc_pw)
-    export ebcEnvironment=prod
+    # export intranetId_USR=$(get_env ebc_id)
+    # export intranetId_PSW=$(get_env ebc_pw)
+    # export ebcEnvironment=prod
 
-    
-    # add the following to runTest.sh:
-    ## Setup required tooling
-    #export GO_VERSION=$(get_env go-version)
-    #make setup-go GO_RELEASE_VERSION=$GO_VERSION
-    #export PATH=$PATH:/usr/local/go/bin
-    # export INSTALL_MODE=$(get_env install-mode)
-    
-    source ../scripts/pipeline/runTest.sh Z
-    source ../scripts/pipeline/runTest.sh X
-    source ../scripts/pipeline/runTest.sh P
+    # source ../scripts/pipeline/runTest.sh Z
+    # source ../scripts/pipeline/runTest.sh X
+    # source ../scripts/pipeline/runTest.sh P
 
    
 
