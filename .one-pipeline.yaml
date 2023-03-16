@@ -72,8 +72,9 @@ setup:
       #   ./scripts/pipeline/getCluster.sh "Z"
       #   ./scripts/pipeline/getCluster.sh "X" 
       #   ./scripts/pipeline/getCluster.sh "P"
-      # fi
     fi
+    fi
+    
 
 test:
   dind: true
