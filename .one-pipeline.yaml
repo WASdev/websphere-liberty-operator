@@ -171,6 +171,7 @@ containerize:
     export arch=$(get_env architecture)
 
     git clone https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+    cp -rf operators/scripts/build ./scripts/
     cp operators/scripts/build ./scripts/ 
 
 
