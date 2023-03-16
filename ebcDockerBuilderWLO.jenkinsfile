@@ -8,7 +8,7 @@ properties([
       // Container build relevant properties
       string(name: 'scriptBranch', defaultValue: "multi-arch", description: 'Git branch containing docker build scripts'),
       string(name: 'scriptOrg', defaultValue: "WASdev", description: 'Git org containing docker build scripts'),
-      string(name: 'command', defaultValue: "make build-pipeline-releases", description: 'Build command to execute on target arch machine, e.g. make build-pipeline-releases'),
+      string(name: 'command', defaultValue: "make build-operator-pipeline REGISTRY=cp.stg.icr.io", description: 'Build command to execute on target arch machine, e.g. make build-pipeline-releases'),
       string(name: 'PIPELINE_OPERATOR_IMAGE', defaultValue: "cp/websphere-liberty-operator", description: 'namespace to push image to in registry'),
       string(name: 'RELEASE_TARGET', defaultValue: "multi-arch", description: 'release branch to use'),
       string(name: 'OPM_VERSION', defaultValue: "4.10", description: 'Redhat CLI OPM version'),

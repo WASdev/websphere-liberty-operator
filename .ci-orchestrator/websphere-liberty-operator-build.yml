@@ -11,7 +11,7 @@ triggers:
   - name: scriptOrg
     defaultValue: "WASdev"
   - name: command
-    defaultValue: "make build-pipeline-releases"
+    defaultValue: "make build-operator-pipeline REGISTRY=cp.stg.icr.io"
 
 steps:
 - stepName: Z Build
