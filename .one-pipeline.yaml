@@ -166,6 +166,8 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    export W3_USERNAME=$(get_env w3_username)
+    export W3_PASSWORD=$(get_env w3_password)
 
     # flags for P and/or Z
     export arch=$(get_env architecture)
