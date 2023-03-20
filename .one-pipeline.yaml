@@ -146,6 +146,9 @@ containerize:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+    
+    # instruct bash to exit if any command fails
+    set -e
 
     echo $STAGE
 
@@ -208,17 +211,17 @@ containerize:
       # Docker login and setup build configurations
       scripts/build/build-initialize.sh
       # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
-        if [[ "$arch" == "ZXP" ]]; then
-          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
-          pipelineid=$(cat ciorchestrator-submit.id)
-        fi
+      if [[ "$arch" == "ZXP" ]]; then
+        ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        pipelineid=$(cat ciorchestrator-submit.id)
+      fi
         
       # Build operator image
       make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
       if [[ "$arch" == "ZXP" ]]; then
-          # wait for build ppc64le and s390x images
-          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
-        fi
+        # wait for build ppc64le and s390x images
+        ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+      fi
       # Build operator manifest (after 3 arch operator builds)
       make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
@@ -229,10 +232,8 @@ containerize:
       make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
       # Build catalog image
       if [[ "$arch" == "ZXP" ]]; then
-        ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
         pipelineid=$(cat ciorchestrator-submit.id)
-      fi
-      if [[ "$arch" == "ZXP" ]]; then
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
       fi
 
@@ -255,16 +256,16 @@ containerize:
         scripts/build/build-initialize.sh
         # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
         if [[ "$arch" == "ZXP" ]]; then
-          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
         
         # Build operator image
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         if [[ "$arch" == "ZXP" ]]; then
-            # wait for build ppc64le and s390x images
-            ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
-          fi
+          # wait for build ppc64le and s390x images
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
         # Build operator manifest (after 3 arch operator builds)
         make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
@@ -275,10 +276,8 @@ containerize:
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         # Build catalog image
         if [[ "$arch" == "ZXP" ]]; then
-          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "multi-arch" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
-        fi
-        if [[ "$arch" == "ZXP" ]]; then
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
 

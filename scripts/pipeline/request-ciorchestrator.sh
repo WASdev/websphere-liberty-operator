@@ -1,9 +1,9 @@
 #!/bin/bash
 
 GH_API_ROOT="https://api.github.com"
-GH_BRANCH="ciorch-integration"
+GH_BRANCH="multi-arch"
 GH_REPOSITORY="websphere-liberty-operator"
-GH_ORG="multi-arch"
+GH_ORG="WASdev"
 CI_TRIGGER="wlodocker"
 CI_CONFIG_FILE=".ci-orchestrator/websphere-liberty-operator-build.yml"
 pipelineName="Websphere Liberty Operator Docker Build"
@@ -112,17 +112,33 @@ function request_ciorchestrator() {
 EOL
 
     echo "${pipelineId}" >ciorchestrator-submit.id
-
+    # add retry logic for Fyre networking issues
     echo "Sending Pipeline Request to CI Orchestrator pipelineId: ${pipelineId} as ${USER}"
-    curl --insecure -v -X POST \
-        -H "Content-Type: application/json"  \
-        -d @ciorchestrator-submit.json \
-        -u "${USER}:${PASSWORD}" \
-        https://libh-proxy1.fyre.ibm.com/eventPublish/rawCIData/${pipelineId}
-
+    echo "command to run: $COMMAND"
+    count=0
+    tryAgain=true
+    while $tryAgain;  do
+        curl --fail --insecure -v -X POST \
+            -H "Content-Type: application/json"  \
+            -d @ciorchestrator-submit.json \
+            -u "${USER}:${PASSWORD}" \
+            https://libh-proxy1.fyre.ibm.com/eventPublish/rawCIData/${pipelineId}
+            rc=$?
+        if [[ $rc -eq 0 ]]; then
+            echo "Successfully sent CI orchestrator Request"
+            tryAgain=false
+        elif [[ $count -gt 600 ]]; then
+            #Bail after 10 mins
+            echo "Problem sending CI orchestrator Request after 10 mins of trying, giving up.  Curl returned $rc"
+            exit 1;
+        else
+            sleep 10
+            count=$((count+10))
+        fi
+    done
 }
 
 
 # --- Run ---
 
-main $*
+main "$@"
