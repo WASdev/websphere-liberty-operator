@@ -54,6 +54,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	OperatorName = "websphere-liberty-operator"
+)
+
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
 type ReconcileWebSphereLiberty struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -103,6 +107,25 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
+	configMap, err := r.GetOpConfigMap(OperatorName, ns)
+	if err != nil {
+		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
+		common.Config = common.DefaultOpConfig()
+		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: OperatorName, Namespace: ns}}
+		configMap.Data = common.Config
+	} else {
+		common.Config.LoadFromConfigMap(configMap)
+	}
+
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.GetClient(), configMap, func() error {
+		configMap.Data = common.Config
+		return nil
+	})
+
+	if err != nil {
+		reqLogger.Info("Failed to create or update websphere-liberty-operator config map, error: " + err.Error())
+	}
+
 	// Fetch the WebSphereLiberty instance
 	instance := &webspherelibertyv1.WebSphereLibertyApplication{}
 	var ba common.BaseComponent = instance
@@ -130,8 +153,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err == nil {
 		for _, element := range deploy.OwnerReferences {
 			if element.Kind != "WebSphereLibertyApplication" {
-				reqLogger.Error(err, "Existing Deployment for "+instance.Name+" is not managed by this operator. It is being managed by "+element.Kind)
-				return reconcile.Result{}, nil
+				message := "Existing Deployment for " + instance.Name + " is not managed by this operator. It is being managed by " + element.Kind
+				err = errors.New(message)
+				reqLogger.Error(err, message)
+				return reconcile.Result{}, err
 			}
 		}
 	}
@@ -140,29 +165,12 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err == nil {
 		for _, element := range statefulSet.OwnerReferences {
 			if element.Kind != "WebSphereLibertyApplication" {
-				reqLogger.Error(err, "Existing StatefulSet for "+instance.Name+" is not managed by this operator. It is being managed by "+element.Kind)
-				return reconcile.Result{}, nil
+				message := "Existing Deployment for " + instance.Name + " is not managed by this operator. It is being managed by " + element.Kind
+				err = errors.New(message)
+				reqLogger.Error(err, message)
+				return reconcile.Result{}, err
 			}
 		}
-	}
-
-	configMap, err := r.GetOpConfigMap("websphere-liberty-operator", ns)
-	if err != nil {
-		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
-		common.Config = common.DefaultOpConfig()
-		configMap = &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "websphere-liberty-operator", Namespace: ns}}
-		configMap.Data = common.Config
-	} else {
-		common.Config.LoadFromConfigMap(configMap)
-	}
-
-	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.GetClient(), configMap, func() error {
-		configMap.Data = common.Config
-		return nil
-	})
-
-	if err != nil {
-		reqLogger.Info("Failed to create or update websphere-liberty-operator config map, error: " + err.Error())
 	}
 
 	// Check if the WebSphereLibertyApplication instance is marked to be deleted, which is
@@ -253,6 +261,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 	if imageReferenceOld != instance.Status.ImageReference {
+		// Trigger a new Semeru Cloud Compiler generation
+		createNewSemeruGeneration(instance)
+
 		reqLogger.Info("Updating status.imageReference", "status.imageReference", instance.Status.ImageReference)
 		err = r.UpdateStatus(instance)
 		if err != nil {
@@ -284,6 +295,26 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
 	if saErr != nil {
 		return r.ManageError(saErr, common.StatusConditionTypeReconciled, instance)
+	}
+
+	// Check if SemeruCloudCompiler is enabled before reconciling the Semeru Compiler deployment and service.
+	// Otherwise, delete the Semeru Compiler deployment and service.
+	message := "Start Semeru Compiler reconcile"
+	reqLogger.Info(message)
+	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(instance)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+	// If semeru compiler is enabled, make sure its ready
+	if r.isSemeruEnabled(instance) {
+		message = "Check Semeru Compiler resources ready"
+		reqLogger.Info(message)
+		err = r.areSemeruCompilerResourcesReady(instance)
+		if err != nil {
+			reqLogger.Error(err, message)
+			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+		}
 	}
 
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
@@ -455,13 +486,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
+
+			statefulSet.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
+
 			if err := oputils.CustomizePodWithSVCCertificate(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
-			if err := lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance); err != nil {
-				return err
-			}
+			lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -470,7 +502,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 			}
 			lutils.ConfigureServiceability(&statefulSet.Spec.Template, instance)
-
+			semeruCertVolume := getSemeruCertVolume(instance)
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
+				statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, *semeruCertVolume)
+				statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
+					getSemeruCertVolumeMount(instance))
+				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
+				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(),
+					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		})
 		if err != nil {
@@ -487,7 +530,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 
-		// Delete service if exists
+		// Delete StatefulSet if exists
 		headlesssvc := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: instance.Name + "-headless", Namespace: instance.Namespace}}
 		err = r.DeleteResource(headlesssvc)
 
@@ -503,13 +546,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
 			}
+			deploy.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
+
 			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
-			if err := lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance); err != nil {
-				return err
-			}
+			lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
 				err = lutils.CustomizeEnvSSO(&deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
@@ -519,6 +562,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 
 			lutils.ConfigureServiceability(&deploy.Spec.Template, instance)
+			semeruCertVolume := getSemeruCertVolume(instance)
+			if r.isSemeruEnabled(instance) && semeruCertVolume != nil {
+				deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *semeruCertVolume)
+				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts,
+					getSemeruCertVolumeMount(instance))
+				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
+				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
+					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		})
 		if err != nil {
@@ -630,10 +685,25 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported", prometheusv1.SchemeGroupVersion.String()))
 	}
 
-	instance.Status.Versions.Reconciled = lutils.OperandVersion
+	// Delete completed Semeru instances because all pods now point to the newest Semeru service
+	if areCompletedSemeruInstancesMarkedToBeDeleted && r.isWebSphereLibertyApplicationReady(instance) {
+		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
+			reqLogger.Error(err, "Failed to delete completed Semeru instance")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	}
 
+	instance.Status.Versions.Reconciled = lutils.OperandVersion
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
+}
+
+func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
+	if r.CheckApplicationStatus(ba) == corev1.ConditionTrue {
+		statusCondition := ba.GetStatus().GetCondition(common.StatusConditionTypeReady)
+		return statusCondition != nil && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
+	}
+	return false
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
