@@ -1,5 +1,6 @@
 #!/bin/bash
 
+GH_API_ROOT="https://api.github.com"
 GH_BRANCH="ciorch-integration"
 GH_REPOSITORY="websphere-liberty-operator"
 GH_ORG="multi-arch"
@@ -101,7 +102,7 @@ function request_ciorchestrator() {
             "command": "${COMMAND}"
         },
         "configMetadata": {
-            "apiRoot": "https://github.ibm.com/api/v3",
+            "apiRoot": "${GH_API_ROOT}",
             "org": "${GH_ORG}",
             "repo": "${GH_REPOSITORY}",
             "branch": "${GH_BRANCH}",
