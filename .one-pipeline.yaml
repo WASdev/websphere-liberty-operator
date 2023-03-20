@@ -1,16 +1,17 @@
 version: "1"
 
 setup:
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "setup"
-    GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
+   
+    echo $STAGE
+
+    ## Setup required tooling
+    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
     export PATH=$PATH:/usr/local/go/bin
-    apt-get update
-    apt-get -y install build-essential
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+    yum -y -q update
+
     go mod vendor
 
     ENABLE_BRANCH_PROTECTION=$(get_env enable-branch-protection)
@@ -31,7 +32,7 @@ setup:
     fi
 
     # Only sync-up main branch and actual releases (i.e. 1.0.0 tag)
-    if [[ "$BRANCH" == "main" || "$BRANCH" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
+    if [[ "$BRANCH" == "main" || "$BRANCH" == "release" || "$BRANCH" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
       # Update repo with Whitesource enabled
       GHE_TOKEN=$(get_env git-token)
       WHITESOURCE_GHE_REPO=$(get_env whitesource-ghe-repo | sed 's/https:\/\///')
@@ -50,29 +51,113 @@ setup:
       git push --prune https://$GHE_TOKEN@$WHITESOURCE_GHE_REPO $BRANCH_REFSPEC +refs/tags/*:refs/tags/*
     fi
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
+    SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
+      exit 0
+    fi
+
+    timestamp=$(date +%s)
+    echo $timestamp
+    wlo_demand_id="wlo_$timestamp"
+    set_env WLO_DEMAND_ID "$wlo_demand_id"
+    echo "wlo_demand_id=$wlo_demand_id"
+    
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    cd ebc-gateway-http
+
+    export intranetId_USR=$(get_env ebc_id)
+    export intranetId_PSW=$(get_env ebc_pw)
+    export demandId=$wlo_demand_id
+
+    PRE_RELEASE=$(get_env pre-release)
+    PRE_RELEASE="$(echo "$PRE_RELEASE" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"  ]]; then
+      rhcos_level=$(get_env pre-release-rhcos-url)
+      ocp_level=$(get_env pre-release-ocp-url)
+      echo "this is a pre-release OCP cluster build"
+      echo "ocp level: $ocp_level"
+      echo "core os level: $rhcos_level"
+      export ebc_plan=svl-onepipeline-ocpplus_x_custom.yml
+      export ebc_fyre_kernel_url=${rhcos_level}/rhcos-live-kernel-x86_64
+      export ebc_fyre_initramfs_url=${rhcos_level}/rhcos-live-initramfs.x86_64.img
+      export ebc_fyre_metal_url=${rhcos_level}/rhcos-metal.x86_64.raw.gz
+      export ebc_fyre_rootfs_url=${rhcos_level}/rhcos-live-rootfs.x86_64.img
+      export ebc_fyre_install_url=${ocp_level}/openshift-install-linux.tar.gz
+      export ebc_fyre_client_url=${ocp_level}/openshift-client-linux.tar.gz
+    else
+      export ebc_plan=svl-onepipeline-ocpplus_x.yml
+      export ebc_ocp_version=$(get_env ocp_version)
+    fi
+    # prod or dev, start out with dev
+    export ebcEnvironment=dev
+    # priority is 30 to start, prod priority may be 100
+    export ebc_priority=30
+    export ebc_autoCompleteAfterXHours=$(get_env ebc_autocomplete_hours "6")
+    # gather pipeline URL and place in following env var
+    reason="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
+    export ebc_reasonForEnvironment=$reason
+    
+    ./ebc_demand.sh
+    rc=$?
+    if [[ "$rc" == 0 ]]; then
+      echo "cluster requested"
+    else
+      echo "Outage impacting demand of cluster, try again later"
+      exit 1
+    fi
+
 test:
   dind: true
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
 
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping unit-tests. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     ## Setup required tooling
-    GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz" 
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
     export PATH=$PATH:/usr/local/go/bin
-    apt-get update
-    apt-get -y install build-essential
+    yum -y -q update
 
     make unit-test
 
 static-scan:
   dind: true
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    BRANCH=$(get_env branch) 
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
     SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
@@ -82,6 +167,7 @@ static-scan:
     sonar.projectKey=websphere-liberty-operator
     sonar.host.url=$SONAR_HOST_URL
     sonar.sources=.
+    sonar.branch.name=$BRANCH
     sonar.login=$SONAR_USER
     sonar.password=$SONAR_PASS
     sonar.c.file.suffixes=-
@@ -92,88 +178,130 @@ static-scan:
     #echo "$SONAR_PASS" >> /tmp/sonarqube-token
     "${COMMONS_PATH}"/static-scan/run.sh
 
-    ## Perform static lint
-    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --static-linter-version $(get_env static-linter-version)
 
 containerize:
   dind: true
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    if [[ "$PIPELINE_DEBUG" == 1 ]]; then
-      trap env EXIT
-      env
-      set -x
-    fi
 
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-    apt-get update
-    apt-get -qq -y install build-essential software-properties-common uidmap
+    echo $STAGE
 
-    # Download and install skopeo
-    if ! command -v skopeo &> /dev/null; then
-      PACKAGE_CACHE_URL=$(get_env package-cache-url)
-      wget "$PACKAGE_CACHE_URL/skopeo_1.2.2-2_amd64.deb"
-      wget "$PACKAGE_CACHE_URL/containers-common_1-22_all.deb"
-      wget http://archive.ubuntu.com/ubuntu/pool/main/g/gpgme1.0/libgpgme11_1.10.0-1ubuntu1_amd64.deb
-      sudo dpkg -i libgpgme11_1.10.0-1ubuntu1_amd64.deb
-      sudo dpkg -i containers-common_1-22_all.deb
-      sudo dpkg -i skopeo_1.2.2-2_amd64.deb
-    fi
-    skopeo --version || exit 1
+    echo "*** OS release ***"
+    cat /etc/os-release
 
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
     #  Build images
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
     export PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export RELEASE_TARGET=$(get_env branch)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
     export REDHAT_USERNAME=$(get_env redhat-user-id)
     export REDHAT_PASSWORD=$(get_env redhat-password)
     export REDHAT_BASE_IMAGE=$(get_env redhat-base-image)
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
+    export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
+    export GITHUB_ACCESS_TOKEN=$(get_env git-token)
 
-    # Build amd64 image
-    make build-pipeline-releases
+    ./scripts/build/get-build-scripts.sh
 
-    # Build ppc64le and s390x images
-    # Disabled for Liberty Operator builds for now
-    #./scripts/pipeline/launch-travis.sh -t $(get_env travis-token) -r "https://github.com/WASDev/websphere-liberty-operator" -b $(get_env branch) -l
+    echo "skopeo version"
+    skopeo --version || exit 1
 
-    # Build manifest
-    make build-pipeline-manifest
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
+      RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
+      #RELEASE_TARGET=$(get_env branch)
+    else
+      if [[ "$PIPELINE_DEBUG" == 1 ]]; then
+        trap env EXIT
+        env
+        set -x
+      fi
 
-    # Build bundle image
-    make setup
-    make bundle-pipeline
+      ## Setup required tooling
+      make setup-go GO_RELEASE_VERSION=$(get_env go-version)
+      export PATH=$PATH:/usr/local/go/bin
+      yum -y -q update
 
-    # Build catalog image
-    echo "${DOCKER_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
-    echo "${REDHAT_PASSWORD}" | docker login "${REDHAT_REGISTRY}" -u "${REDHAT_USERNAME}" --password-stdin
-    make catalog-pipeline-build
-    make catalog-pipeline-push
+      #  Build images
+      export RELEASE_TARGET=$(get_env branch)
+      
+      if [[ -z $DISABLE_ARTIFACTORY ]]; then
+        export DISABLE_ARTIFACTORY="false"
+      fi
+
+      # Staging registry build
+      echo "Running builds for staging registry."
+
+      # Docker login and setup build configurations
+      scripts/build/build-initialize.sh
+
+      # Build operator image
+      make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
+
+      # Build operator manifest (after 3 arch operator builds)
+      make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
+
+      # Build bundle image
+      make build-bundle-pipeline REGISTRY=${PIPELINE_REGISTRY}
+
+      # Build catalog image for amd64 first - then p and z
+      make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
+
+      # Build catalog manifest
+      make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
+
+      if [[ "$DISABLE_ARTIFACTORY" == "false" ]]; then
+        echo "Running builds for artifactory repository."
+
+        read -r ARTIFACTORY_REPO_URL_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.repository_url' | sed 's:/*$::')"
+        read -r ARTIFACTORY_USERNAME_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.user_id')"
+        read -r ARTIFACTORY_TOKEN_VALUE <<< "$(get_env artifactorybackup | jq -r '.parameters.token')"
+
+        export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
+        export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
+        export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
+
+        # Docker login and setup build configurations
+        scripts/build/build-initialize.sh
+
+        # Build operator image
+        make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
+
+        # Build operator manifest (after 3 arch operator builds)
+        make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}
+
+        # Build bundle image
+        make build-bundle-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
+
+        # Build catalog image for amd64 first - then p and z
+        make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
+
+        # Build catalog manifest
+        make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
+
+        echo "Completed pushing to artifactory."
+      fi
+    fi
 
     # Save artifacts
     ## disabled the ppc64le and s380x save for now (see build stanza above).  Once these are built, we can move forward with this section.
-    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
+    echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
     echo "**** Saving Artifacts ****"
-    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+    # declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64")
+    declare -a tags=("${RELEASE_TARGET}" "${RELEASE_TARGET}-amd64" "${RELEASE_TARGET}-ppc64le" "${RELEASE_TARGET}-s390x")
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
       DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && MANIFEST=false; } || { ARCH="amd64" && MANIFEST=true; }
-      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST manifest=$MANIFEST"
-      save_artifact operator-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=$MANIFEST"
+      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
+      echo "Saving artifact operator-$i name=$IMAGE digest=$DIGEST type=$TYPE"
+      save_artifact operator-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
     declare -a bundles=("${RELEASE_TARGET}")
@@ -181,10 +309,10 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-     ARCH=amd64
-     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST manifest=false"
-     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
+     # ARCH=amd64
+     ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+     echo "Saving artifact bundle-$i name=$IMAGE digest=$DIGEST"
+     save_artifact bundle-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
 
     declare -a catalogs=("${RELEASE_TARGET}")
@@ -192,23 +320,53 @@ containerize:
     do
      IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-     #ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
-     ARCH=amd64
-     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST manifest=false"
-     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" "manifest=false"
+     # ARCH=amd64
+     ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$' || echo 'amd64')"
+     echo "Saving artifact catalog-$i name=$IMAGE digest=$DIGEST"
+     save_artifact catalog-$i type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH" 
     done
+
+    echo "MEND unified agent scan"
+    chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+    source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
+
+    ## Perform lint
+    IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}"
+    DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+    BUNDLE_IMAGE_WITH_DIGEST="${IMAGE}@${DIGEST}"
+    ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --bundle-image $BUNDLE_IMAGE_WITH_DIGEST --static-linter-version $(get_env static-linter-version)
 
 sign-artifact:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/image-signing:1.0.0@sha256:e9d8e354668ba3d40be2aaee08298d2aa7f0e1c8a1829cca4094ec93830e3e6a
   script: |
     #!/usr/bin/env bash
-    echo "sign-artifact"
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping sign-artifact. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
 deploy:
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping deploy. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     if [[ "$PIPELINE_DEBUG" == 1 ]]; then
       trap env EXIT
       env
@@ -218,10 +376,20 @@ deploy:
 
 dynamic-scan:
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "dynamic-scan"
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
     #export APP_URL=$(cat ../app-url)
     # feature preview this until evidence locker v2 usage is full feature ready
     # can be triggered, and owasp will run for preview purposes
@@ -230,76 +398,180 @@ dynamic-scan:
 acceptance-test:
   dind: true
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "acceptance-test"
-    # Download and configure golang
-    GO_VERSION=$(get_env go-version)
-    wget --header "Accept: application/octet-stream"  "https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz"
-    rm -rf /usr/local/go && tar -C /usr/local -xf go*.linux-amd64.tar.gz
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
+    SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+    if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
+      exit 0
+    fi
+
+    rm -rf .git
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    cd ebc-gateway-http
+
+    export intranetId_USR=$(get_env ebc_id)
+    export intranetId_PSW=$(get_env ebc_pw)
+
+    wlo_demand_id=$(get_env WLO_DEMAND_ID)
+    export demandId=$wlo_demand_id
+
+    #(prod or dev to use dev ebc)
+    export ebcEnvironment=dev
+    
+    echo "calling ebc_waitForDemand.sh"
+    json=$(./ebc_waitForDemand.sh)
+    rc=$?
+    echo "return from ebc_waitForDemand.sh"
+    
+    
+    status=$(jq -c '.status' <<< $json)
+    ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
+    ip=$(echo "$ip" | tr -d '"')
+    
+    PRIVATE_KEY="$(get_env private_key "")"
+    echo -n "${PRIVATE_KEY}" | base64 -d > id_rsa
+    
+    chmod 600 id_rsa
+    pwd
+    ls -l id_rsa
+    
+    echo "oc version:"
+    oc version
+    
+    token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
+    
+    echo "demand_id=$wlo_demand_id"
+    echo "*** results from EBC wait:"
+    echo "ip=$ip"
+    echo "status=$status"
+    echo "json=$json"
+    echo "token=$token"
+    
+    if [[ "$rc" == 0 ]]; then
+       echo "EBC create of id: $wlo_demand_id cluster successful"
+    else
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
+      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+      exit 1
+    fi
+
+    cd ..
+
+    clusterurl="$ip:6443"
+
+    echo "running cluster.sh"
+    GITHUB_ACCESS_TOKEN=$(get_env git-token)
+    GITHUB_SCRIPT_URL="https://api.github.ibm.com/repos/websphere/operators/contents/scripts/configure-cluster/configure-cluster.sh"
+    curl -H "Authorization: token $GITHUB_ACCESS_TOKEN" -H "Accept: application/vnd.github.v3+json" "$GITHUB_SCRIPT_URL" | jq -r ".content" | base64 --decode > configure-cluster.sh
+    chmod +x configure-cluster.sh
+    ls -l cluster.sh
+    echo "**** issuing oc login"
+    oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
+    echo "Open Shift Console:"
+    console=$(oc whoami --show-console)
+    echo $console
+    echo "*** after issuing oc login"
+    ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
+    
+    ## Setup required tooling
+    export GO_VERSION=$(get_env go-version)
+    make setup-go GO_RELEASE_VERSION=$GO_VERSION
     export PATH=$PATH:/usr/local/go/bin
-    apt-get update
-    apt-get -y install build-essential
+
+    # OCP test
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
     export PIPELINE_REGISTRY=$(get_env pipeline-registry)
     export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
     export DOCKER_USERNAME=$(get_env docker-username)
     export DOCKER_PASSWORD=$(get_env docker-password)
-    export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
-    export CLUSTER_TOKEN=$(get_env test-cluster-token)
-    export TRAVIS_BUILD_NUMBER=$BUILD_NUMBER
+    #export CLUSTER_URL=$(get_env test-cluster-url)
+    export CLUSTER_URL=$clusterurl
+    #export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
+    export CLUSTER_TOKEN=$token
     export RELEASE_TARGET=$(get_env branch)
-    export CATALOG_IMAGE="$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$RELEASE_TARGET"
-    make setup
-    make test-pipeline-e2e
+    export DEBUG_FAILURE=$(get_env debug-failure)
+    export INSTALL_MODE=$(get_env install-mode)
+
+    # Kind test
+    export FYRE_USER=$(get_env fyre-user)
+    export FYRE_KEY=$(get_env fyre-key)
+    export FYRE_PASS=$(get_env fyre-pass)
+    export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
+
+
+
+    scripts/acceptance-test.sh
+    rc=$?
+
+    cd ebc-gateway-http
+
+    if [[ "$rc" == 0 ]]; then
+      ./ebc_complete.sh
+    else
+      hours=$(get_env ebc_autocomplete_hours "6")
+      echo "Your acceptance test failed, the cluster will be retained for $hours hours.  If you need more time to debug ( 72 hours ):"
+      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
+      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
+      echo "access console at: $console"
+      echo "credentials: kubeadmin/$token"
+      slack_users=$(get_env slack_users)
+      echo "slack_users=$slack_users"
+      eval "arr=($slack_users)"
+      for user in "${arr[@]}"; do 
+        echo "user=$user"
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
+        echo " "
+      done
+      pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Failing pipeline: '$pipeline_url'"}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"The cluster will be retained for '$hours' hours.  If you need more time to debug ( 72 hours ):"}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"issue @ebc debug '$wlo_demand_id' in #was-ebc channel to keep cluster for debug"}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"access console at: '$console'"}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"credentials: kubeadmin/'$token'"}' $(get_env slack_web_hook_url) </dev/null
+    fi
 
 scan-artifact:
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.6@sha256:7f588468622a981f89cf5e1212aaf75fface9da6169b5345ca52ab63d8215907
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo "twistlock-scan"
-    ./scripts/pipeline/twistlock-scan.sh
-    echo "VA scan"
-    . scripts/pipeline/va_scan
-    if which list_artifacts >/dev/null; then
-      list_artifacts | while IFS= read -r artifact; do
-        image="$(load_artifact "$artifact" "name")"
-        type="$(load_artifact "$artifact" "type")"
-        digest="$(load_artifact "$artifact" "digest")"
-        manifest="$(load_artifact "$artifact" "manifest")"
-        name="$(echo "$artifact" | awk '{print $1}')"
-        if [[ "$type" == "image" ]]; then
-          if [[ "$image" == *"icr.io"* && "$manifest" == false ]]; then
-            echo "Starting VA scan for $image"
-            start_va_scan "$name" "$image" "$digest"
-          else
-            echo "Skipping VA scan for $image"
-          fi
-        fi
-      done
-    fi
 
-    echo "aqua scan"
-    # install docker
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    # get aqua scan executables
-    git clone https://$(get_env git-token)@github.ibm.com/CICD-CPP/cpp-pipelines.git
-    chmod -R +x cpp-pipelines
-    # setup and execute aqua scan
-    cd cpp-pipelines
-    export CUSTOM_SCRIPTS_PATH=/workspace/app/one-pipeline-config-repo/cpp-pipelines
-    ./commons/aqua/aqua-local-scan
+    echo $STAGE
+
+    # ========== Security Scanner ==========
+    ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
 release:
   abort_on_failure: false
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.12@sha256:ff4053b0bca784d6d105fee1d008cfb20db206011453071e86b69ca3fde706a4
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+
+    echo $STAGE
+
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
 
     RELEASE_FLAG=$(get_env release "false")
 

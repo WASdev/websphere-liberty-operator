@@ -16,15 +16,24 @@
 
 #   Available commands:
 
-#   all       - Run all targets
+#   all       - Run mininum setup/install targets (init, build, catalog, subscribe)
 #   init      - Initialize new OCP cluster by patching registry settings and logging in
 #   build     - Build and push all images
 #   catalog   - Apply CatalogSource (install operator into operator hub)
 #   subscribe - Apply OperatorGroup & Subscription (install operator onto cluster)
+#   login     - Login to registry
+#   deploy    - Run make deploy
+#   e2e       - Setup cluster for e2e scorecard tests
+#   scorecard - Run scorecard tests 
 
 set -Eeo pipefail
 
-readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy  [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> ]"
+
+readonly USAGE="Usage: dev.sh all | init | login| build | catalog | subscribe | deploy | e2e | scorecard [ -host <ocp registry hostname url> -version <operator verion to build> -image <image name> -bundle <bundle image> -catalog <catalog image> -name <operator name> -namespace <namespace> -tempdir <temp dir> -channel <channel> ]"
+
+warn() {
+  echo -e "${yel}Warning:${end} $1"
+}
 
 main() {
 
@@ -60,7 +69,9 @@ main() {
 
   # Set defaults unless overridden. 
   NAMESPACE=${NAMESPACE:="websphere-liberty"}
-  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}
+  
+  OCP_REGISTRY_URL=${OCP_REGISTRY_URL:=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')}  > /dev/null 2>&1 && true
+
   if [[ -z "${OCP_REGISTRY_URL}" ]]; then
      init_cluster
   fi
@@ -77,6 +88,7 @@ main() {
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
   MAKEFILE_DIR=${MAKEFILE_DIR:=$SCRIPT_DIR/..}
   TEMP_DIR=${TEMP_DIR:=/tmp}
+  CHANNEL=${CHANNEL:="v1.1"}
   
   if [[ "$COMMAND" == "all" ]]; then
      login_registry
@@ -100,6 +112,16 @@ main() {
      apply_subscribe
   elif [[ "$COMMAND" == "login" ]]; then
      login_registry
+  elif [[ "$COMMAND" == "e2e" ]]; then
+     add_rbac
+     install_rook
+     install_serverless
+     setup_knative_serving
+     install_cert_manager
+     add_affinity_label_to_node
+     create_image_content_source_policy
+  elif [[ "$COMMAND" == "scorecard" ]]; then
+     run_scorecard
   elif [[ "$COMMAND" == "deploy" ]]; then
      deploy
   else 
@@ -165,7 +187,7 @@ metadata:
   name: websphere-liberty-operator-subscription
   namespace: $NAMESPACE
 spec:
-  channel:  v1.0 
+  channel: $CHANNEL
   name: ibm-websphere-liberty
   source: websphere-liberty-catalog
   sourceNamespace: $NAMESPACE
@@ -284,10 +306,230 @@ parse_args() {
     -tempdir)
       shift
       TEMP_DIR="${1}"
-      ;;         
+      ;;
+    -channel)
+       CHANNEL="${1}"
+      ;;            
     esac
     shift
   done
 }
+
+
+add_rbac() {
+     oc apply -f $MAKEFILE_DIR/config/rbac/kuttl-rbac.yaml
+}
+
+run_scorecard() {
+     operator-sdk scorecard --verbose --selector=suite=kuttlsuite --namespace $NAMESPACE --service-account scorecard-kuttl --wait-time 60m $MAKEFILE_DIR/bundle
+}
+
+install_rook() {
+    if ! oc get storageclass | grep rook-ceph >/dev/null; then
+    echo "Installing Rook storage orchestrator..."
+
+    cur_dir="$(pwd)"
+    tmp_dir=$(mktemp -d -t ceph-XXXXXXXXXX)
+    cd "$tmp_dir"
+
+    git clone --single-branch --branch master https://github.com/rook/rook.git
+    cd rook/deploy/examples
+
+    oc create -f crds.yaml
+    oc create -f common.yaml
+    oc create -f operator-openshift.yaml
+    oc create -f cluster.yaml
+    oc create -f ./csi/rbd/storageclass.yaml
+    oc create -f ./csi/rbd/pvc.yaml
+    oc create -f ./csi/rbd/snapshotclass.yaml
+    oc create -f filesystem.yaml
+    oc create -f ./csi/cephfs/storageclass.yaml
+    oc create -f ./csi/cephfs/pvc.yaml
+    oc create -f ./csi/cephfs/snapshotclass.yaml
+    oc create -f toolbox.yaml
+
+    oc patch storageclass rook-cephfs -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+    cd "$cur_dir"
+    echo
+  else
+    echo "Rook storage orchestrator is already installed."
+  fi
+}
+
+install_serverless() {
+  if ! oc get subs -n openshift-operators | grep serverless-operator >/dev/null; then
+    echo "Installing Red Hat Openshift Serverless operator..."
+    name="serverless-operator"
+    packageManifest="$(oc get packagemanifests $name -n openshift-marketplace -o jsonpath="{.status.catalogSource},{.status.catalogSourceNamespace},{.status.channels[?(@.name=='stable')].currentCSV}")"
+    catalogSource="$(echo $packageManifest | cut -d, -f1)"
+    catalogSourceNamespace="$(echo $packageManifest | cut -d, -f2)"
+    currentCSV="$(echo $packageManifest | cut -d, -f3)"
+    cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: $name
+  namespace: openshift-operators
+  generateName: serverless-operator-
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: $name
+  source: $catalogSource
+  sourceNamespace: $catalogSourceNamespace
+  startingCSV: $currentCSV
+EOF
+    echo
+  else
+    echo "Red Hat Openshift Serverless operator is already installed."
+  fi
+}
+
+setup_knative_serving() {
+  if ! oc get knativeserving.operator.knative.dev/knative-serving -n knative-serving >/dev/null; then
+    echo "Waiting 30 seconds for Serverless operator to finish being set up..."
+    sleep 30
+    wait_count=0
+    KNS_FILE=/$TEMP_DIR/kns.yaml  
+    cat << EOF > $KNS_FILE
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeServing
+metadata:
+    name: knative-serving
+    namespace: knative-serving
+EOF
+    while [ $wait_count -le 20 ]
+    do
+      echo "Creating Knative Serving instance..."
+      oc apply -f $KNS_FILE > /dev/null 2>&1 && true
+      [[ $? == 0 ]] && break
+      warn "Knative Serving configuration failed (probably because the Serverless operator isn't done being set up). Trying again in 15 seconds."
+      ((wait_count++))
+      sleep 15
+    done
+    rm $KNS_FILE
+    echo
+  else
+    echo "Knative Serving instance is already created."
+  fi
+}
+
+install_cert_manager() {
+  if ! oc get deployments -n cert-manager 2>/dev/null | grep cert-manager >/dev/null; then
+    echo "Installing cert-manager..."
+    oc apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+    echo
+  else
+    echo "cert-manager is already installed."
+  fi
+}
+
+add_affinity_label_to_node() {
+  affinity_label="kuttlTest=test1"
+  labeled_node="$(oc get nodes -l "$affinity_label" -o name)"
+  if [[ -z "$labeled_node" ]]; then
+    first_worker="$(oc get nodes | grep worker | head -1 | awk '{print $1}')"
+    echo "Adding affinity label ($affinity_label) to worker node $first_worker..."
+    oc label --overwrite node "$first_worker" "$affinity_label"
+    echo
+  else
+    echo "Affinity label ($affinity_label) already exists on worker node $labeled_node."
+  fi
+}
+
+create_image_content_source_policy() {
+  if ! oc get imagecontentsourcepolicy | grep mirror-config >/dev/null; then
+    echo "Adding ImageContentSourcePolicy to mirror to staging repository..."
+    cat <<EOF | oc apply -f -
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+    name: mirror-config
+spec:
+    repositoryDigestMirrors:
+    - mirrors:
+      - cp.stg.icr.io/cp
+      source: cp.icr.io/cp
+    - mirrors:
+      - cp.stg.icr.io/cp
+      source: icr.io/cpopen
+EOF
+    echo
+  else
+    echo "ImageContentSourcePolicy to mirror to staging repository already exists."
+  fi
+}
+
+add_stg_registry_pull_secret() {
+  dockerconfigjson="$(oc extract secret/pull-secret -n openshift-config --to=-)"
+  if [[ "$(echo $dockerconfigjson | jq '.auths["cp.stg.icr.io"]')" == "null" ]]; then
+    echo "Adding a pull secret for cp.stg.icr.io to .dockerconfigjson..."
+    auth="$(echo "iamapikey:${REGISTRY_KEY}" | base64)"
+    echo $dockerconfigjson | jq --arg auth "$auth" '.auths["cp.stg.icr.io"]={"email":"unused","auth":$auth}' > /tmp/.dockerconfigjson
+    oc set data secret/pull-secret -n openshift-config --from-file=/tmp/.dockerconfigjson
+    rm /tmp/.dockerconfigjson
+  else
+    echo ".dockerconfigjson already contains a pull secret for cp.stg.icr.io."
+  fi
+}
+
+add_cluster_admin() {
+  NEW_ADMIN_USER="$(echo "${NEW_ADMIN_CREDS}" | cut -d: -f1)"
+  NEW_ADMIN_PASS="$(echo "${NEW_ADMIN_CREDS}" | cut -d: -f2)"
+
+  cur_dir="$(pwd)"
+  tmp_dir=$(mktemp -d -t htpasswd-XXXXXXXXXX)
+  cd "$tmp_dir"
+
+  if ! oc get user "${NEW_ADMIN_USER}" >/dev/null 2>&1; then
+    if oc get secret htpass-secret >/dev/null 2>&1; then
+      echo "Adding new user \"${NEW_ADMIN_USER}\" to cluster's HTPasswd secret..."
+      oc get secret htpass-secret -ojsonpath={.data.htpasswd} -n openshift-config | base64 --decode > users.htpasswd
+      htpasswd -bB users.htpasswd "${NEW_ADMIN_USER}" "${NEW_ADMIN_PASS}"
+
+      echo "Updating HTPasswd secret on cluster..."
+      oc create secret generic htpass-secret --from-file=htpasswd=users.htpasswd --dry-run=client -o yaml -n openshift-config | oc replace -f -
+    else
+      echo "Creating HTPasswd file for new user \"${NEW_ADMIN_USER}\"..."
+      htpasswd -c -B -b users.htpasswd "${NEW_ADMIN_USER}" "${NEW_ADMIN_PASS}"
+
+      echo "Adding HTPasswd secret to cluster..."
+      oc create secret generic htpass-secret --from-file=htpasswd=users.htpasswd -n openshift-config
+    fi
+
+    cd "$cur_dir"
+
+    echo "Add HTPasswd identity provider to cluster..."
+    cat <<EOF | oc apply -f -
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: htpasswd-provider
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpass-secret
+EOF
+        
+    wait_count=0
+    while [ $wait_count -le 20 ]
+    do
+      echo "Adding cluster-admin role to \"${NEW_ADMIN_USER}\" user..."
+      oc adm policy add-cluster-role-to-user cluster-admin "${NEW_ADMIN_USER}"
+      [[ $? == 0 ]] && break
+      warn "Adding cluster-admin role to \"${NEW_ADMIN_USER}\" user failed (probably because the identity provider isn't done being set up). Trying again in 15 seconds."
+      ((wait_count++))
+      sleep 15
+    done
+    echo
+  else
+    echo "The user \"${NEW_ADMIN_USER}\" already exists on this cluster."
+  fi
+}
+
 
 main "$@"
