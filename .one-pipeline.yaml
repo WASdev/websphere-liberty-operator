@@ -65,13 +65,13 @@ setup:
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
     else
-      export arch=$(get_env architecture)
-      if [[ "$arch" == "X" ]]; then
+      # export arch=$(get_env architecture)
+      # if [[ "$arch" == "X" ]]; then
         ./scripts/pipeline/getCluster.sh "X"
-      else
-        ./scripts/pipeline/getCluster.sh "Z"
-        ./scripts/pipeline/getCluster.sh "X" 
-        ./scripts/pipeline/getCluster.sh "P"
+      # else
+      #   ./scripts/pipeline/getCluster.sh "Z"
+      #   ./scripts/pipeline/getCluster.sh "X" 
+      #   ./scripts/pipeline/getCluster.sh "P"
       fi 
     fi
     
@@ -94,12 +94,12 @@ test:
       exit 0
     fi
 
-    # ## Setup required tooling
-    # make setup-go GO_RELEASE_VERSION=$(get_env go-version)
-    # export PATH=$PATH:/usr/local/go/bin
-    # yum -y -q update
+    ## Setup required tooling
+    make setup-go GO_RELEASE_VERSION=$(get_env go-version)
+    export PATH=$PATH:/usr/local/go/bin
+    yum -y -q update
 
-    # make unit-test
+    make unit-test
 
 static-scan:
   dind: true
@@ -118,26 +118,26 @@ static-scan:
       exit 0
     fi
 
-    # BRANCH=$(get_env branch) 
-    # read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
-    # read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
-    # SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
-    # read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
-    # touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
-    # cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    # sonar.projectKey=websphere-liberty-operator
-    # sonar.host.url=$SONAR_HOST_URL
-    # sonar.sources=.
-    # sonar.branch.name=$BRANCH
-    # sonar.login=$SONAR_USER
-    # sonar.password=$SONAR_PASS
-    # sonar.c.file.suffixes=-
-    # sonar.cpp.file.suffixes=-
-    # sonar.objc.file.suffixes=-
-    # EOF
-    # chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
-    # #echo "$SONAR_PASS" >> /tmp/sonarqube-token
-    # "${COMMONS_PATH}"/static-scan/run.sh
+    BRANCH=$(get_env branch) 
+    read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
+    read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
+    SONARQUBE_INSTANCE_ID=$(get_env sonarqube | jq -r '.instance_id')
+    read -r SONAR_PASS <<< "$(jq -r --arg sonar_instance "$SONARQUBE_INSTANCE_ID" '[.services[] | select(."service_id"=="sonarqube")][] | select(."instance_id"==$sonar_instance) | .parameters.user_password' /toolchain/toolchain.json)"  
+    touch "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties   
+    cat << EOF > "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    sonar.projectKey=websphere-liberty-operator
+    sonar.host.url=$SONAR_HOST_URL
+    sonar.sources=.
+    sonar.branch.name=$BRANCH
+    sonar.login=$SONAR_USER
+    sonar.password=$SONAR_PASS
+    sonar.c.file.suffixes=-
+    sonar.cpp.file.suffixes=-
+    sonar.objc.file.suffixes=-
+    EOF
+    chmod -x "$WORKSPACE"/websphere-liberty-operator/sonar-project.properties
+    #echo "$SONAR_PASS" >> /tmp/sonarqube-token
+    "${COMMONS_PATH}"/static-scan/run.sh
 
 
 containerize:
@@ -146,7 +146,7 @@ containerize:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    
+
     # instruct bash to exit if any command fails
     set -e
 
@@ -212,6 +212,7 @@ containerize:
       scripts/build/build-initialize.sh
       # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
       if [[ "$arch" == "ZXP" ]]; then
+        echo "Sending request to build P and Z"
         ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
         pipelineid=$(cat ciorchestrator-submit.id)
       fi
@@ -220,6 +221,7 @@ containerize:
       make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
       if [[ "$arch" == "ZXP" ]]; then
         # wait for build ppc64le and s390x images
+        echo "waiting on request to build P and Z"
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
       fi
       # Build operator manifest (after 3 arch operator builds)
@@ -232,8 +234,10 @@ containerize:
       make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
       # Build catalog image
       if [[ "$arch" == "ZXP" ]]; then
+        echo "Sending request to build P and Z catalogs"
         ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
         pipelineid=$(cat ciorchestrator-submit.id)
+        echo "waiting on request to build P and Z catalogs"
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
       fi
 
@@ -256,6 +260,7 @@ containerize:
         scripts/build/build-initialize.sh
         # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
         if [[ "$arch" == "ZXP" ]]; then
+          echo "Sending request to build P and Z"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
@@ -264,6 +269,7 @@ containerize:
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         if [[ "$arch" == "ZXP" ]]; then
           # wait for build ppc64le and s390x images
+          echo "waiting on request to build P and Z"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
         # Build operator manifest (after 3 arch operator builds)
@@ -276,8 +282,10 @@ containerize:
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         # Build catalog image
         if [[ "$arch" == "ZXP" ]]; then
+           echo "Sending request to build P and Z catalogs"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
+          echo "waiting on request to build P and Z catalogs"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
 
@@ -419,17 +427,17 @@ acceptance-test:
       exit 0
     fi
 
-    # rm -rf .git
-    # git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-    # cd ebc-gateway-http
+    rm -rf .git
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+    cd ebc-gateway-http
 
     
-    # export intranetId_USR=$(get_env ebc_id)
-    # export intranetId_PSW=$(get_env ebc_pw)
-    # export ebcEnvironment=prod
+    export intranetId_USR=$(get_env ebc_id)
+    export intranetId_PSW=$(get_env ebc_pw)
+    export ebcEnvironment=prod
 
     # source ../scripts/pipeline/runTest.sh Z
-    # source ../scripts/pipeline/runTest.sh X
+    source ../scripts/pipeline/runTest.sh X
     # source ../scripts/pipeline/runTest.sh P
 
    
@@ -442,8 +450,8 @@ scan-artifact:
 
     echo $STAGE
 
-    # ========== Security Scanner ==========
-    #./scripts/pipeline/ci_to_secure_pipeline_scan.sh
+    ========== Security Scanner ==========
+    ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
 release:
   abort_on_failure: false
@@ -468,37 +476,37 @@ release:
       exit 0
     fi
 
-    # SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
-    # ./scripts/pipeline/evaluator.sh      
-    # if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
-    #   if [[  $SKIP_ALL_CHECKS == "true" ]]; then
-    #     echo "Skipping image scan checks"
-    #   fi
-    #   APP_REPO=$(pwd)
-    #   echo "Application Repository: $APP_REPO"
-    #   INVENTORY_REPO=$(get_env inventory-repo)
-    #   echo "Cloning inventory repository: $INVENTORY_REPO"
-    #   cd "$WORKSPACE"
-    #   APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
-    #   . "${ONE_PIPELINE_PATH}"/git/clone_repo \
-    #     "$INVENTORY_REPO" \
-    #     "master"  \
-    #     "" \
-    #     "$APP_TOKEN_PATH"
-    #   REPO=${INVENTORY_REPO##*/}
-    #   NAME=${REPO%.*}
-    #   echo "Inventory name: $NAME"
-    #   cd $WORKSPACE/$NAME
-    #   if [ "$(ls )" ]; then
-    #     echo "Clearing inventory repository: $INVENTORY_REPO"
-    #     git config --global user.email "tekton@example.com"
-    #     git config --global user.name "Tekton"
-    #     git rm *
-    #     git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
-    #     git push origin master
-    #   fi
-    #   cd $APP_REPO
-    #   ./scripts/pipeline/release.sh
-    # else
-    #   echo "Errors found.  images will not be released"
-    # fi
+    SKIP_ALL_CHECKS=$(get_env SKIP_ALL_CHECKS "false")
+    ./scripts/pipeline/evaluator.sh      
+    if [[ $? == 0 || $SKIP_ALL_CHECKS == "true" ]]; then
+      if [[  $SKIP_ALL_CHECKS == "true" ]]; then
+        echo "Skipping image scan checks"
+      fi
+      APP_REPO=$(pwd)
+      echo "Application Repository: $APP_REPO"
+      INVENTORY_REPO=$(get_env inventory-repo)
+      echo "Cloning inventory repository: $INVENTORY_REPO"
+      cd "$WORKSPACE"
+      APP_TOKEN_PATH="$WORKSPACE/secrets/app-token"
+      . "${ONE_PIPELINE_PATH}"/git/clone_repo \
+        "$INVENTORY_REPO" \
+        "master"  \
+        "" \
+        "$APP_TOKEN_PATH"
+      REPO=${INVENTORY_REPO##*/}
+      NAME=${REPO%.*}
+      echo "Inventory name: $NAME"
+      cd $WORKSPACE/$NAME
+      if [ "$(ls )" ]; then
+        echo "Clearing inventory repository: $INVENTORY_REPO"
+        git config --global user.email "tekton@example.com"
+        git config --global user.name "Tekton"
+        git rm *
+        git commit -m "Delete contents of inventory repository - $PIPELINE_RUN_ID"
+        git push origin master
+      fi
+      cd $APP_REPO
+      ./scripts/pipeline/release.sh
+    else
+      echo "Errors found.  images will not be released"
+    fi
