@@ -113,7 +113,7 @@ EOL
     echo "${pipelineId}" >ciorchestrator-submit.id
 
     echo "Sending Pipeline Request to CI Orchestrator pipelineId: ${pipelineId} as ${USER}"
-    curl -v -X POST \
+    curl --insecure -v -X POST \
         -H "Content-Type: application/json"  \
         -d @ciorchestrator-submit.json \
         -u "${USER}:${PASSWORD}" \
