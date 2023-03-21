@@ -64,16 +64,16 @@ setup:
     if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
-      # else
-      # export arch=$(get_env architecture)
-      # if [[ "$arch" == "X" ]]; then
-      # git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-      # ./scripts/pipeline/getCluster.sh "X"
-      # else
-      #   ./scripts/pipeline/getCluster.sh "Z"
-      #   ./scripts/pipeline/getCluster.sh "X" 
-      #   ./scripts/pipeline/getCluster.sh "P"
-      # fi 
+    else
+        export arch=$(get_env architecture)
+        if [[ "$arch" == "X" ]]; then
+          git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+          ./scripts/pipeline/getCluster.sh "X"
+        else
+          ./scripts/pipeline/getCluster.sh "Z"
+          ./scripts/pipeline/getCluster.sh "X" 
+          ./scripts/pipeline/getCluster.sh "P"
+        fi 
     fi
     
     
@@ -213,7 +213,7 @@ containerize:
       scripts/build/build-initialize.sh
       # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
       if [[ "$arch" == "ZXP" ]]; then
-        echo "Sending request to build P and Z"
+        echo "<ciorchestrator> Sending request to build P and Z"
         DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
         pipelineid=$(cat ciorchestrator-submit.id)
       fi
@@ -222,7 +222,7 @@ containerize:
       make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
       if [[ "$arch" == "ZXP" ]]; then
         # wait for build ppc64le and s390x images
-        echo "waiting on request to build P and Z"
+        echo "<ciorchestrator> waiting on request to build P and Z"
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
       fi
       # Build operator manifest (after 3 arch operator builds)
@@ -235,10 +235,10 @@ containerize:
       make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
       # Build catalog image
       if [[ "$arch" == "ZXP" ]]; then
-        echo "Sending request to build P and Z catalogs"
+        echo "<ciorchestrator> Sending request to build P and Z catalogs"
         DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
         pipelineid=$(cat ciorchestrator-submit.id)
-        echo "waiting on request to build P and Z catalogs"
+        echo "<ciorchestrator> waiting on request to build P and Z catalogs"
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
       fi
 
@@ -261,7 +261,7 @@ containerize:
         scripts/build/build-initialize.sh
         # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
         if [[ "$arch" == "ZXP" ]]; then
-          echo "Sending request to build P and Z"
+          echo "<ciorchestrator> Sending request to build P and Z"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
@@ -270,7 +270,7 @@ containerize:
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         if [[ "$arch" == "ZXP" ]]; then
           # wait for build ppc64le and s390x images
-          echo "waiting on request to build P and Z"
+          echo "<ciorchestrator> waiting on request to build P and Z"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
         # Build operator manifest (after 3 arch operator builds)
@@ -283,10 +283,10 @@ containerize:
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         # Build catalog image
         if [[ "$arch" == "ZXP" ]]; then
-           echo "Sending request to build P and Z catalogs"
+           echo "<ciorchestrator> Sending request to build P and Z catalogs"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
-          echo "waiting on request to build P and Z catalogs"
+          echo "<ciorchestrator> waiting on request to build P and Z catalogs"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
 
