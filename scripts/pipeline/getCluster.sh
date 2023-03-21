@@ -8,6 +8,9 @@ echo "wlo_demand_id=$wlo_demand_id"
 #git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
 cd ebc-gateway-http
 
+echo "PRE_RELEASE=$PRE_RELEASE"
+echo "arch=$arch"
+
 export arch=$(get_env architecture)
 export intranetId_USR=$(get_env ebc_id)
 export intranetId_PSW=$(get_env ebc_pw)
