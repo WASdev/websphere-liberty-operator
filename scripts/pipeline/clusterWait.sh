@@ -13,6 +13,8 @@ json=$(./ebc_waitForDemand.sh)
 rc=$?
 echo "return from ebc_waitForDemand.sh for $arch"
 
+cd ..
+
 if [[ "$rc" == 0 ]]; then
     echo "EBC create of id: $wlo_demand_id cluster successful"
 else

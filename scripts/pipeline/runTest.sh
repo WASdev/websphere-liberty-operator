@@ -3,6 +3,9 @@ arch=$1
 source ./clusterWait.sh $arch
 clusterurl="$ip:6443"
 
+echo "in directory"
+pwd
+
 echo "running configure-ccluster.sh"
 GITHUB_ACCESS_TOKEN=$(get_env git-token)
 GITHUB_SCRIPT_URL="https://api.github.ibm.com/repos/websphere/operators/contents/scripts/configure-cluster/configure-cluster.sh"
@@ -46,6 +49,7 @@ export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 ../acceptance-test.sh
 rc=$?
 
+echo "switching back to ebc-gateway-http" directory"
 cd ebc-gateway-http
 
 if [[ "$rc" == 0 ]]; then
