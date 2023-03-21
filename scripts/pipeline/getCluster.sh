@@ -22,6 +22,7 @@ echo "wlo_demand_id=$wlo_demand_id"
 PRE_RELEASE=$(get_env pre-release)
 PRE_RELEASE="$(echo "$PRE_RELEASE" | tr '[:upper:]' '[:lower:]')"
 if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"  ]]; then
+    echo "<<1>>"
     rhcos_level=$(get_env pre-release-rhcos-url)
     ocp_level=$(get_env pre-release-ocp-url)
     echo "this is a pre-release OCP cluster build"
@@ -31,6 +32,7 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
     export ebc_fyre_client_url=${ocp_level}/openshift-client-linux.tar.gz
     if [[ "$arch" == "X" ]]; then
         # X values
+         echo "<<1a>>"
         export ebc_plan=svl-onepipeline-ocpplus_x_custom.yml
         export ebc_fyre_kernel_url=${rhcos_level}/rhcos-live-kernel-x86_64
         export ebc_fyre_initramfs_url=${rhcos_level}/rhcos-live-initramfs.x86_64.img
@@ -54,7 +56,9 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
         export ebc_fyre_rootfs_url=${rhcos_level_p}/rhcos-live-rootfs.ppc64le.img
     fi
 else
+    echo "<<2>>"
     if [[ "$arch" == "X" ]]; then
+        echo "<<3>>"
         export ebc_plan=svl-onepipeline-ocpplus_x.yml
         echo "setting ebc plan for X: $ebc_plan"
     fi
