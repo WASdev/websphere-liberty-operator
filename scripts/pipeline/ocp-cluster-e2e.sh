@@ -57,8 +57,10 @@ cleanup_env() {
   echo "*** ${WLO_CSV_NAME}"
   oc -n $INSTALL_NAMESPACE delete csv $WLO_CSV_NAME
 
-  echo "*** Deleting project ${TEST_NAMESPACE}"
-  oc delete project "${TEST_NAMESPACE}"
+  if [ $INSTALL_MODE != "OwnNamespace" ]; then
+    echo "*** Deleting project ${TEST_NAMESPACE}"
+    oc delete project "${TEST_NAMESPACE}"
+  fi
 
   if [ $INSTALL_MODE != "AllNamespaces" ]; then
     echo "*** Deleting project ${INSTALL_NAMESPACE}"
