@@ -66,8 +66,8 @@ setup:
       exit 0
     else
         export arch=$(get_env architecture)
+        git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
         if [[ "$arch" == "X" ]]; then
-          git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
           ./scripts/pipeline/getCluster.sh "X"
         else
           ./scripts/pipeline/getCluster.sh "Z"
