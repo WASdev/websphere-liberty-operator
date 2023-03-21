@@ -11,7 +11,7 @@ cd ebc-gateway-http
 echo "PRE_RELEASE=$PRE_RELEASE"
 echo "arch=$arch"
 
-export arch=$(get_env architecture)
+#export arch=$(get_env architecture)
 export intranetId_USR=$(get_env ebc_id)
 export intranetId_PSW=$(get_env ebc_pw)
 
