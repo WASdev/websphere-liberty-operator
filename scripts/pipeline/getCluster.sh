@@ -57,6 +57,7 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
     fi
 else
     echo "<<2>>"
+    echo "second display arch=$arch"
     if [[ "$arch" == "X" ]]; then
         echo "<<3>>"
         export ebc_plan=svl-onepipeline-ocpplus_x.yml
