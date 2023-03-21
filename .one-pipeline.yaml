@@ -261,7 +261,7 @@ containerize:
         scripts/build/build-initialize.sh
         # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
         if [[ "$arch" == "ZXP" ]]; then
-          echo "<ciorchestrator> Sending request to build P and Z"
+          echo "<ciorchestrator> Sending request to build P and Z ( artifactory )"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
@@ -270,7 +270,7 @@ containerize:
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         if [[ "$arch" == "ZXP" ]]; then
           # wait for build ppc64le and s390x images
-          echo "<ciorchestrator> waiting on request to build P and Z"
+          echo "<ciorchestrator> waiting on request to build P and Z ( artifactory )"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
         # Build operator manifest (after 3 arch operator builds)
@@ -283,10 +283,10 @@ containerize:
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         # Build catalog image
         if [[ "$arch" == "ZXP" ]]; then
-           echo "<ciorchestrator> Sending request to build P and Z catalogs"
+           echo "<ciorchestrator> Sending request to build P and Z catalogs ( artifactory )"
           ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
           pipelineid=$(cat ciorchestrator-submit.id)
-          echo "<ciorchestrator> waiting on request to build P and Z catalogs"
+          echo "<ciorchestrator> waiting on request to build P and Z catalogs ( artifactory )"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
         fi
 
