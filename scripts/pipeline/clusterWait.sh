@@ -5,6 +5,7 @@ arch=$1
 wlo_demand_id=$(get_env WLO_DEMAND_ID_$arch)
 export demandId=$wlo_demand_id
 echo "calling ebc_waitForDemand.sh for $arch"
+cd ebc-gateway-http
    
 export ebcEnvironment=prod
 
