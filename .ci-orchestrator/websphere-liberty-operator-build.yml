@@ -6,10 +6,8 @@ triggers:
 - type: manual
   triggerName: "wlodocker"
   propertyDefinitions:
-  - name: scriptBranch
-    defaultValue: multi-arch           
-  - name: scriptOrg
-    defaultValue: "WASdev"
+  - name: RELEASE_TARGET
+    defaultValue: "main"        
   - name: command
     defaultValue: "make build-operator-pipeline REGISTRY=cp.stg.icr.io"
 

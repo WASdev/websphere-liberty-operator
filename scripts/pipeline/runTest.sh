@@ -1,14 +1,14 @@
 #!/bin/bash
 arch=$1
-source ../scripts/pipeline/clusterWait.sh $arch
+source ./clusterWait.sh $arch
 clusterurl="$ip:6443"
 
-echo "running cluster.sh"
+echo "running configure-ccluster.sh"
 GITHUB_ACCESS_TOKEN=$(get_env git-token)
 GITHUB_SCRIPT_URL="https://api.github.ibm.com/repos/websphere/operators/contents/scripts/configure-cluster/configure-cluster.sh"
 curl -H "Authorization: token $GITHUB_ACCESS_TOKEN" -H "Accept: application/vnd.github.v3+json" "$GITHUB_SCRIPT_URL" | jq -r ".content" | base64 --decode > configure-cluster.sh
 chmod +x configure-cluster.sh
-ls -l cluster.sh
+ls -l configure-cluster.sh
 echo "**** issuing oc login"
 oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
 echo "Open Shift Console:"
@@ -43,7 +43,7 @@ export FYRE_KEY=$(get_env fyre-key)
 export FYRE_PASS=$(get_env fyre-pass)
 export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-scripts/acceptance-test.sh
+../acceptance-test.sh
 rc=$?
 
 cd ebc-gateway-http

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GH_API_ROOT="https://api.github.com"
-GH_BRANCH="multi-arch"
+GH_BRANCH="main"
 GH_REPOSITORY="websphere-liberty-operator"
 GH_ORG="WASdev"
 CI_TRIGGER="wlodocker"
@@ -85,19 +85,28 @@ function parse_arguments() {
     done
 }
 
+
 function request_ciorchestrator() {
     pipelineId=OnePipeline_${PIPELINE_RUN_ID}_${RANDOM}
     cat >ciorchestrator-submit.json <<EOL
     {
         "type": "PipelineTriggered",
-        "ecosystemRouting": "dev",
+        "ecosystemRouting": "prod",
         "pipelineId": "${pipelineId}",
         "pipelineName": "${pipelineName}",
         "triggerName": "${CI_TRIGGER}",
         "triggerType": "manual",
         "requestor": "${USER}",
         "properties": {
-            "scriptBranch": "${GH_BRANCH}",
+            "RELEASE_TARGET": "${GH_BRANCH}",
+            "DISABLE_ARTIFACTORY": "${DISABLE_ARTIFACTORY}",
+            "ARTIFACTORY_REPO_URL": "${ARTIFACTORY_REPO_URL}",
+            "PIPELINE_OPERATOR_IMAGE": "${PIPELINE_OPERATOR_IMAGE}",
+            "OPM_VERSION": "${OPM_VERSION}",
+            "PIPELINE_PRODUCTION_IMAGE": "${PIPELINE_PRODUCTION_IMAGE}",
+            "REDHAT_BASE_IMAGE": "${REDHAT_BASE_IMAGE}",
+            "REDHAT_REGISTRY": "${REDHAT_REGISTRY}",
+            "PIPELINE_REGISTRY": "${PIPELINE_REGISTRY}",
             "scriptOrg": "${GH_ORG}",
             "command": "${COMMAND}"
         },

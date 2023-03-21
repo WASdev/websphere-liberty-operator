@@ -6,17 +6,18 @@ properties([
       string(name: 'ebcPlan', defaultValue: 'svl-dockerJenkins-ubuntu20_ppcle.yml', description: 'EBC plan to use when provisioning a Jenkins node'),
       string(name: 'ebcBranch', defaultValue: "${env.ecosystem_branch}", description: 'Git branch used for ebc code'),
       // Container build relevant properties
-      string(name: 'scriptBranch', defaultValue: "multi-arch", description: 'Git branch containing docker build scripts'),
+      //name: 'scriptBranch', defaultValue: "main", description: 'Git branch containing docker build scripts'),
       string(name: 'scriptOrg', defaultValue: "WASdev", description: 'Git org containing docker build scripts'),
       string(name: 'command', defaultValue: "make build-operator-pipeline REGISTRY=cp.stg.icr.io", description: 'Build command to execute on target arch machine, e.g. make build-pipeline-releases'),
       string(name: 'PIPELINE_OPERATOR_IMAGE', defaultValue: "cp/websphere-liberty-operator", description: 'namespace to push image to in registry'),
-      string(name: 'RELEASE_TARGET', defaultValue: "multi-arch", description: 'release branch to use'),
+      string(name: 'RELEASE_TARGET', defaultValue: "main", description: 'release branch to use'),
       string(name: 'OPM_VERSION', defaultValue: "4.10", description: 'Redhat CLI OPM version'),
       string(name: 'PIPELINE_PRODUCTION_IMAGE', defaultValue: "icr.io/cpopen/websphere-liberty-operator", description: 'namespace in prod registry'),
       string(name: 'REDHAT_BASE_IMAGE', defaultValue: "registry.redhat.io/openshift4/ose-operator-registry", description: 'base image for operator'),
       string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login'),
       string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to'),
-      string(name: 'ARTIFACTORY_REPO_URL', defaultValue: "hyc-taas-onepipeline-team-docker-local.artifactory.swg-devops.com", description: 'artifactory repo url [only used if disable artifactory is false]]')
+      string(name: 'ARTIFACTORY_REPO_URL', defaultValue: "hyc-taas-onepipeline-team-docker-local.artifactory.swg-devops.com", description: 'artifactory repo url [only used if disable artifactory is false]]'),
+      string(name: 'DISABLE_ARTIFACTORY', defaultValue: "false", description: 'whether to back up container images to artifactorys')
       // OPM_VERSION               opm-version               ("4.10")
       // GO_RELEASE_VERSION        go-version                ("1.19.5")
    ])
@@ -85,7 +86,7 @@ timestamps {
 // Clone the git repo and stash it, so that the jenkins agent machine can grab it later
 def gitCloneAndStash() {
   dir('websphere-liberty-operator') {
-      git branch: scriptBranch, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
+      git branch: RELEASE_TARGET, url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
   }
   dir('operators') {
       git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
@@ -103,7 +104,7 @@ def void doWork(){
    
    // Unstash the git repo
    unstash(name: 'websphere-liberty-operator')
-   sh "DISABLE_ARTIFACTORY=false ./scripts/build/build-initialize.sh"
+   sh "./scripts/build/build-initialize.sh"
    sh "${command}"
 }
 
