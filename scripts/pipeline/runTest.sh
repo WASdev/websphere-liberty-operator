@@ -46,17 +46,19 @@ export FYRE_KEY=$(get_env fyre-key)
 export FYRE_PASS=$(get_env fyre-pass)
 export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-../acceptance-test.sh
+cd ..
+
+./acceptance-test.sh
 rc=$?
 
 echo "switching back to ebc-gateway-http" directory"
-cd ebc-gateway-http
+cd pipeline/ebc-gateway-http
 
 if [[ "$rc" == 0 ]]; then
     ./ebc_complete.sh
 else
     hours=$(get_env ebc_autocomplete_hours "6")
-    echo "Your acceptance test failed, the cluster will be retained for $hours hours.  If you need more time to debug ( 72 hours ):"
+    echo "Your acceptance test failed, the cluster will be retained for $hours hours."
     echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
     echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
     echo "access console at: $console"
