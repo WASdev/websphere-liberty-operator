@@ -53,6 +53,7 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
 else
     if [[ "$arch" == "X" ]]; then
         export ebc_plan=svl-onepipeline-ocpplus_x.yml
+        echo "setting ebc plan for X: $ebc_plan"
     fi
     if [[ "$arch" == "Z" ]]; then
        export ebc_plan=svl-onepipeline-ocpplus_z.yml
