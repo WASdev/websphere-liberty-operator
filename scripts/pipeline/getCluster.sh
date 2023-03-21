@@ -11,7 +11,6 @@ cd ebc-gateway-http
 echo "PRE_RELEASE=$PRE_RELEASE"
 echo "arch=$arch"
 
-#export arch=$(get_env architecture)
 export intranetId_USR=$(get_env ebc_id)
 export intranetId_PSW=$(get_env ebc_pw)
 
@@ -56,10 +55,7 @@ if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"
         export ebc_fyre_rootfs_url=${rhcos_level_p}/rhcos-live-rootfs.ppc64le.img
     fi
 else
-    echo "<<2>>"
-    echo "second display arch=$arch"
     if [[ "$arch" == "X" ]]; then
-        echo "<<3>>"
         export ebc_plan=svl-onepipeline-ocpplus_x.yml
         echo "setting ebc plan for X: $ebc_plan"
     fi
