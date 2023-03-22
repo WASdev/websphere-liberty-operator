@@ -456,7 +456,7 @@ scan-artifact:
 
     echo $STAGE
 
-    ========== Security Scanner ==========
+    # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
 release:
