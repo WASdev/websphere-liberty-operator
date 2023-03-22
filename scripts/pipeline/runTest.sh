@@ -46,15 +46,15 @@ export FYRE_KEY=$(get_env fyre-key)
 export FYRE_PASS=$(get_env fyre-pass)
 export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
-cd ..
+cd ../..
 echo "directory before acceptance-test.sh"
 pwd
 
-./acceptance-test.sh
+scripts/acceptance-test.sh
 rc=$?
 
 echo "switching back to ebc-gateway-http directory"
-cd pipeline/ebc-gateway-http
+cd scripts/pipeline/ebc-gateway-http
 
 if [[ "$rc" == 0 ]]; then
     ./ebc_complete.sh
