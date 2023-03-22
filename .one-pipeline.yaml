@@ -64,57 +64,19 @@ setup:
     if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
-    fi
-
-    timestamp=$(date +%s)
-    echo $timestamp
-    wlo_demand_id="wlo_$timestamp"
-    set_env WLO_DEMAND_ID "$wlo_demand_id"
-    echo "wlo_demand_id=$wlo_demand_id"
-    
-    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-    cd ebc-gateway-http
-
-    export intranetId_USR=$(get_env ebc_id)
-    export intranetId_PSW=$(get_env ebc_pw)
-    export demandId=$wlo_demand_id
-
-    PRE_RELEASE=$(get_env pre-release)
-    PRE_RELEASE="$(echo "$PRE_RELEASE" | tr '[:upper:]' '[:lower:]')"
-    if [[ ! -z "$PRE_RELEASE" && "$PRE_RELEASE" != "false" && "$PRE_RELEASE" != "no"  ]]; then
-      rhcos_level=$(get_env pre-release-rhcos-url)
-      ocp_level=$(get_env pre-release-ocp-url)
-      echo "this is a pre-release OCP cluster build"
-      echo "ocp level: $ocp_level"
-      echo "core os level: $rhcos_level"
-      export ebc_plan=svl-onepipeline-ocpplus_x_custom.yml
-      export ebc_fyre_kernel_url=${rhcos_level}/rhcos-live-kernel-x86_64
-      export ebc_fyre_initramfs_url=${rhcos_level}/rhcos-live-initramfs.x86_64.img
-      export ebc_fyre_metal_url=${rhcos_level}/rhcos-metal.x86_64.raw.gz
-      export ebc_fyre_rootfs_url=${rhcos_level}/rhcos-live-rootfs.x86_64.img
-      export ebc_fyre_install_url=${ocp_level}/openshift-install-linux.tar.gz
-      export ebc_fyre_client_url=${ocp_level}/openshift-client-linux.tar.gz
     else
-      export ebc_plan=svl-onepipeline-ocpplus_x.yml
-      export ebc_ocp_version=$(get_env ocp_version)
+        export arch=$(get_env architecture)
+        git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
+        if [[ "$arch" == "X" ]]; then
+          ./scripts/pipeline/getCluster.sh "X"
+        else
+          ./scripts/pipeline/getCluster.sh "Z"
+          ./scripts/pipeline/getCluster.sh "X" 
+          ./scripts/pipeline/getCluster.sh "P"
+        fi 
     fi
-    # prod or dev, start out with dev
-    export ebcEnvironment=dev
-    # priority is 30 to start, prod priority may be 100
-    export ebc_priority=30
-    export ebc_autoCompleteAfterXHours=$(get_env ebc_autocomplete_hours "6")
-    # gather pipeline URL and place in following env var
-    reason="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
-    export ebc_reasonForEnvironment=$reason
     
-    ./ebc_demand.sh
-    rc=$?
-    if [[ "$rc" == 0 ]]; then
-      echo "cluster requested"
-    else
-      echo "Outage impacting demand of cluster, try again later"
-      exit 1
-    fi
+    
 
 test:
   dind: true
@@ -186,6 +148,9 @@ containerize:
   script: |
     #!/usr/bin/env bash
 
+    # instruct bash to exit if any command fails
+    set -e
+
     echo $STAGE
 
     echo "*** OS release ***"
@@ -205,9 +170,15 @@ containerize:
     export REDHAT_REGISTRY=$(get_env redhat-registry)
     export OPM_VERSION=$(get_env opm-version)
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
-    export GITHUB_ACCESS_TOKEN=$(get_env git-token)
+    export W3_USERNAME=$(get_env w3_username)
+    export W3_PASSWORD=$(get_env w3_password)
 
-    ./scripts/build/get-build-scripts.sh
+    # flags for P and/or Z
+    export arch=$(get_env architecture)
+
+    git clone https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+    cp -rf operators/scripts/build ./scripts/
+    
 
     echo "skopeo version"
     skopeo --version || exit 1
@@ -240,10 +211,20 @@ containerize:
 
       # Docker login and setup build configurations
       scripts/build/build-initialize.sh
-
+      # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
+      if [[ "$arch" == "ZXP" ]]; then
+        echo "<ciorchestrator> Sending request to build P and Z"
+        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        pipelineid=$(cat ciorchestrator-submit.id)
+      fi
+        
       # Build operator image
       make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}
-
+      if [[ "$arch" == "ZXP" ]]; then
+        # wait for build ppc64le and s390x images
+        echo "<ciorchestrator> waiting on request to build P and Z"
+        ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+      fi
       # Build operator manifest (after 3 arch operator builds)
       make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
@@ -252,9 +233,18 @@ containerize:
 
       # Build catalog image for amd64 first - then p and z
       make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
+      # Build catalog image
+      if [[ "$arch" == "ZXP" ]]; then
+        echo "<ciorchestrator> Sending request to build P and Z catalogs"
+        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        pipelineid=$(cat ciorchestrator-submit.id)
+        echo "<ciorchestrator> waiting on request to build P and Z catalogs"
+        ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+      fi
 
       # Build catalog manifest
       make build-manifest-pipeline REGISTRY=${PIPELINE_REGISTRY} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
+
 
       if [[ "$DISABLE_ARTIFACTORY" == "false" ]]; then
         echo "Running builds for artifactory repository."
@@ -266,13 +256,23 @@ containerize:
         export ARTIFACTORY_REPO_URL="${ARTIFACTORY_REPO_URL_VALUE#*://}"  # Cuts the http(s):// off of the front of the url
         export ARTIFACTORY_USERNAME="$ARTIFACTORY_USERNAME_VALUE"
         export ARTIFACTORY_TOKEN="$ARTIFACTORY_TOKEN_VALUE"
-
-        # Docker login and setup build configurations
+        
+         # Docker login and setup build configurations
         scripts/build/build-initialize.sh
-
+        # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
+        if [[ "$arch" == "ZXP" ]]; then
+          echo "<ciorchestrator> Sending request to build P and Z ( artifactory )"
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+        fi
+        
         # Build operator image
         make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
-
+        if [[ "$arch" == "ZXP" ]]; then
+          # wait for build ppc64le and s390x images
+          echo "<ciorchestrator> waiting on request to build P and Z ( artifactory )"
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
         # Build operator manifest (after 3 arch operator builds)
         make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}
 
@@ -281,11 +281,20 @@ containerize:
 
         # Build catalog image for amd64 first - then p and z
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
+        # Build catalog image
+        if [[ "$arch" == "ZXP" ]]; then
+           echo "<ciorchestrator> Sending request to build P and Z catalogs ( artifactory )"
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          pipelineid=$(cat ciorchestrator-submit.id)
+          echo "<ciorchestrator> waiting on request to build P and Z catalogs ( artifactory )"
+          ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
+        fi
 
         # Build catalog manifest
         make build-manifest-pipeline REGISTRY=${ARTIFACTORY_REPO_URL} IMAGE=${PIPELINE_OPERATOR_IMAGE}-catalog
 
         echo "Completed pushing to artifactory."
+
       fi
     fi
 
@@ -419,132 +428,25 @@ acceptance-test:
       exit 0
     fi
 
-    rm -rf .git
-    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-    cd ebc-gateway-http
-
     export intranetId_USR=$(get_env ebc_id)
     export intranetId_PSW=$(get_env ebc_pw)
+    export ebcEnvironment=prod
 
-    wlo_demand_id=$(get_env WLO_DEMAND_ID)
-    export demandId=$wlo_demand_id
+    cd scripts/pipeline
+    rm -rf .git
+    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
 
-    #(prod or dev to use dev ebc)
-    export ebcEnvironment=dev
+    export arch=$(get_env architecture)
     
-    echo "calling ebc_waitForDemand.sh"
-    json=$(./ebc_waitForDemand.sh)
-    rc=$?
-    echo "return from ebc_waitForDemand.sh"
-    
-    
-    status=$(jq -c '.status' <<< $json)
-    ip=$(jq -c '.machineAddresses.ocpinf' <<< $json)
-    ip=$(echo "$ip" | tr -d '"')
-    
-    PRIVATE_KEY="$(get_env private_key "")"
-    echo -n "${PRIVATE_KEY}" | base64 -d > id_rsa
-    
-    chmod 600 id_rsa
-    pwd
-    ls -l id_rsa
-    
-    echo "oc version:"
-    oc version
-    
-    token=$(ssh -o StrictHostKeyChecking=no -i id_rsa root@$ip "cat ~/auth/kubeadmin-password")
-    
-    echo "demand_id=$wlo_demand_id"
-    echo "*** results from EBC wait:"
-    echo "ip=$ip"
-    echo "status=$status"
-    echo "json=$json"
-    echo "token=$token"
-    
-    if [[ "$rc" == 0 ]]; then
-       echo "EBC create of id: $wlo_demand_id cluster successful"
+    if [[ "$arch" == "ZXP" ]]; then
+      # source runTest.sh Z
+      source runTest.sh X
+      # source runTest.sh P
     else
-      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
-      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
-      exit 1
+      source runTest.sh X
     fi
 
-    cd ..
-
-    clusterurl="$ip:6443"
-
-    echo "running cluster.sh"
-    GITHUB_ACCESS_TOKEN=$(get_env git-token)
-    GITHUB_SCRIPT_URL="https://api.github.ibm.com/repos/websphere/operators/contents/scripts/configure-cluster/configure-cluster.sh"
-    curl -H "Authorization: token $GITHUB_ACCESS_TOKEN" -H "Accept: application/vnd.github.v3+json" "$GITHUB_SCRIPT_URL" | jq -r ".content" | base64 --decode > configure-cluster.sh
-    chmod +x configure-cluster.sh
-    ls -l cluster.sh
-    echo "**** issuing oc login"
-    oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
-    echo "Open Shift Console:"
-    console=$(oc whoami --show-console)
-    echo $console
-    echo "*** after issuing oc login"
-    ./configure-cluster.sh -k $(get_env ibmcloud-api-key-staging) -A
-    
-    ## Setup required tooling
-    export GO_VERSION=$(get_env go-version)
-    make setup-go GO_RELEASE_VERSION=$GO_VERSION
-    export PATH=$PATH:/usr/local/go/bin
-
-    # OCP test
-    export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
-    export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
-    export PIPELINE_REGISTRY=$(get_env pipeline-registry)
-    export PIPELINE_OPERATOR_IMAGE=$(get_env pipeline-operator-image)
-    export DOCKER_USERNAME=$(get_env docker-username)
-    export DOCKER_PASSWORD=$(get_env docker-password)
-    #export CLUSTER_URL=$(get_env test-cluster-url)
-    export CLUSTER_URL=$clusterurl
-    #export CLUSTER_USER=$(get_env test-cluster-user kubeadmin)
-    export CLUSTER_TOKEN=$token
-    export RELEASE_TARGET=$(get_env branch)
-    export DEBUG_FAILURE=$(get_env debug-failure)
-    export INSTALL_MODE=$(get_env install-mode)
-
-    # Kind test
-    export FYRE_USER=$(get_env fyre-user)
-    export FYRE_KEY=$(get_env fyre-key)
-    export FYRE_PASS=$(get_env fyre-pass)
-    export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
-
-
-
-    scripts/acceptance-test.sh
-    rc=$?
-
-    cd ebc-gateway-http
-
-    if [[ "$rc" == 0 ]]; then
-      ./ebc_complete.sh
-    else
-      hours=$(get_env ebc_autocomplete_hours "6")
-      echo "Your acceptance test failed, the cluster will be retained for $hours hours.  If you need more time to debug ( 72 hours ):"
-      echo "debug of cluster may be required, issue @ebc debug $wlo_demand_id in #was-ebc channel to keep cluster for debug"
-      echo "issue @ebc debugcomplete $wlo_demand_id when done debugging in #was-ebc channel "
-      echo "access console at: $console"
-      echo "credentials: kubeadmin/$token"
-      slack_users=$(get_env slack_users)
-      echo "slack_users=$slack_users"
-      eval "arr=($slack_users)"
-      for user in "${arr[@]}"; do 
-        echo "user=$user"
-        curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
-        echo " "
-      done
-      pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}"
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"Failing pipeline: '$pipeline_url'"}' $(get_env slack_web_hook_url) </dev/null
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"The cluster will be retained for '$hours' hours.  If you need more time to debug ( 72 hours ):"}' $(get_env slack_web_hook_url) </dev/null
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"issue @ebc debug '$wlo_demand_id' in #was-ebc channel to keep cluster for debug"}' $(get_env slack_web_hook_url) </dev/null
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"access console at: '$console'"}' $(get_env slack_web_hook_url) </dev/null
-      curl -X POST -H 'Content-type: application/json' --data '{"text":"credentials: kubeadmin/'$token'"}' $(get_env slack_web_hook_url) </dev/null
-    fi
+   
 
 scan-artifact:
   abort_on_failure: false
