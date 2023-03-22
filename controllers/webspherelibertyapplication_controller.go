@@ -153,7 +153,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err == nil {
 		for _, element := range deploy.OwnerReferences {
 			if element.Kind != "WebSphereLibertyApplication" {
-				message := "Existing Deployment for \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\"."
+				message := "Existing Deployment \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\". Resolve the naming conflict."
 				err = errors.New(message)
 				reqLogger.Error(err, message)
 				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
@@ -165,7 +165,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if err == nil {
 		for _, element := range statefulSet.OwnerReferences {
 			if element.Kind != "WebSphereLibertyApplication" {
-				message := "Existing StatefulSet for \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\"."
+				message := "Existing StatefulSet \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\". Resolve the naming conflict."
 				err = errors.New(message)
 				reqLogger.Error(err, message)
 				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
