@@ -50,7 +50,7 @@ cd ..
 echo "directory before acceptance-test.sh"
 pwd
 
-source ./acceptance-test.sh
+./acceptance-test.sh
 rc=$?
 
 echo "switching back to ebc-gateway-http directory"
