@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly usage="Usage: ocp-cluster-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id> --catalog-image <catalog-image> --channel <channel>"
+readonly usage="Usage: ocp-cluster-e2e.sh -u <docker-username> -p <docker-password> --cluster-url <url> --cluster-token <token> --registry-name <name> --registry-image <ns/image> --registry-user <user> --registry-password <password> --release <daily|release-tag> --test-tag <test-id> --catalog-image <catalog-image> --channel <channel> --install-mode <install-mode>"
 readonly OC_CLIENT_VERSION="4.6.0"
 readonly CONTROLLER_MANAGER_NAME="wlo-controller-manager"
 
@@ -15,17 +15,31 @@ setup_env() {
     echo "****** Logging into remote cluster..."
     oc login "${CLUSTER_URL}" -u "${CLUSTER_USER:-kubeadmin}" -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
 
-    # Set variables for rest of script to use
+    # set TEST Namespace 
     readonly TEST_NAMESPACE="wlo-test-${TEST_TAG}"
-    if [[ $INSTALL_MODE = "SingleNamespace" ]]; then
-      readonly INSTALL_NAMESPACE="wlo-test-single-namespace-${TEST_TAG}"
-    elif [[ $INSTALL_MODE = "AllNamespaces" ]]; then
-      readonly INSTALL_NAMESPACE="openshift-operators"
+
+    # Set selected install mode
+    if [[ $INSTALL_MODE = "AllInstallModes" ]]; then
+      SELECTED_INSTALL_MODE="OwnNamespace"
     else
-      readonly INSTALL_NAMESPACE="wlo-test-${TEST_TAG}"
+      SELECTED_INSTALL_MODE=$INSTALL_MODE
+    fi
+}
+
+setup_namespaces() {
+    echo "******************************************************************************"
+    echo "********** Start of test for install mode: ${SELECTED_INSTALL_MODE}"
+    echo "******************************************************************************"
+
+    if [[ $SELECTED_INSTALL_MODE = "SingleNamespace" ]]; then
+      INSTALL_NAMESPACE="wlo-test-single-namespace-${TEST_TAG}"
+    elif [[ $SELECTED_INSTALL_MODE = "AllNamespaces" ]]; then
+      INSTALL_NAMESPACE="openshift-operators"
+    else
+      INSTALL_NAMESPACE="wlo-test-${TEST_TAG}"
     fi
 
-    if [ $INSTALL_MODE != "AllNamespaces" ]; then
+    if [ $SELECTED_INSTALL_MODE != "AllNamespaces" ]; then
       echo "****** Creating install namespace: ${INSTALL_NAMESPACE} for release ${RELEASE}"
       oc new-project "${INSTALL_NAMESPACE}" || oc project "${INSTALL_NAMESPACE}"
     fi
@@ -39,6 +53,8 @@ setup_env() {
 
 ## cleanup_env : Delete generated resources that are not bound to a test INSTALL_NAMESPACE.
 cleanup_env() {
+  echo "****** Entering cleanup_env()"
+
   ## Delete CRDs
   WLO_CRD_NAMES=$(oc get crd -o name | grep liberty.websphere | cut -d/ -f2)
   echo "*** Deleting CRDs ***"
@@ -57,15 +73,33 @@ cleanup_env() {
   echo "*** ${WLO_CSV_NAME}"
   oc -n $INSTALL_NAMESPACE delete csv $WLO_CSV_NAME
 
-  if [ $INSTALL_MODE != "OwnNamespace" ]; then
+  if [ $SELECTED_INSTALL_MODE != "OwnNamespace" ]; then
     echo "*** Deleting project ${TEST_NAMESPACE}"
     oc delete project "${TEST_NAMESPACE}"
+    delete_project_wait $TEST_NAMESPACE
   fi
 
-  if [ $INSTALL_MODE != "AllNamespaces" ]; then
+  if [ $SELECTED_INSTALL_MODE != "AllNamespaces" ]; then
     echo "*** Deleting project ${INSTALL_NAMESPACE}"
     oc delete project "${INSTALL_NAMESPACE}"
+    delete_project_wait $INSTALL_NAMESPACE
   fi
+}
+
+delete_project_wait() {
+    i=1
+    until [ $i -gt 31 ]
+    do
+      result=$(oc projects | grep -c $1)
+      if (( $result == 0 )); then
+        echo "*** Project ${1} has been deleted"
+        i=99
+      else
+        echo "*** Waiting for project ${1} to be deleted - pass ${i}"
+        sleep 10
+        ((i=i+1))
+      fi
+    done
 }
 
 ## trap_cleanup : Call cleanup_env and exit. For use by a trap to detect if the script is exited at any point.
@@ -161,6 +195,7 @@ main() {
 
     echo "****** Setting up test environment..."
     setup_env
+    setup_namespaces
 
     if [[ -z "${DEBUG_FAILURE}" ]]; then
         trap trap_cleanup EXIT
@@ -197,8 +232,31 @@ main() {
     if [[ "$rc_rk" == 0 ]]; then
         echo "rook-ceph up"
     fi
-    echo "****** Installing operator from catalog: ${CATALOG_IMAGE} using install mode of ${INSTALL_MODE}"
-    echo "****** Install namespace is ${INSTALL_NAMESPACE}.  Test namespace is ${TEST_NAMESPACE}"    
+
+    test_common
+    result=$?
+
+    if [[ $INSTALL_MODE = "AllInstallModes" ]]; then
+      # When all is selected, the default (initial) path is ownNamespace INSTALL_MODE.
+      # When that completes, we perform two more passes.  One for singleNamespace and one for allNamespaces  
+      SELECTED_INSTALL_MODE="SingleNamespace"
+      setup_namespaces
+      test_common
+      singleResult=$?
+
+      SELECTED_INSTALL_MODE="AllNamespaces"
+      setup_namespaces
+      test_common
+      allResult=$?
+
+      result=$(($result + $singleResult + $allResult))
+    fi
+
+    return $result
+}
+
+test_common() {
+    echo "****** Entering test_common()"
     install_operator
 
     # Wait for operator deployment to be ready
@@ -223,6 +281,10 @@ main() {
 }
 
 install_operator() {
+    echo "****** Entering install_operator()"
+    echo "****** Installing operator from catalog: ${CATALOG_IMAGE} using install mode of ${SELECTED_INSTALL_MODE}"
+    echo "****** Install namespace is ${INSTALL_NAMESPACE}.  Test namespace is ${TEST_NAMESPACE}"    
+
     # Apply the catalog
     echo "****** Applying the catalog source..."
     cat <<EOF | oc apply -f -
@@ -238,7 +300,7 @@ spec:
   publisher: IBM
 EOF
 
-if [ $INSTALL_MODE != "AllNamespaces" ]; then
+if [ $SELECTED_INSTALL_MODE != "AllNamespaces" ]; then
     echo "****** Applying the operator group..."
     cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
