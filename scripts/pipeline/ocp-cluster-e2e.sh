@@ -299,7 +299,7 @@ setup_tests () {
   echo "Change affinity tests to look for ppc64le nodes"
   sed -i.bak "s,amd64,ppc64le," $(find ./bundle/tests/scorecard/kuttl/affinity -type f)
   echo "Change storage test to set storageclass to managed-nfs-storage"
-  sed -i.bak "s,rook-cephf,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
+  sed -i.bak "s,rook-cephfs,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
   # These will need changing if a different image is used
   echo "Change image-stream tests to the correct digest for correct architecture"
   sed -i.bak "s,sha256:0796d9d800932a0da80d91fea720c12977bab871f8bf33b6e353b2c58aff23f1,sha256:5325d35a0c219ff545c6f906aa35b5d84a953493166c43aecd37ecc0d5e64fa6," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
@@ -308,7 +308,7 @@ setup_tests () {
   echo "Change affinity tests to look for s390x nodes"
   sed -i.bak "s,amd64,s390x," $(find ./bundle/tests/scorecard/kuttl/affinity -type f)
   echo "Change storage test to set storageclass to managed-nfs-storage"
-  sed -i.bak "s,rook-cephf,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
+  sed -i.bak "s,rook-cephfs,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
   # These will need changing if a different image is used
   echo "Change image-stream tests to the correct digest for correct architecture"
   sed -i.bak "s,sha256:0796d9d800932a0da80d91fea720c12977bab871f8bf33b6e353b2c58aff23f1,sha256:d622c05f4d62fc1f3cccc674c9f68cf57822c022fdd37af17bb1a7303f998ff5," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
