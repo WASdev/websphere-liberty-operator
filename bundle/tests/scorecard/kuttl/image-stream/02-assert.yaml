@@ -11,7 +11,7 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: icr.io/appcafe/websphere-liberty@sha256:73cce354026b3a3c19b4eb759fdd8b11b748481588a242c22106e00b0ffd52e4
+  - image: icr.io/appcafe/websphere-liberty@sha256:5db4910bb5d5f479c55cba3ed0d9572676d50e30bf61b4a00d086f79016b8d53
 status:
   containerStatuses:
   - ready: true
