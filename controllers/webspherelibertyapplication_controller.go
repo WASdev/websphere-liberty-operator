@@ -150,7 +150,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	// Check if there is an existing Deployment, Statefulset or Knative service by this name
 	// not managed by this operator
-	err = oputils.CheckForNameConflicts("RuntimeComponent", instance.Name, instance.Namespace, r.GetClient(), req, isKnativeSupported)
+	err = oputils.CheckForNameConflicts("WebSphereLibertyApplication", instance.Name, instance.Namespace, r.GetClient(), request, isKnativeSupported)
 	if err != nil {
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
