@@ -141,36 +141,18 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return reconcile.Result{}, err
 	}
 
-	defaultMeta := metav1.ObjectMeta{
-		Name:      instance.Name,
-		Namespace: instance.Namespace,
+	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
+	if err != nil {
+		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	} else if !isKnativeSupported && instance.Spec.CreateKnativeService != nil && *instance.Spec.CreateKnativeService {
+		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported on the cluster", servingv1.SchemeGroupVersion.String()))
 	}
 
-	// Check to see if the existing deployment or statefulsets are owned by us
-	// If they are not, display and error and do not requeue
-	deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
-	err = r.GetClient().Get(context.TODO(), request.NamespacedName, deploy)
-	if err == nil {
-		for _, element := range deploy.OwnerReferences {
-			if element.Kind != "WebSphereLibertyApplication" {
-				message := "Existing Deployment \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\". Resolve the naming conflict."
-				err = errors.New(message)
-				reqLogger.Error(err, message)
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-			}
-		}
-	}
-	statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
-	err = r.GetClient().Get(context.TODO(), request.NamespacedName, statefulSet)
-	if err == nil {
-		for _, element := range statefulSet.OwnerReferences {
-			if element.Kind != "WebSphereLibertyApplication" {
-				message := "Existing StatefulSet \"" + instance.Name + "\" is not managed by this operator. It is being managed by \"" + element.Kind + "\". Resolve the naming conflict."
-				err = errors.New(message)
-				reqLogger.Error(err, message)
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-			}
-		}
+	// Check if there is an existing Deployment, Statefulset or Knative service by this name
+	// not managed by this operator
+	err = oputils.CheckForNameConflicts("RuntimeComponent", instance.Name, instance.Namespace, r.GetClient(), req, isKnativeSupported)
+	if err != nil {
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
 	// Check if the WebSphereLibertyApplication instance is marked to be deleted, which is
@@ -233,6 +215,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// if currentGen == 1 {
 	// 	return reconcile.Result{}, nil
 	// }
+
+	defaultMeta := metav1.ObjectMeta{
+		Name:      instance.Name,
+		Namespace: instance.Namespace,
+	}
 
 	imageReferenceOld := instance.Status.ImageReference
 	instance.Status.ImageReference = instance.Spec.ApplicationImage
@@ -315,13 +302,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			reqLogger.Error(err, message)
 			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
 		}
-	}
-
-	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
-	if err != nil {
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-	} else if !isKnativeSupported && instance.Spec.CreateKnativeService != nil && *instance.Spec.CreateKnativeService {
-		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported on the cluster", servingv1.SchemeGroupVersion.String()))
 	}
 
 	if instance.Spec.CreateKnativeService != nil && *instance.Spec.CreateKnativeService {
