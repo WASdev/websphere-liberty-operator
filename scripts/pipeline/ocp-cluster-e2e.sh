@@ -10,7 +10,14 @@ setup_env() {
     # Install kubectl and oc
     curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OC_CLIENT_VERSION}/openshift-client-linux.tar.gz | tar xvz
     sudo mv oc kubectl /usr/local/bin/
-
+    if [[ "$ARCHITECTURE" == "Z" ]]; then
+    {
+      echo "****** Installing kubectl-kuttl..."
+      curl -L -o kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.15.0/kubectl-kuttl_0.15.0_linux_x86_64
+      chmod +x kubectl-kuttl
+      sudo mv kubectl-kuttl /usr/local/bin
+    }
+    fi
     # Start a cluster and login
     echo "****** Logging into remote cluster..."
     oc login "${CLUSTER_URL}" -u "${CLUSTER_USER:-kubeadmin}" -p "${CLUSTER_TOKEN}" --insecure-skip-tls-verify=true
