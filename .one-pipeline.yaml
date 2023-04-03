@@ -71,8 +71,8 @@ setup:
           ./scripts/pipeline/getCluster.sh "X"
         else
           ./scripts/pipeline/getCluster.sh "Z"
-#          ./scripts/pipeline/getCluster.sh "X" 
-#          ./scripts/pipeline/getCluster.sh "P"
+          # ./scripts/pipeline/getCluster.sh "X" 
+          # ./scripts/pipeline/getCluster.sh "P"
         fi 
     fi
     
@@ -447,8 +447,8 @@ acceptance-test:
     
     if [[ "$arch" == "ZXP" ]]; then
       source runTest.sh Z
-#      source runTest.sh X
-#      source runTest.sh P
+      # source runTest.sh X
+      # source runTest.sh P
     else
       source runTest.sh X
     fi
