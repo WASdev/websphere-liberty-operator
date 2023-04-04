@@ -394,7 +394,7 @@ parse_args() {
       shift
       readonly INSTALL_MODE="${1}"
       ;;
-        --architecture)
+    --architecture)
       shift
       readonly ARCHITECTURE="${1}"
       ;;  
