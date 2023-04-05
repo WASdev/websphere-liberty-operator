@@ -207,6 +207,9 @@ kind: OperatorGroup
 metadata:
   name: websphere-operator-group
   namespace: $NAMESPACE
+spec:
+  targetNamespaces:
+    - $NAMESPACE    
 EOF
 
     oc apply -f $OG_FILE

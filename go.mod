@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.19
 
 require (
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20230221145444-413ec4e4e2e8
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20230331211904-f635163c3ca2
 	github.com/go-logr/logr v1.2.2
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220630204433-c71d40c7de49
@@ -29,7 +29,7 @@ require (
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
