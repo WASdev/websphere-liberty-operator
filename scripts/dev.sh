@@ -88,7 +88,7 @@ main() {
   CATALOG_IMG=${CATALOG_IMG:=$OCP_REGISTRY_URL/$NAMESPACE/$OPERATOR_NAME-catalog:$VVERSION}
   MAKEFILE_DIR=${MAKEFILE_DIR:=$SCRIPT_DIR/..}
   TEMP_DIR=${TEMP_DIR:=/tmp}
-  CHANNEL=${CHANNEL:="v1.1"}
+  CHANNEL=${CHANNEL:="v1.2"}
   
   if [[ "$COMMAND" == "all" ]]; then
      login_registry
