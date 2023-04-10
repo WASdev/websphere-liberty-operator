@@ -220,7 +220,7 @@ bundle: manifests setup kustomize ## Generate bundle manifests and metadata, the
 	$(KUSTOMIZE) build config/kubectl/crd -o internal/deploy/kubectl/websphereliberty-app-crd.yaml
 	$(KUSTOMIZE) build config/kubectl/operator -o internal/deploy/kubectl/websphereliberty-app-operator.yaml
 	$(KUSTOMIZE) build config/kubectl/rbac-watch-all -o internal/deploy/kubectl/websphereliberty-app-rbac-watch-all.yaml
-	#$(KUSTOMIZE) build config/kubectl/operator -o internal/deploy/kubectl/websphereliberty-app-operator.yaml
+	$(KUSTOMIZE) build config/kubectl/rbac-watch-another -o internal/deploy/kubectl/websphereliberty-app-rbac-watch-another.yaml
 
 	operator-sdk bundle validate ./bundle
 

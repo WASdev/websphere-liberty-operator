@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
 - ../../rbac
 
-namePrefix: wlo-cluster
+namePrefix: wlo-cluster-
 
 # Labels to add to all resources and selectors.
 commonLabels:
@@ -11,17 +11,42 @@ commonLabels:
   app.kubernetes.io/managed-by: olm
   app.kubernetes.io/name: websphere-liberty-operator
 
-patchesStrategicMerge:
-- patches/delete-service-account.yaml
+patches:
+- path: patches/delete-service-account.yaml
+  target:
+    kind: ServiceAccount
 
 patchesJson6902:
-- patch: |-
-    - op: replace
-      path: /kind
-      value: ClusterRole
-  target:
-    group: rbac.authorization.k8s.io
-    kind: Role
-    name: leader-election-role
-    version: v1
-
+  - target:
+      namespace: websphere-liberty-operator
+      name: .*
+    patch: |-
+      - op: remove
+        path: /metadata/namespace
+  - target:
+      kind: Role
+      name: .*
+    patch: |-
+      - op: replace
+        path: /kind
+        value: ClusterRole
+  - target:
+      kind: RoleBinding
+      name: .*
+    patch: |-
+      - op: replace
+        path: /kind
+        value: ClusterRoleBinding
+  - target:
+      kind: ClusterRoleBinding
+      name: .*
+    patch: |-
+      - op: replace
+        path: /subjects/0/name
+        value: wlo-controller-manager
+      - op: replace
+        path: /subjects/0/namespace
+        value: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
+      - op: replace
+        path: /roleRef/kind
+        value: ClusterRole

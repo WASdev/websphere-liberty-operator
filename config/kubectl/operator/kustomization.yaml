@@ -5,7 +5,6 @@ resources:
 - ../../manager
 
 namePrefix: wlo-
-  #namespacee: null
 
 # Labels to add to all resources and selectors.
 commonLabels:
@@ -13,5 +12,36 @@ commonLabels:
   app.kubernetes.io/managed-by: olm
   app.kubernetes.io/name: websphere-liberty-operator
 
-#patchesStrategicMerge:
-  #- patches/delete-namespace.yaml
+patches:
+- path: patches/delete-namespace.yaml
+  target:
+    kind: Namespace
+
+patchesJson6902:
+  - target:
+      namespace: system
+      name: .*
+    patch: |-
+      - op: remove
+        path: /metadata/namespace
+  - target:
+      namespace: websphere-liberty-operator
+      name: .*
+    patch: |-
+      - op: remove
+        path: /metadata/namespace
+  - target:
+      kind: RoleBinding
+      name: .*
+    patch: |-
+      - op: remove
+        path: /subjects/0/namespace
+  - target:
+      kind: Deployment
+      name: wlo-controller-manager
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/env/1/valueFrom
+      - op: add
+        path: /spec/template/spec/containers/0/env/1/value
+        value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
