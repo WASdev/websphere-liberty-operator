@@ -1,4 +1,3 @@
-# permissions to do leader election.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -6,30 +5,29 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-role
+  name: wlo-cluster-leader-election-role
 rules:
-  - apiGroups:
-      - ""
-      - coordination.k8s.io
-    resources:
-      - configmaps
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-
+- apiGroups:
+  - ""
+  - coordination.k8s.io
+  resources:
+  - configmaps
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -39,7 +37,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-role
+  name: wlo-cluster-manager-role
 rules:
 - apiGroups:
   - apps
@@ -216,14 +214,6 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -232,11 +222,11 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-rolebinding
+  name: wlo-cluster-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: wlo-leader-election-cluster-role
+  name: wlo-cluster-leader-election-role
 subjects:
 - kind: ServiceAccount
   name: wlo-controller-manager
@@ -249,11 +239,11 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-rolebinding
+  name: wlo-cluster-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: wlo-manager-cluster-role
+  name: wlo-cluster-manager-role
 subjects:
 - kind: ServiceAccount
   name: wlo-controller-manager
