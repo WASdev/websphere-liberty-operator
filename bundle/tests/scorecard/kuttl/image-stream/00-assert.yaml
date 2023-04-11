@@ -6,11 +6,11 @@ spec:
   tags:
   - from:
       kind: DockerImage
-      name: navidsh/demo-day:v0.1.0
+      name: icr.io/appcafe/websphere-liberty:23.0.0.1-full-java8-openj9-ubi
     name: latest
 status:
   tags:
   - tag: latest
     items:
-    - image: sha256:b441e81a681df8fdf6922f00318fb78d15dea7f24823eef58b2480aa84aba823
+    - image: sha256:0796d9d800932a0da80d91fea720c12977bab871f8bf33b6e353b2c58aff23f1
 

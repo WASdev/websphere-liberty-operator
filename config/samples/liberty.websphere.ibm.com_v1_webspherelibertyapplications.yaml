@@ -7,6 +7,5 @@ spec:
     accept: false
     edition: IBM WebSphere Application Server
     productEntitlementSource: Standalone
-    metric: Virtual Processor Core (VPC)
-  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started@sha256:9a6f6352bee814302fcf939dd640b7d3b3e02307330f82bc32b782e7a9feb8a3
   manageTLS: true

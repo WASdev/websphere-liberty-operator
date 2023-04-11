@@ -26,6 +26,7 @@ spec:
         productName: "WebSphere Liberty Operator"
         productMetric: "FREE"
         productChargedContainers: "ALL"
+        kubectl.kubernetes.io/default-container: manager
     spec:
       hostIPC: false
       hostPID: false
@@ -70,6 +71,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.annotations['olm.targetNamespaces']
+          - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+            value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:9a6f6352bee814302fcf939dd640b7d3b3e02307330f82bc32b782e7a9feb8a3
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false
@@ -96,3 +99,5 @@ spec:
                 operator: In
                 values:
                 - amd64
+                - ppc64le
+                - s390x

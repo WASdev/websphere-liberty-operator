@@ -91,4 +91,4 @@ The WebSphere Liberty Operator provides various customization options to configu
 
 ## Limitations 
 
-IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional information.
+See the [limitations](https://ibm.biz/wlo-limits) for details.

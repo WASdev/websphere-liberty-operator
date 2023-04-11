@@ -99,61 +99,62 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=16,type=spec,displayName="Route"
 	Route *WebSphereLibertyApplicationRoute `json:"route,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Network Policy"
+	// Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application.
+	// +operator-sdk:csv:customresourcedefinitions:order=17,type=spec,displayName="Semeru Cloud Compiler"
+	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Network Policy"
 	NetworkPolicy *WebSphereLibertyApplicationNetworkPolicy `json:"networkPolicy,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Serviceability"
+	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Serviceability"
 	Serviceability *WebSphereLibertyApplicationServiceability `json:"serviceability,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Single Sign-On"
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Single Sign-On"
 	SSO *WebSphereLibertyApplicationSSO `json:"sso,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Monitoring"
+	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Monitoring"
 	Monitoring *WebSphereLibertyApplicationMonitoring `json:"monitoring,omitempty"`
 
 	// An array of environment variables for the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec,displayName="Environment Variables"
+	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Environment Variables"
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// List of sources to populate environment variables in the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=22,type=spec,displayName="Environment Variables from Sources"
+	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Environment Variables from Sources"
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Represents a volume with data that is accessible to the application container.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=23,type=spec,displayName="Volumes"
+	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Volumes"
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
 
 	// Represents where to mount the volumes into the application container.
 	// +listType=atomic
-	// +operator-sdk:csv:customresourcedefinitions:order=24,type=spec,displayName="Volume Mounts"
+	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Volume Mounts"
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 
 	// List of containers to run before other containers in a pod.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=25,type=spec,displayName="Init Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Init Containers"
 	InitContainers []corev1.Container `json:"initContainers,omitempty"`
 
 	// List of sidecar containers. These are additional containers to be added to the pods.
 	// +listType=map
 	// +listMapKey=name
-	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Sidecar Containers"
+	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Sidecar Containers"
 	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
 
-	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Affinity"
+	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Affinity"
 	Affinity *WebSphereLibertyApplicationAffinity `json:"affinity,omitempty"`
 
 	// Security context for the application container.
-	// +operator-sdk:csv:customresourcedefinitions:order=28,type=spec,displayName="Security Context"
+	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
-
-	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Semeru Cloud Compiler"
-	SemeruCloudCompiler *WebSphereLibertyApplicationSemeruCloudCompiler `json:"semeruCloudCompiler,omitempty"`
 }
 
 // License information is required.
@@ -166,8 +167,8 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
-	// Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)
-	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric"
+	// Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.
+	// +operator-sdk:csv:customresourcedefinitions:order=102,type=spec,displayName="Metric",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	Metric LicenseMetric `json:"metric,omitempty"`
 
 	// I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
@@ -433,9 +434,21 @@ type WebSphereLibertyApplicationRoute struct {
 }
 
 type WebSphereLibertyApplicationSemeruCloudCompiler struct {
-	// Resource requests and limits for the Semeru Cloud Compiler.
-	// +operator-sdk:csv:customresourcedefinitions:order=48,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	// Enable the Semeru Cloud Compiler. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	Enable bool `json:"enable,omitempty"`
+	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
+	Replicas *int32 `json:"replicas,omitempty"`
+	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+// Defines SemeruCompiler status
+type SemeruCompilerStatus struct {
+	TLSSecretName   string `json:"tlsSecretName,omitempty"`
+	ServiceHostname string `json:"serviceHostname,omitempty"`
 }
 
 // Defines the observed state of WebSphereLibertyApplication.
@@ -452,6 +465,8 @@ type WebSphereLibertyApplicationStatus struct {
 	Binding *corev1.LocalObjectReference `json:"binding,omitempty"`
 
 	References common.StatusReferences `json:"references,omitempty"`
+
+	SemeruCompiler *SemeruCompilerStatus `json:"semeruCompiler,omitempty"`
 }
 
 // Defines possible status conditions.
@@ -1115,9 +1130,18 @@ func (cr *WebSphereLibertyApplication) GetSecurityContext() *corev1.SecurityCont
 	return cr.Spec.SecurityContext
 }
 
-// GetSemeruCloudCompiler returns the semeru cloud compiler configuration
+// GetSemeruCloudCompiler returns the Semeru Cloud Compiler configuration
 func (cr *WebSphereLibertyApplication) GetSemeruCloudCompiler() *WebSphereLibertyApplicationSemeruCloudCompiler {
 	return cr.Spec.SemeruCloudCompiler
+}
+
+// GetReplicas returns the replicas for Semeru Cloud Compiler if specified, otherwise 1
+func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetReplicas() *int32 {
+	if scc.Replicas != nil {
+		return scc.Replicas
+	}
+	one := int32(1)
+	return &one
 }
 
 // Initialize sets default values
@@ -1177,10 +1201,6 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 	if cr.Spec.License.ProductEntitlementSource == "" {
 		cr.Spec.License.ProductEntitlementSource = LicenseEntitlementStandalone
 	}
-	if cr.Spec.License.Metric == "" {
-		cr.Spec.License.Metric = LicenseMetricVPC
-	}
-
 }
 
 // GetLabels returns set of labels to be added to all resources
