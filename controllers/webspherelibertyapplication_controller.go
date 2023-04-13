@@ -394,7 +394,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
-	if np := instance.Spec.NetworkPolicy; !np.IsDisabled() {
+	if np := instance.Spec.NetworkPolicy; np == nil || np != nil && !np.IsDisabled() {
 		err = r.CreateOrUpdate(networkPolicy, instance, func() error {
 			oputils.CustomizeNetworkPolicy(networkPolicy, r.IsOpenShift(), instance)
 			return nil
