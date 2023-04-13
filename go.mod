@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.19
 
 require (
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20230404142730-63075c49bea6
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20230413024947-1dca2a9877ad
 	github.com/go-logr/logr v1.2.2
 	github.com/openshift/api v0.0.0-20220414050251-a83e6f8f1d50 // Openshift 4.9
 	github.com/openshift/library-go v0.0.0-20220630204433-c71d40c7de49
@@ -62,11 +62,11 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -92,7 +92,6 @@ replace (
 	github.com/otiai10/copy => github.com/otiai10/copy v1.0.2
 	github.com/otiai10/mint => github.com/otiai10/mint v1.3.0
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
-	golang.org/x/net => golang.org/x/net v0.1.1-0.20221104162952-702349b0e862
 	golang.org/x/text => golang.org/x/text v0.4.0
 
 	k8s.io/api => k8s.io/api v0.24.2
