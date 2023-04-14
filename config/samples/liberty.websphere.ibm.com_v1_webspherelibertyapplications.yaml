@@ -8,4 +8,6 @@ spec:
     edition: IBM WebSphere Application Server
     productEntitlementSource: Standalone
   applicationImage: icr.io/appcafe/open-liberty/samples/getting-started@sha256:9a6f6352bee814302fcf939dd640b7d3b3e02307330f82bc32b782e7a9feb8a3
+  expose: true
   manageTLS: true
+  replicas: 1
