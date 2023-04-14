@@ -7,7 +7,7 @@ readonly BUILD_IMAGE="websphere-liberty-operator:latest"
 
 readonly RUNASUSER="\n  securityContext:\n    runAsUser: 1001"
 readonly APPIMAGE='applicationImage:\s'
-readonly IMAGES=('k8s.gcr.io\/pause:2.0' 'navidsh\/demo-day')
+readonly IMAGES=('registry.k8s.io\/pause:2.0' 'navidsh\/demo-day')
 
 main() {
   parse_args "$@"
