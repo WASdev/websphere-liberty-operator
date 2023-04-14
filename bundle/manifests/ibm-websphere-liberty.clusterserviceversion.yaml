@@ -12,12 +12,14 @@ metadata:
           },
           "spec": {
             "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:9a6f6352bee814302fcf939dd640b7d3b3e02307330f82bc32b782e7a9feb8a3",
+            "expose": true,
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
               "productEntitlementSource": "Standalone"
             },
-            "manageTLS": true
+            "manageTLS": true,
+            "replicas": 1
           }
         },
         {
@@ -57,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-04-13T10:08:23Z"
+    createdAt: "2023-04-13T20:19:54Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
