@@ -58,6 +58,16 @@ const (
 	OperatorName = "websphere-liberty-operator"
 )
 
+// Labels used for Operator resources (not for CRs)
+func GetOperatorLabels() map[string]string {
+	labels := map[string]string{
+		"app.kubernetes.io/instance":   OperatorName,
+		"app.kubernetes.io/name":       OperatorName,
+		"app.kubernetes.io/managed-by": "olm",
+	}
+	return labels
+}
+
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
 type ReconcileWebSphereLiberty struct {
 	// This client, initialized using mgr.Client() above, is a split client

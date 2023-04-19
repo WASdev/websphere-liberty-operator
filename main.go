@@ -141,7 +141,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	utils.CreateConfigMap(controllers.OperatorName)
+	utils.CreateConfigMap(controllers.OperatorName, controllers.GetOperatorLabels())
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
