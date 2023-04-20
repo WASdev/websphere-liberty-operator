@@ -9,7 +9,6 @@ namePrefix: wlo-
 # Labels to add to all resources and selectors.
 commonLabels:
   app.kubernetes.io/instance: websphere-liberty-operator
-  app.kubernetes.io/managed-by: olm
   app.kubernetes.io/name: websphere-liberty-operator
 
 patches:

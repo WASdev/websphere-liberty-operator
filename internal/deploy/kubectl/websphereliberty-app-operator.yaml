@@ -3,7 +3,6 @@ kind: ServiceAccount
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-controller-manager
 ---
@@ -12,7 +11,6 @@ kind: Role
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-role
 rules:
@@ -44,7 +42,6 @@ metadata:
   creationTimestamp: null
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-manager-role
 rules:
@@ -229,7 +226,6 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-rolebinding
 roleRef:
@@ -245,7 +241,6 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-manager-rolebinding
 roleRef:
@@ -261,7 +256,6 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
     control-plane: controller-manager
   name: wlo-controller-manager
@@ -270,7 +264,6 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/instance: websphere-liberty-operator
-      app.kubernetes.io/managed-by: olm
       app.kubernetes.io/name: websphere-liberty-operator
       control-plane: controller-manager
   template:
@@ -283,7 +276,6 @@ spec:
         productName: WebSphere Liberty Operator
       labels:
         app.kubernetes.io/instance: websphere-liberty-operator
-        app.kubernetes.io/managed-by: olm
         app.kubernetes.io/name: websphere-liberty-operator
         control-plane: controller-manager
     spec:

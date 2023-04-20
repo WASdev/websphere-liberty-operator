@@ -8,7 +8,6 @@ namePrefix: wlo-cluster-
 # Labels to add to all resources and selectors.
 commonLabels:
   app.kubernetes.io/instance: websphere-liberty-operator
-  app.kubernetes.io/managed-by: olm
   app.kubernetes.io/name: websphere-liberty-operator
 
 patches:
@@ -50,3 +49,24 @@ patchesJson6902:
       - op: replace
         path: /roleRef/kind
         value: ClusterRole
+  - target:
+      kind: ClusterRoleBinding
+      name: wlo-cluster-leader-election-rolebinding
+    patch: |-
+      - op: replace
+        path: /roleRef/name
+        value: wlo-cluster-leader-election-role
+  - target:
+      kind: ClusterRoleBinding
+      name: wlo-cluster-manager-rolebinding
+    patch: |-
+      - op: replace
+        path: /roleRef/name
+        value: wlo-cluster-manager-role
+  - target:
+      kind: ClusterRole
+      name: wlo-cluster-manager-role
+    patch: |-
+      - op: add
+        path: /rules/-
+        value: {"apiGroups":[""],"resources":["namespaces"],"verbs":["get","list","watch"]}
