@@ -12,12 +12,14 @@ metadata:
           },
           "spec": {
             "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:9a6f6352bee814302fcf939dd640b7d3b3e02307330f82bc32b782e7a9feb8a3",
+            "expose": true,
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
               "productEntitlementSource": "Standalone"
             },
-            "manageTLS": true
+            "manageTLS": true,
+            "replicas": 1
           }
         },
         {
@@ -57,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-04-20T17:45:01Z"
+    createdAt: "2023-04-13T20:19:54Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -275,6 +277,11 @@ spec:
         path: service.annotations
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Annotations to be added to the service certificate.
+        displayName: Annotations
+        path: service.certificate.annotations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: The port that the operator assigns to containers inside pods.
           Defaults to the value of .spec.service.port.
         displayName: Target Port
@@ -294,20 +301,23 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Route
         path: route
-      - description: An array consisting of service ports.
-        displayName: Ports
-        path: service.ports
+      - description: Configure service certificate.
+        displayName: Service Certificate
+        path: service.certificate
       - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT)
           compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
+      - description: An array consisting of service ports.
+        displayName: Ports
+        path: service.ports
+      - displayName: Network Policy
+        path: networkPolicy
       - description: Expose the application as a bindable service. Defaults to false.
         displayName: Bindable
         path: service.bindable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - displayName: Network Policy
-        path: networkPolicy
       - displayName: Serviceability
         path: serviceability
       - displayName: Single Sign-On
