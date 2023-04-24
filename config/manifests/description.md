@@ -90,11 +90,11 @@ See [IBM WebSphere Liberty documentation](https://ibm.biz/wlo-docs).
 
 ## Installing
 
-Install the IBM WebSphere Liberty Operator to the desired namespace and create an instance of the [WebSphereLibertyApplication custom resource](https://ibm.biz/wlo-crs).
+[Install](https://ibm.biz/wlo-install) the IBM WebSphere Liberty Operator to the desired namespace and deploy the [sample Liberty application](https://ibm.biz/wlo-deploy-sample-app) or [your custom Liberty applications](https://ibm.biz/wlo-deploy-custom-app).
 
 ## Configuration
 
-The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) for details.
+The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) and [configuration examples](https://ibm.biz/wlo-config-examples) for details.
 
 ## Limitations 
 

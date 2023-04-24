@@ -59,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-04-22T17:04:15Z"
+    createdAt: "2023-04-24T16:30:10Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -787,11 +787,11 @@ spec:
     
     ## Installing
     
-    Install the IBM WebSphere Liberty Operator to the desired namespace and create an instance of the [WebSphereLibertyApplication custom resource](https://ibm.biz/wlo-crs).
+    [Install](https://ibm.biz/wlo-install) the IBM WebSphere Liberty Operator to the desired namespace and deploy the [sample Liberty application](https://ibm.biz/wlo-deploy-sample-app) or [your custom Liberty applications](https://ibm.biz/wlo-deploy-custom-app).
     
     ## Configuration
     
-    The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) for details.
+    The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) and [configuration examples](https://ibm.biz/wlo-config-examples) for details.
     
     ## Limitations 
     
