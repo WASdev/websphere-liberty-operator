@@ -7,4 +7,4 @@ The WebSphere Liberty Operator can be installed using kustomize to:
 * watch another namespace
 * watch all namespaces in the cluster
 
-Follow the instructions in the [documentation](https://ibm.biz/wlo-install-kustomize).
+Follow the instructions in the link:++https://ibm.biz/wlo-install-kustomize++[documentation].

@@ -7,4 +7,4 @@ The WebSphere Liberty Operator can be installed using Kubernetes command-line in
 * watch another namespace
 * watch all namespaces in the cluster
 
-Follow the instructions in the [documentation](https://ibm.biz/wlo-install-kubectl).
+Follow the instructions in the link:++https://ibm.biz/wlo-install-kubectl++[documentation].
