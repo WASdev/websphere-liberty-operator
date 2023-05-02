@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
   name: websphere-liberty-leader-election-role
-  namespace: default
+  namespace: websphere-liberty
 rules:
 - apiGroups:
   - ""
@@ -46,7 +46,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
   name: websphere-liberty-manager-role
-  namespace: default
+  namespace: websphere-liberty
 rules:
 - apiGroups:
   - apps
@@ -231,7 +231,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
   name: websphere-liberty-leader-election-rolebinding
-  namespace: default
+  namespace: websphere-liberty
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -239,7 +239,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -248,7 +248,7 @@ metadata:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
   name: websphere-liberty-manager-rolebinding
-  namespace: default
+  namespace: websphere-liberty
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -256,4 +256,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty

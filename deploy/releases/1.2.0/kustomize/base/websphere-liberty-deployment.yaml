@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: websphere-liberty-operator
     control-plane: websphere-liberty-controller-manager
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 spec:
   replicas: 1
   selector:

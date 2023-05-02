@@ -93,8 +93,8 @@ endif
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,generateEmbeddedObjectMeta=true"
 
-# Produce files under deploy/kustomize/daily with default namespace
-KUSTOMIZE_NAMESPACE = default
+# Produce files under deploy/kustomize/daily with websphere-liberty namespace
+KUSTOMIZE_NAMESPACE = websphere-liberty
 KUSTOMIZE_IMG = cp.stg.icr.io/cp/websphere-liberty-operator:main
 
 # Use docker if available. Otherwise default to podman. 
