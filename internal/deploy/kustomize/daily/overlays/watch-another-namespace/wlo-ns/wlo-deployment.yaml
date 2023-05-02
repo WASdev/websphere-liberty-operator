@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 spec:
   template:
     spec:

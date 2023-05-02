@@ -4,7 +4,7 @@ resources:
 - ../../rbac
 
 # Adds namespace to all resources.
-namespace: default
+namespace: websphere-liberty
 namePrefix: websphere-liberty-
 
 # Labels to add to all resources and selectors.

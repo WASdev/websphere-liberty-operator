@@ -12,7 +12,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -28,7 +28,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager
-  namespace: default
+  namespace: websphere-liberty
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
