@@ -1,0 +1,14 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: license-wla
+  annotations:
+    test-step: license-02
+spec:
+  license:
+    accept: true
+    edition: IBM WebSphere Application Server Network Deployment
+    productEntitlementSource: IBM Cloud Pak for Applications
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
+  replicas: 1
+

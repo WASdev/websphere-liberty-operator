@@ -171,7 +171,7 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 	return nil
 }
 
-func addSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
+func AddSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
 	secret := &corev1.Secret{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
 	if err != nil {
@@ -190,7 +190,7 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	pts.Annotations = rcoutils.MergeMaps(pts.Annotations, libertyAnnotations)
 }
 
-func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) error {
+func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
 	pid := ""
 	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
 		pid = val
@@ -200,13 +200,9 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 
 	entitlement := la.Spec.License.ProductEntitlementSource
 
-	metricValue := "VIRTUAL_PROCESSOR_CORE"
-	if la.Spec.License.Metric == wlv1.LicenseMetricPVU {
-		if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
-			return fmt.Errorf("Invalid metric value '%v' is specified for product entitlement source '%v'", la.Spec.License.Metric, entitlement)
-		} else {
-			metricValue = "PROCESSOR_VALUE_UNIT"
-		}
+	metricValue := "PROCESSOR_VALUE_UNIT"
+	if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
+		metricValue = "VIRTUAL_PROCESSOR_CORE"
 	}
 	pts.Annotations["productMetric"] = metricValue
 
@@ -236,8 +232,6 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 		}
 		pts.Annotations["cloudpakId"] = cloudpakId
 	}
-
-	return nil
 }
 
 // findEnvVars checks if the environment variable is already present
@@ -581,4 +575,13 @@ func Remove(list []string, s string) []string {
 		}
 	}
 	return list
+}
+
+func GetWLOLicenseAnnotations() map[string]string {
+	annotations := make(map[string]string)
+	annotations["productID"] = "cb1747ecb831410f88006195f024183f"
+	annotations["productName"] = "WebSphere Liberty Operator"
+	annotations["productMetric"] = "FREE"
+	annotations["productChargedContainers"] = "ALL"
+	return annotations
 }

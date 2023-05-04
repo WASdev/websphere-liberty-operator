@@ -1,0 +1,14 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+metadata:
+  name: my-wsliberty-app
+spec:
+  applicationImage: icr.io/appcafe/websphere-liberty:kernel-java8-openj9-ubi
+  license:
+    accept: true
+    edition: IBM WebSphere Application Server
+    metric: Virtual Processor Core (VPC)
+    productEntitlementSource: Standalone
+  pullPolicy: IfNotPresent
+  semeruCloudCompiler:
+    enable: true

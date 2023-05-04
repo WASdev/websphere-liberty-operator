@@ -11,11 +11,10 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69",
             "license": {
               "accept": false,
               "edition": "IBM WebSphere Application Server",
-              "metric": "Virtual Processor Core (VPC)",
               "productEntitlementSource": "Standalone"
             },
             "manageTLS": true
@@ -58,11 +57,11 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2022-10-18T10:56:57Z"
+    createdAt: "2023-03-02T11:18:01Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.1.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
-    operators.operatorframework.io/builder: operator-sdk-v1.6.1+git
+    operators.operatorframework.io/builder: operator-sdk-v1.24.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -75,7 +74,9 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: 'Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
+    - description: 'Represents the deployment of a WebSphere Liberty application.
+        Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs.
+        License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyApplication
       kind: WebSphereLibertyApplication
       name: webspherelibertyapplications.liberty.websphere.ibm.com
@@ -110,7 +111,9 @@ spec:
         path: applicationImage
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Required field for autoscaling. Upper limit for the number of pods that can be set by the autoscaler. Parameter .spec.resources.requests.cpu must also be specified.
+      - description: Required field for autoscaling. Upper limit for the number of
+          pods that can be set by the autoscaler. Parameter .spec.resources.requests.cpu
+          must also be specified.
         displayName: Max Replicas
         path: autoscaling.maxReplicas
         x-descriptors:
@@ -124,7 +127,8 @@ spec:
       - description: The unique ID for the provider. Default value is oidc.
         displayName: ID
         path: sso.oidc[0].id
-      - description: Name of the application. Defaults to the name of this custom resource.
+      - description: Name of the application. Defaults to the name of this custom
+          resource.
         displayName: Application Name
         path: applicationName
         x-descriptors:
@@ -136,7 +140,8 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:number
       - displayName: OAuth2
         path: sso.oauth2
-      - description: Specifies a discovery endpoint URL for the OpenID Connect provider. Required field.
+      - description: Specifies a discovery endpoint URL for the OpenID Connect provider.
+          Required field.
         displayName: Discovery Endpoint
         path: sso.oidc[0].discoveryEndpoint
       - description: Version of the application.
@@ -144,14 +149,16 @@ spec:
         path: applicationVersion
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Target average CPU utilization, represented as a percentage of requested CPU, over all the pods.
+      - description: Target average CPU utilization, represented as a percentage of
+          requested CPU, over all the pods.
         displayName: Target CPU Utilization Percentage
         path: autoscaling.targetCPUUtilizationPercentage
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
       - displayName: GitHub
         path: sso.github
-      - description: Specifies the name of the claim. Use its value as the user group membership.
+      - description: Specifies the name of the claim. Use its value as the user group
+          membership.
         displayName: Group Name Attribute
         path: sso.oidc[0].groupNameAttribute
       - description: Policy for pulling container images. Defaults to IfNotPresent.
@@ -159,18 +166,22 @@ spec:
         path: pullPolicy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:imagePullPolicy
-      - description: Specifies the name of the claim. Use its value as the authenticated user principal.
+      - description: Specifies the name of the claim. Use its value as the authenticated
+          user principal.
         displayName: User Name Attribute
         path: sso.oidc[0].userNameAttribute
       - description: Specifies a callback protocol, host and port number.
         displayName: Redirect to RP Host and Port
         path: sso.redirectToRPHostAndPort
-      - description: Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.
+      - description: Name of the Secret to use to pull images from the specified repository.
+          It is not required if the cluster is configured with a global image pull
+          secret.
         displayName: Pull Secret
         path: pullSecret
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
-      - description: Specifies whether to map a user identifier to a registry user. This parameter applies to all providers.
+      - description: Specifies whether to map a user identifier to a registry user.
+          This parameter applies to all providers.
         displayName: Map to User Registry
         path: sso.mapToUserRegistry
         x-descriptors:
@@ -178,7 +189,8 @@ spec:
       - description: The name of the social login configuration for display.
         displayName: Display Name
         path: sso.oidc[0].displayName
-      - description: Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.
+      - description: Name of the service account to use for deploying the application.
+          A service account is automatically created if it's not specified.
         displayName: Service Account Name
         path: serviceAccountName
         x-descriptors:
@@ -193,10 +205,12 @@ spec:
         path: createKnativeService
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Specifies the name of the claim. Use its value as the subject realm.
+      - description: Specifies the name of the claim. Use its value as the subject
+          realm.
         displayName: Realm Name Attribute
         path: sso.oidc[0].realmNameAttribute
-      - description: Expose the application externally via a Route, a Knative Route or an Ingress resource.
+      - description: Expose the application externally via a Route, a Knative Route
+          or an Ingress resource.
         displayName: Expose
         path: expose
         x-descriptors:
@@ -209,7 +223,8 @@ spec:
       - description: Specifies one or more scopes to request.
         displayName: Scope
         path: sso.oidc[0].scope
-      - description: Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.
+      - description: Number of pods to create. Defaults to 1. Not applicable when
+          .spec.autoscaling or .spec.createKnativeService is specified.
         displayName: Replicas
         path: replicas
         x-descriptors:
@@ -228,7 +243,8 @@ spec:
         path: service.type
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Specifies whether to enable host name verification when the client contacts the provider.
+      - description: Specifies whether to enable host name verification when the client
+          contacts the provider.
         displayName: Host Name Verification Enabled
         path: sso.oidc[0].hostNameVerificationEnabled
         x-descriptors:
@@ -257,7 +273,8 @@ spec:
         path: service.annotations
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The port that the operator assigns to containers inside pods. Defaults to the value of .spec.service.port.
+      - description: The port that the operator assigns to containers inside pods.
+          Defaults to the value of .spec.service.port.
         displayName: Target Port
         path: service.targetPort
         x-descriptors:
@@ -266,7 +283,9 @@ spec:
         path: statefulSet
       - displayName: Service
         path: service
-      - description: 'A name of a secret that already contains TLS key, certificate and CA to be mounted in the pod. The following keys are valid in the secret: ca.crt, tls.crt, and tls.key.'
+      - description: 'A name of a secret that already contains TLS key, certificate
+          and CA to be mounted in the pod. The following keys are valid in the secret:
+          ca.crt, tls.crt, and tls.key.'
         displayName: Certificate Secret Reference
         path: service.certificateSecretRef
         x-descriptors:
@@ -276,98 +295,115 @@ spec:
       - description: An array consisting of service ports.
         displayName: Ports
         path: service.ports
-      - displayName: Network Policy
-        path: networkPolicy
+      - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT)
+          compilation requests from the application.
+        displayName: Semeru Cloud Compiler
+        path: semeruCloudCompiler
       - description: Expose the application as a bindable service. Defaults to false.
         displayName: Bindable
         path: service.bindable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - displayName: Network Policy
+        path: networkPolicy
       - displayName: Serviceability
         path: serviceability
       - displayName: Single Sign-On
         path: sso
-      - displayName: Monitoring
-        path: monitoring
-      - description: Specifies the strategy to replace old deployment pods with new pods.
+      - description: Specifies the strategy to replace old deployment pods with new
+          pods.
         displayName: Deployment Update Strategy
         path: deployment.updateStrategy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
+      - displayName: Monitoring
+        path: monitoring
       - description: An array of environment variables for the application container.
         displayName: Environment Variables
         path: env
-      - description: List of sources to populate environment variables in the application container.
+      - description: List of sources to populate environment variables in the application
+          container.
         displayName: Environment Variables from Sources
         path: envFrom
-      - description: Specifies the strategy to replace old StatefulSet pods with new pods.
+      - description: Specifies the strategy to replace old StatefulSet pods with new
+          pods.
         displayName: StatefulSet Update Strategy
         path: statefulSet.updateStrategy
-      - description: Represents a volume with data that is accessible to the application container.
-        displayName: Volumes
-        path: volumes
       - displayName: Storage
         path: statefulSet.storage
+      - description: Represents a volume with data that is accessible to the application
+          container.
+        displayName: Volumes
+        path: volumes
+      - description: A convenient field to set the size of the persisted storage.
+        displayName: Storage Size
+        path: statefulSet.storage.size
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Represents where to mount the volumes into the application container.
         displayName: Volume Mounts
         path: volumeMounts
       - description: List of containers to run before other containers in a pod.
         displayName: Init Containers
         path: initContainers
-      - description: A convenient field to set the size of the persisted storage.
-        displayName: Storage Size
-        path: statefulSet.storage.size
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: List of sidecar containers. These are additional containers to be added to the pods.
-        displayName: Sidecar Containers
-        path: sidecarContainers
-      - description: A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.
+      - description: A convenient field to request the storage class of the persisted
+          storage. The name can not be specified or updated after the storage is created.
         displayName: Storage Class Name
         path: statefulSet.storage.className
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Affinity
-        path: affinity
-      - description: The directory inside the container where this persisted storage will be bound to.
+      - description: List of sidecar containers. These are additional containers to
+          be added to the pods.
+        displayName: Sidecar Containers
+        path: sidecarContainers
+      - description: The directory inside the container where this persisted storage
+          will be bound to.
         displayName: Storage Mount Path
         path: statefulSet.storage.mountPath
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Security context for the application container.
-        displayName: Security Context
-        path: securityContext
-      - description: A YAML object that represents a volumeClaimTemplate component of a StatefulSet.
+      - displayName: Affinity
+        path: affinity
+      - description: A YAML object that represents a volumeClaimTemplate component
+          of a StatefulSet.
         displayName: Storage Volume Claim Template
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - description: Security context for the application container.
+        displayName: Security Context
+        path: securityContext
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: A YAML snippet representing an array of Endpoint component from ServiceMonitor.
+      - description: A YAML snippet representing an array of Endpoint component from
+          ServiceMonitor.
         displayName: Monitoring Endpoints
         path: monitoring.endpoints
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:endpointList
-      - description: Controls which nodes the pod are scheduled to run on, based on labels on the node.
+      - description: Controls which nodes the pod are scheduled to run on, based on
+          labels on the node.
         displayName: Node Affinity
         path: affinity.nodeAffinity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:nodeAffinity
-      - description: Controls the nodes the pod are scheduled to run on, based on labels on the pods that are already running on the node.
+      - description: Controls the nodes the pod are scheduled to run on, based on
+          labels on the pods that are already running on the node.
         displayName: Pod Affinity
         path: affinity.podAffinity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podAffinity
-      - description: Enables the ability to prevent running a pod on the same node as another pod.
+      - description: Enables the ability to prevent running a pod on the same node
+          as another pod.
         displayName: Pod Anti Affinity
         path: affinity.podAntiAffinity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podAntiAffinity
-      - description: A YAML object that contains a set of required labels and their values.
+      - description: A YAML object that contains a set of required labels and their
+          values.
         displayName: Node Affinity Labels
         path: affinity.nodeAffinityLabels
         x-descriptors:
@@ -387,14 +423,18 @@ spec:
         path: route.path
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Path type to be used for Ingress. This does not apply to Route on OpenShift.
+      - description: Path type to be used for Ingress. This does not apply to Route
+          on OpenShift.
         displayName: Path Type
         path: route.pathType
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:select:Exact
         - urn:alm:descriptor:com.tectonic.ui:select:Prefix
         - urn:alm:descriptor:com.tectonic.ui:select:ImplementationSpecific
-      - description: 'A name of a secret that already contains TLS key, certificate and CA to be used in the route. It can also contain destination CA certificate. The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt, and tls.key.'
+      - description: 'A name of a secret that already contains TLS key, certificate
+          and CA to be used in the route. It can also contain destination CA certificate.
+          The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt,
+          and tls.key.'
         displayName: Certificate Secret Reference
         path: route.certificateSecretRef
         x-descriptors:
@@ -406,20 +446,24 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:select:edge
         - urn:alm:descriptor:com.tectonic.ui:select:reencrypt
         - urn:alm:descriptor:com.tectonic.ui:select:passthrough
-      - description: HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect and None.
+      - description: HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect
+          and None.
         displayName: Insecure Edge Termination Policy
         path: route.insecureEdgeTerminationPolicy
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:select:Allow
         - urn:alm:descriptor:com.tectonic.ui:select:Redirect
         - urn:alm:descriptor:com.tectonic.ui:select:None
-      - description: Periodic probe of container liveness. Container will be restarted if the probe fails.
+      - description: Periodic probe of container liveness. Container will be restarted
+          if the probe fails.
         displayName: Liveness Probe
         path: probes.liveness
-      - description: Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails.
+      - description: Periodic probe of container service readiness. Container will
+          be removed from service endpoints if the probe fails.
         displayName: Readiness Probe
         path: probes.readiness
-      - description: Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully.
+      - description: Probe to determine successful initialization. If specified, other
+          probes are not executed until this completes successfully.
         displayName: Startup Probe
         path: probes.startup
       - description: Disable the creation of the network policy. Defaults to false.
@@ -427,41 +471,75 @@ spec:
         path: networkPolicy.disable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Specify the labels of namespaces that incoming traffic is allowed from.
+      - description: Enable the Semeru Cloud Compiler. Defaults to false.
+        displayName: Enable
+        path: semeruCloudCompiler.enable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Specify the labels of namespaces that incoming traffic is allowed
+          from.
         displayName: Namespace Labels
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Specify the labels of pod(s) that incoming traffic is allowed from.
+      - description: Number of desired pods for the Semeru Cloud Compiler. Defaults
+          to 1.
+        displayName: Replicas
+        path: semeruCloudCompiler.replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podCount
+      - description: Specify the labels of pod(s) that incoming traffic is allowed
+          from.
         displayName: From Labels
         path: networkPolicy.fromLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: 'Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment'
+      - description: Resource requests and limits for the Semeru Cloud Compiler. The
+          CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi,
+          with a limit of 1200Mi.
+        displayName: Resource Requirements
+        path: semeruCloudCompiler.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: 'Product edition. Defaults to IBM WebSphere Application Server.
+          Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere
+          Application Server Network Deployment'
         displayName: Edition
         path: license.edition
-      - description: 'Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition'
+      - description: 'Entitlement source for the product. Defaults to Standalone.
+          Other options: IBM Cloud Pak for Applications, IBM WebSphere Application
+          Server Family Edition, IBM WebSphere Hybrid Edition'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
-      - description: 'Charge metric code. Defaults to Virtual Processor Core (VPC). Other option: Processor Value Unit (PVU)'
+      - description: Deprecated. Charge metric code is now automatically determined
+          based on the specified product edition and entitlement source.
         displayName: Metric
         path: license.metric
-      - description: I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: I represent that the software in the above-referenced application
+          container includes the IBM Program referenced below and I accept the terms
+          of the license agreement corresponding to the version of IBM Program in
+          the application container by setting this value to true. See https://ibm.biz/was-license
+          for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
-      - description: Determines whether the access token that is provided in the request is used for authentication.
+      - description: Determines whether the access token that is provided in the request
+          is used for authentication.
         displayName: Access Token Required
         path: sso.oauth2[0].accessTokenRequired
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Determines whether to support access token authentication if an access token is provided in the request.
+      - description: Determines whether to support access token authentication if
+          an access token is provided in the request.
         displayName: Access Token Supported
         path: sso.oauth2[0].accessTokenSupported
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Specifies the unique ID for the provider. The default value is oauth2.
+      - description: Specifies the unique ID for the provider. The default value is
+          oauth2.
         displayName: ID
         path: sso.oauth2[0].id
       - description: The URL for retrieving the user information.
@@ -559,7 +637,9 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes:Secret
       version: v1
-    - description: 'Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
+    - description: 'Day-2 operation for generating server dumps. Documentation: For
+        more information about installation parameters, see https://ibm.biz/wlo-crs.
+        License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyDump
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
@@ -569,7 +649,8 @@ spec:
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+      - description: The license must be accepted before day-2 operations can be deployed.
+          License information is available at https://ibm.biz/was-license
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -581,7 +662,9 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
-    - description: 'Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
+    - description: 'Day-2 operation for gathering server traces. Documentation: For
+        more information about installation parameters, see https://ibm.biz/wlo-crs.
+        License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'
       displayName: WebSphereLibertyTrace
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
@@ -591,7 +674,8 @@ spec:
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+      - description: The license must be accepted before day-2 operations can be deployed.
+          License information is available at https://ibm.biz/was-license
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -699,7 +783,12 @@ spec:
   install:
     spec:
       deployments:
-      - name: wlo-controller-manager
+      - label:
+          app.kubernetes.io/instance: websphere-liberty-operator
+          app.kubernetes.io/managed-by: olm
+          app.kubernetes.io/name: websphere-liberty-operator
+          control-plane: controller-manager
+        name: wlo-controller-manager
         spec:
           replicas: 1
           selector:
@@ -712,6 +801,7 @@ spec:
           template:
             metadata:
               annotations:
+                kubectl.kubernetes.io/default-container: manager
                 productChargedContainers: ALL
                 productID: cb1747ecb831410f88006195f024183f
                 productMetric: FREE
@@ -747,6 +837,8 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69
                 image: icr.io/cpopen/websphere-liberty-operator:daily
                 livenessProbe:
                   failureThreshold: 3
@@ -1019,6 +1111,6 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35
-    name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:60ca13dd15d5dd583a594436d3568fc69fc7a58081dc40885dc4d2b16a6e4c69
+    name: liberty-sample-app
   version: 1.1.0
