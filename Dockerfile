@@ -16,7 +16,7 @@ COPY controllers/ controllers/
 COPY utils/ utils/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -ldflags="-s -w" -a -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -ldflags="-s -w" -a -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -25,7 +25,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 ARG USER_ID=65532
 ARG GROUP_ID=65532
 
-ARG VERSION_LABEL=1.1.0
+ARG VERSION_LABEL=1.2.0
 ARG RELEASE_LABEL=XX
 ARG VCS_REF=0123456789012345678901234567890123456789
 ARG VCS_URL="https://github.com/WASdev/websphere-liberty-operator"

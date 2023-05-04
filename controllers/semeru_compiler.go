@@ -326,6 +326,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 					},
 					Env: []corev1.EnvVar{
 						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections" +
+							" -XX:+JITServerShareROMClasses" +
 							" -XX:JITServerSSLKey=/etc/x509/certs/tls.key" +
 							" -XX:JITServerSSLCert=/etc/x509/certs/tls.crt"},
 					},
@@ -543,7 +544,7 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 			certificateLocation = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 		}
 		jitServerAddress := instance.Status.SemeruCompiler.ServiceHostname
-		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:+JITServerShareROMClasses -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
+		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
 			jitServerAddress, certificateLocation)
 
 		args := []string{

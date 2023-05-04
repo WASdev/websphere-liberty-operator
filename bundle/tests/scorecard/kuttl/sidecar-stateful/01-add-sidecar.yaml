@@ -7,6 +7,6 @@ spec:
   applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
   replicas: 1
   sidecarContainers:
-  - image: k8s.gcr.io/pause:2.0
+  - image: registry.k8s.io/pause:3.2
     name: sidecar-container
 

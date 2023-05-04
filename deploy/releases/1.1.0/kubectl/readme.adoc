@@ -1,7 +1,7 @@
 
 == Installation
 
-The Websphere Liberty Operator can be installed to:
+The WebSphere Liberty Operator can be installed to:
 
 * watch own namespace
 * watch another namespace
@@ -11,14 +11,14 @@ Appropriate roles and bindings are required to watch another namespace or watch 
 
 ---
 
-. Install Custom Resource Definitions (CRDs) for `WebsphereLibertyApplication` and day-2 operations `WebsphereLibertyTrace` and `WebsphereLibertyDump`. This needs to be done only ONCE per cluster:
+. Install Custom Resource Definitions (CRDs) for `WebSphereLibertyApplication` and day-2 operations `WebSphereLibertyTrace` and `WebSphereLibertyDump`. This needs to be done only ONCE per cluster:
 +
 [source,sh]
 ----
     kubectl apply -f https://raw.githubusercontent.com/WASdev/websphere-liberty-operator/main/deploy/releases/1.1.0/kubectl/websphereliberty-app-crd.yaml
 ----
 
-. Install the `Websphere Liberty Operator:
+. Install the WebSphere Liberty Operator:
 
 .. Set operator namespace and the namespace to watch:
 +
@@ -65,11 +65,11 @@ NOTE: Ensure that you replace  `<SPECIFY_OPERATOR_NAMESPACE_HERE>` and `<SPECIFY
 
 == Uninstallation
 
-_Optional_: Remove any `WebsphereLibertyApplication` Custom Resource instances before uninstalling the operator.
+_Optional_: Remove any `WebSphereLibertyApplication` Custom Resource instances before uninstalling the operator.
 
 To uninstall the operator, run commands from Step 2c first and then Step 2b (if applicable), but after replacing `kubectl apply` with `kubectl delete`.
 
 To delete the CRD, run command from Step 1, but after replacing `kubectl apply` with `kubectl delete`.
 
-_Deleting the CRD will also delete all `WebsphereLibertyApplication` in the cluster_
+_Deleting the CRD will also delete all `WebSphereLibertyApplication` in the cluster_
 

@@ -12,8 +12,36 @@ The WebSphere Liberty Operator allows you to deploy and manage containerized Lib
 
 Key features provided by the operator:
 
+### Simplified license tracking
+Specify the edition and the product entitlement source for your applications and the operator will automatically add the necessary WebSphere license metadata on the deployed workloads. You can use the IBM License Service to view the aggregated license usage information for all applications.
+
+### Integration with Certificate Managers
+The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates for the application. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods and they are automatically refreshed when the certificates are updated. Optionally, you can bring your own (BYO) certificate authority (CA) or Issuer to generate certificates to secure your applications.
+
+### Automatically restrict network communication
+Network policies are created for each application by default to limit incoming traffic to pods in the same namespace that are part of the same application. Only the ports configured by the service are allowed. The network policy can be configured to allow either namespaces and/or pods with certain labels. On OpenShift, the operator automatically configures network policy to allow traffic from ingress, when the application is exposed, and from the monitoring stack.
+
+### Integration with Semeru Cloud Compiler
+Use a single toggle to stand up a compatible Semeru Cloud Compiler instance to handle compilation requests from the multiple instances of the same application. Liberty Operator automatically sets up encrypted communication between the compiler and the application. It also handles application upgrade scenarios gracefully to ensure compiler and application instances remain compatible.
+
+### Exposing metrics to Prometheus
+Expose the Liberty application's metrics via the Prometheus Operator. You can pick between a basic mode, where you simply specify the label that Prometheus is watching to scrape the metrics from the container, or you can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `.spec.monitoring` field to control configurations such as poll interval and security credentials.
+
+### Single Sign-On (SSO)
+Liberty runtime provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows you to easily configure and manage the single sign-on information for your applications.
+
+### Easily mount logs and transaction directories
+Do you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster)? Simply specify the volume size and the location to persist and the operator takes care of the rest. For example, add the following configuration into the WebSphereLibertyApplication's `.spec.storage` field :
+``` size: 2Gi mountPath: "/logs" ```
+
+### Service Binding
+Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating Kubernetes secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to their required services without any intervention or interruption.
+
+### Integration with Knative (OpenShift Serverless)
+Deploy your serverless runtime component using a single toggle. The operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing the application to automatically scale to 0 when it is idle.
+
 ### Application Lifecycle
-You can deploy your Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the operator will watch for any updates and will re-deploy the modified image.
+You can deploy your Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the operator will watch for any updates and will automatically re-deploy the new image.
 
 ### Custom RBAC
 This Operator is capable of using a custom Kubernetes service account from the caller, allowing it to follow RBAC restrictions. By default, it creates a service account if one is not specified, which can also be bound with specific roles.
@@ -30,36 +58,15 @@ Run multiple instances of your application for high availability. Either specify
 ### Persistence and advanced storage
 Enable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and we will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where you can specify a built-in PersistentVolumeClaim, allowing you to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use single storage for serviceability-related day-2 operations, such as gathering server traces and dumps.
 
-### Service Binding
-Your runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating Kubernetes secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to their required services without any intervention or interruption.
-
-### Single Sign-On (SSO)
-Liberty runtime provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows you to easily configure and manage the single sign-on information for your applications.
-
-### Exposing metrics to Prometheus
-Expose the Liberty application's metrics via the Prometheus Operator.
-You can pick between a basic mode, where you simply specify the label that Prometheus is watching to scrape the metrics from the container, or you can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `.spec.monitoring` field to control configurations such as poll interval and security credentials.
-
-### Easily mount logs and transaction directories
-Do you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster)? Simply add the following configuration (to specify the volume size and the location to persist) to your WebSphereLibertyApplication CR:
-``` storage: size: 2Gi mountPath: "/logs" ```
-
-### Integration with Certificate Managers
-The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates for the application. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods as well as routes and they are automatically refreshed when the certificates are updated.
-
-### Control network communication
-Network policies are created for each application by default to limit incoming traffic to pods in the same namespace that are part of the same application. Only the ports configured by the service are allowed. The network policy can be configured to allow either namespaces and/or pods with certain labels. On OpenShift, the operator automatically configures network policy to allow traffic from ingress, when the application is exposed, and from the monitoring stack.
-
-### Integration with OpenShift Serverless
-Deploy your serverless runtime component using a single toggle. The operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing application to automatically scale to 0 when it is idle.
-
 ### Integration with OpenShift's Topology UI
 We set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and services and how they are connected.
 
 ## Supported platforms
 
-Kubernetes platform installed on the following platform:
-- Linux x86_64
+Kubernetes platform installed on one of the following platforms:
+- Linux&reg; x86_64 (amd64)
+- Linux&reg; on IBM&reg; Z (s390x)
+- Linux&reg; on Power&reg; (ppc64le)
 
 ## Prerequisites
 
@@ -83,12 +90,12 @@ See [IBM WebSphere Liberty documentation](https://ibm.biz/wlo-docs).
 
 ## Installing
 
-Install the IBM WebSphere Liberty Operator to the desired namespace and create an instance of the [WebSphereLibertyApplication custom resource](https://ibm.biz/wlo-crs).
+[Install](https://ibm.biz/wlo-install) the IBM WebSphere Liberty Operator to the desired namespace and deploy the [sample Liberty application](https://ibm.biz/wlo-deploy-sample-app) or [your custom Liberty applications](https://ibm.biz/wlo-deploy-custom-app).
 
 ## Configuration
 
-The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) for details.
+The WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) and [configuration examples](https://ibm.biz/wlo-config-examples) for details.
 
 ## Limitations 
 
-IBM WebSphere Liberty Operator is not available on Power or Z architectures. Please see the [limitations](https://ibm.biz/wlo-limits) for additional information.
+See the [limitations](https://ibm.biz/wlo-limits) for details.

@@ -3,42 +3,38 @@ kind: ServiceAccount
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-controller-manager
 ---
-# permissions to do leader election.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-role
 rules:
-  - apiGroups:
-      - ""
-      - coordination.k8s.io
-    resources:
-      - configmaps
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-
+- apiGroups:
+  - ""
+  - coordination.k8s.io
+  resources:
+  - configmaps
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -46,7 +42,6 @@ metadata:
   creationTimestamp: null
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-manager-role
 rules:
@@ -231,7 +226,6 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-leader-election-rolebinding
 roleRef:
@@ -247,7 +241,6 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
   name: wlo-manager-rolebinding
 roleRef:
@@ -263,45 +256,57 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/managed-by: olm
     app.kubernetes.io/name: websphere-liberty-operator
     control-plane: controller-manager
   name: wlo-controller-manager
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/instance: websphere-liberty-operator
-      app.kubernetes.io/managed-by: olm
       app.kubernetes.io/name: websphere-liberty-operator
       control-plane: controller-manager
-  replicas: 1
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+        productChargedContainers: ALL
+        productID: cb1747ecb831410f88006195f024183f
+        productMetric: FREE
+        productName: WebSphere Liberty Operator
       labels:
         app.kubernetes.io/instance: websphere-liberty-operator
-        app.kubernetes.io/managed-by: olm
         app.kubernetes.io/name: websphere-liberty-operator
         control-plane: controller-manager
-      annotations:
-        productID: "cb1747ecb831410f88006195f024183f"
-        productName: "WebSphere Liberty Operator"
-        productMetric: "FREE"
-        productChargedContainers: "ALL"
     spec:
-      hostIPC: false
-      hostPID: false
-      hostNetwork: false
-      securityContext:
-        runAsNonRoot: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
       containers:
-      - command:
-        - /manager
-        args:
-        - "--health-probe-bind-address=:8081"
-        - "--metrics-bind-address=127.0.0.1:8080"
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
         - --enable-leader-election
-        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:b2b0f07db844e0b3970cfdf82f87a0ce330ee38f34df6926c09535b8ecbd2832
-        name: manager
+        command:
+        - /manager
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: WATCH_NAMESPACE
+          value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+        - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+          value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:e22dd56a05e44618a10d275d3ff07a38eb364c0f04f86ffe9618d83dd5467860
+        image: icr.io/cpopen/websphere-liberty-operator:daily
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -312,6 +317,7 @@ spec:
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 10
+        name: manager
         readinessProbe:
           failureThreshold: 3
           httpGet:
@@ -322,21 +328,6 @@ spec:
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 10
-        env:
-          - name: OPERATOR_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: WATCH_NAMESPACE
-            value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
-        securityContext:
-          allowPrivilegeEscalation: false
-          privileged: false
-          runAsNonRoot: true
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-              - ALL
         resources:
           limits:
             cpu: 400m
@@ -344,14 +335,18 @@ spec:
           requests:
             cpu: 200m
             memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      hostIPC: false
+      hostNetwork: false
+      hostPID: false
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: wlo-controller-manager
       terminationGracePeriodSeconds: 10
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - amd64
