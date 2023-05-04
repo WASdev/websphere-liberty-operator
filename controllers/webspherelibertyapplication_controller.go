@@ -635,24 +635,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	} else if ok {
 		if instance.Spec.Monitoring != nil && (instance.Spec.CreateKnativeService == nil || !*instance.Spec.CreateKnativeService) {
-			var basicAuth *prometheusv1.BasicAuth
-			basicAuth = instance.Spec.Monitoring.Endpoints[0].BasicAuth
-			var secrets []string
-			if basicAuth != nil {
-				secrets = append(secrets, basicAuth.Username.Name)
-				if basicAuth.Username.Name != basicAuth.Password.Name {
-					secrets = append(secrets, basicAuth.Password.Name)
-				}
+			// Validate the monitoring endpoints' configuration before creating/updating the ServiceMonitor
+			if err := r.validatePrometheusMonitoringEndpoints(instance); err != nil {
+				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 			}
-
-			// if the BasicAuth Secret is specified but does not exist, do not create/update the ServiceMonitor
-			for _, sName := range secrets {
-				if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: sName, Namespace: ns}, &corev1.Secret{}); err != nil {
-					reqLogger.Error(err, "Failed to reconcile Secret")
-					return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-				}
-			}
-
 			sm := &prometheusv1.ServiceMonitor{ObjectMeta: defaultMeta}
 			err = r.CreateOrUpdate(sm, instance, func() error {
 				oputils.CustomizeServiceMonitor(sm, instance)
@@ -804,6 +790,88 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 		})
 	}
 	return b.Complete(r)
+}
+
+// Returns the array result for the set union of {names..., name}.
+func appendNameIfUnique(names []string, name string) []string {
+	if len(name) > 0 && !lutils.Contains(names, name) {
+		return append(names, name)
+	}
+	return names
+}
+
+// Returns true if the ConfigMap is not specified as optional, otherwise return false.
+func configMapShouldExist(configMapKeySelector corev1.ConfigMapKeySelector) bool {
+	return configMapKeySelector.Optional == nil || !*configMapKeySelector.Optional
+}
+
+// Returns true if the Secret is not specified as optional, otherwise return false.
+func secretShouldExist(secretKeySelector corev1.SecretKeySelector) bool {
+	return secretKeySelector.Optional == nil || !*secretKeySelector.Optional
+}
+
+// Returns an error if any user specified non-optional Secret or ConfigMap for Prometheus monitoring does not exist, otherwise return nil.
+func (r *ReconcileWebSphereLiberty) validatePrometheusMonitoringEndpoints(instance *webspherelibertyv1.WebSphereLibertyApplication) error {
+	var basicAuth *prometheusv1.BasicAuth
+	var oauth2 *prometheusv1.OAuth2
+	var bearerTokenSecret corev1.SecretKeySelector
+	var authorization *prometheusv1.SafeAuthorization
+	if instance.Spec.Monitoring.Endpoints != nil {
+		for _, endpoint := range instance.Spec.Monitoring.Endpoints {
+			var secretNames []string
+			var configMapNames []string
+			// BasicAuth
+			basicAuth = endpoint.BasicAuth
+			if basicAuth != nil {
+				if secretShouldExist(basicAuth.Username) {
+					secretNames = appendNameIfUnique(secretNames, basicAuth.Username.Name)
+				}
+				if secretShouldExist(basicAuth.Password) {
+					secretNames = appendNameIfUnique(secretNames, basicAuth.Password.Name)
+				}
+			}
+			// OAuth2
+			oauth2 = endpoint.OAuth2
+			if oauth2 != nil {
+				if oauth2.ClientID.Secret != nil && secretShouldExist(*oauth2.ClientID.Secret) {
+					secretNames = appendNameIfUnique(secretNames, oauth2.ClientID.Secret.Name)
+				}
+				if oauth2.ClientID.ConfigMap != nil && configMapShouldExist(*oauth2.ClientID.ConfigMap) {
+					configMapNames = appendNameIfUnique(configMapNames, oauth2.ClientID.ConfigMap.Name)
+				}
+				if secretShouldExist(oauth2.ClientSecret) {
+					secretNames = appendNameIfUnique(secretNames, oauth2.ClientSecret.Name)
+				}
+			}
+			// BearerTokenSecret
+			bearerTokenSecret = endpoint.BearerTokenSecret
+			if secretShouldExist(bearerTokenSecret) {
+				secretNames = appendNameIfUnique(secretNames, bearerTokenSecret.Name)
+			}
+			// Authorization
+			authorization = endpoint.Authorization
+			if authorization != nil && authorization.Credentials != nil && secretShouldExist(*authorization.Credentials) {
+				secretNames = appendNameIfUnique(secretNames, authorization.Credentials.Name)
+			}
+			// Error if any Secret is specified but does not exist
+			for _, secretName := range secretNames {
+				if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: instance.Namespace}, &corev1.Secret{}); err != nil {
+					errorMessage := fmt.Sprintf("Could not find Secret '%s' in this namespace.", secretName)
+					r.Log.Error(err, errorMessage)
+					return errors.New(errorMessage)
+				}
+			}
+			// Error if any ConfigMap is specified but does not exist
+			for _, configMapName := range configMapNames {
+				if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: instance.Namespace}, &corev1.ConfigMap{}); err != nil {
+					errorMessage := fmt.Sprintf("Could not find ConfigMap '%s' in this namespace.", configMapName)
+					r.Log.Error(err, errorMessage)
+					return errors.New(errorMessage)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func getMonitoringEnabledLabelName(ba common.BaseComponent) string {
