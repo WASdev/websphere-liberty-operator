@@ -9,6 +9,6 @@ spec:
     accept: true
     edition: IBM WebSphere Application Server Network Deployment
     productEntitlementSource: IBM Cloud Pak for Applications
-  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
   replicas: 1
 
