@@ -149,9 +149,35 @@ static-scan:
     "${COMMONS_PATH}"/static-scan/run.sh
 
 compliance-checks:
-
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
+  dind: true
   abort_on_failure: false
+  image_pull_policy: IfNotPresent
+  sources:
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 38149a3644798c0b5679e6d8cdf999ce7f6e5142
+    path: cra
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 56cb780f891167b93b95d6f477ad7dce79f3df16
+    path: doi
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 7815b2273f9721d6edbdaf9bddb18e44d070b238
+    path: detect-secrets
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 38149a3644798c0b5679e6d8cdf999ce7f6e5142
+    path: compliance-checks
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: eabe79d3f0567752387563cf36edc09cac226846
+    path: checkov
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: eabe79d3f0567752387563cf36edc09cac226846
+    path: terraform
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: eabe79d3f0567752387563cf36edc09cac226846
+    path: tfsec
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 3e927695cfdb4f1bb8b25697ae67a10983de9a8c
+    path: mend    
   script: |
     #!/usr/bin/env bash
     
