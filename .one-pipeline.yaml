@@ -173,6 +173,8 @@ compliance-checks:
       exit 0
     fi
 
+    "${COMMONS_PATH}"/compliance-checks/run.sh
+
 containerize:
   dind: true
   abort_on_failure: true
