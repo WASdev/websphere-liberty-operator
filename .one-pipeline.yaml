@@ -148,6 +148,30 @@ static-scan:
     #echo "$SONAR_PASS" >> /tmp/sonarqube-token
     "${COMMONS_PATH}"/static-scan/run.sh
 
+compliance-checks:
+
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3@sha256:5b8f7e1964c0a82995689d636b60a1761dd08ce422b9195aadc0249e5da90dae
+  abort_on_failure: false
+  script: |
+    #!/usr/bin/env bash
+    
+    echo $STAGE
+    
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
 
 containerize:
   dind: true
