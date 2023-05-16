@@ -150,7 +150,7 @@ static-scan:
 
 compliance-checks:
 
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3@sha256:5b8f7e1964c0a82995689d636b60a1761dd08ce422b9195aadc0249e5da90dae
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
   abort_on_failure: false
   script: |
     #!/usr/bin/env bash
