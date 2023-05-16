@@ -119,6 +119,14 @@ static-scan:
       exit 0
     fi
 
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
     BRANCH=$(get_env branch) 
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
@@ -368,6 +376,14 @@ sign-artifact:
       exit 0
     fi
 
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
 deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
@@ -403,6 +419,14 @@ dynamic-scan:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
 
@@ -463,6 +487,14 @@ scan-artifact:
 
     echo $STAGE
 
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
 
@@ -479,6 +511,14 @@ release:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+    
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
 
