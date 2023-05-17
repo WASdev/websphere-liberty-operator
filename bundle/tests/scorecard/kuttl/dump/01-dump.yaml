@@ -9,3 +9,5 @@ spec:
   include:
     - thread
     - heap
+  versions:
+    reconciled: 1.2.0

@@ -9,3 +9,5 @@ spec:
   traceSpecification: "*=info:com.ibm.ws.webcontainer*=all"
   maxFileSize: 20
   maxFiles: 5
+  versions:
+    reconciled: 1.2.0
