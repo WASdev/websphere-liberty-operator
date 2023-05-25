@@ -3,9 +3,9 @@ kind: Deployment
 metadata:
   name: autoscaling3-wsliberty
 status:
-  replicas: 3
-  readyReplicas: 3
-  updatedReplicas: 3
+  replicas: 2
+  readyReplicas: 2
+  updatedReplicas: 2
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
@@ -13,5 +13,5 @@ metadata:
   name: autoscaling3-wsliberty
 spec:
   maxReplicas: 5
-  minReplicas: 3
+  minReplicas: 2
   targetCPUUtilizationPercentage: 50

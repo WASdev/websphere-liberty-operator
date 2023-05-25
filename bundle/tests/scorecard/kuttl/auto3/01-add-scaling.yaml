@@ -8,6 +8,6 @@ spec:
       cpu: "0.2"
   autoscaling:
     maxReplicas: 5
-    minReplicas: 3
+    minReplicas: 2
     targetCPUUtilizationPercentage: 50
 

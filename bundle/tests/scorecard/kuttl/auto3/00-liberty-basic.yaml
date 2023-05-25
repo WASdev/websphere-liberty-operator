@@ -27,3 +27,12 @@ spec:
       periodSeconds: 5
       successThreshold: 1
       failureThreshold: 12
+    startup:
+      httpGet:
+        path: /
+        port: 9080
+      timeoutSeconds: 3
+      periodSeconds: 5
+      # 45 * 5 = 225 seconds till failure
+      failureThreshold: 45
+
