@@ -35,8 +35,8 @@ docker build -t e2e-runner:latest -f Dockerfile.e2e --build-arg GO_VERSION="${GO
 #)
 
 #if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
-declare -A E2E_TESTS=(
 #	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
+declare -A E2E_TESTS=(
 	[kind-e2e-run]=$(cat <<- EOF
 		--volume /var/run/docker.sock:/var/run/docker.sock \
 		--env FYRE_USER=${FYRE_USER} \
