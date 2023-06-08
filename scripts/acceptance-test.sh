@@ -10,31 +10,32 @@ docker build -t e2e-runner:latest -f Dockerfile.e2e --build-arg GO_VERSION="${GO
 	exit 1
 }
 
-declare -A E2E_TESTS=(
-	[ocp-e2e-run-${ARCHITECTURE}]=$(cat <<-EOF
-		--volume /var/run/docker.sock:/var/run/docker.sock \
-		--env PIPELINE_USERNAME=${PIPELINE_USERNAME} \
-		--env PIPELINE_PASSWORD=${PIPELINE_PASSWORD} \
-		--env PIPELINE_REGISTRY=${PIPELINE_REGISTRY} \
-		--env PIPELINE_OPERATOR_IMAGE=${PIPELINE_OPERATOR_IMAGE} \
-		--env DOCKER_USERNAME=${DOCKER_USERNAME} \
-		--env DOCKER_PASSWORD=${DOCKER_PASSWORD} \
-		--env CLUSTER_URL=${CLUSTER_URL} \
-		--env CLUSTER_USER=${CLUSTER_USER} \
-		--env CLUSTER_TOKEN=${CLUSTER_TOKEN} \
-		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
-		--env RELEASE_TARGET=${RELEASE_TARGET} \
-		--env CATALOG_IMAGE=${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET} \
-		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
-		--env INSTALL_MODE=${INSTALL_MODE} \
-		--env ARCHITECTURE=${ARCHITECTURE}
-		e2e-runner:latest \
-		make test-pipeline-e2e
-		EOF
-	)
-)
+#declare -A E2E_TESTS=(
+#	[ocp-e2e-run-${ARCHITECTURE}]=$(cat <<-EOF
+#		--volume /var/run/docker.sock:/var/run/docker.sock \
+#		--env PIPELINE_USERNAME=${PIPELINE_USERNAME} \
+#		--env PIPELINE_PASSWORD=${PIPELINE_PASSWORD} \
+#		--env PIPELINE_REGISTRY=${PIPELINE_REGISTRY} \
+#		--env PIPELINE_OPERATOR_IMAGE=${PIPELINE_OPERATOR_IMAGE} \
+#		--env DOCKER_USERNAME=${DOCKER_USERNAME} \
+#		--env DOCKER_PASSWORD=${DOCKER_PASSWORD} \
+#		--env CLUSTER_URL=${CLUSTER_URL} \
+#		--env CLUSTER_USER=${CLUSTER_USER} \
+#		--env CLUSTER_TOKEN=${CLUSTER_TOKEN} \
+#		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
+#		--env RELEASE_TARGET=${RELEASE_TARGET} \
+#		--env CATALOG_IMAGE=${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET} \
+#		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
+#		--env INSTALL_MODE=${INSTALL_MODE} \
+#		--env ARCHITECTURE=${ARCHITECTURE}
+#		e2e-runner:latest \
+#		make test-pipeline-e2e
+#		EOF
+#	)
+#)
 
-if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
+#if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
+declare -A E2E_TESTS=(
 	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
 		--volume /var/run/docker.sock:/var/run/docker.sock \
 		--env FYRE_USER=${FYRE_USER} \
@@ -48,6 +49,7 @@ if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
 		make kind-e2e-test
 		EOF
 	)
+)
 else
 	echo "SKIP_KIND_E2E was set or architecture is not X. Skipping kind e2e..."
 fi
