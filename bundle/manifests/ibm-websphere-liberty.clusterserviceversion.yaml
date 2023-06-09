@@ -59,9 +59,9 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-04-24T14:48:50Z"
+    createdAt: "2023-06-09T18:33:09Z"
     description: Deploy and manage containerized Liberty applications
-    olm.skipRange: '>=1.0.0 <1.2.0'
+    olm.skipRange: '>=1.0.0 <1.2.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.24.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -72,7 +72,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-  name: ibm-websphere-liberty.v1.2.0
+  name: ibm-websphere-liberty.v1.2.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -1134,4 +1134,4 @@ spec:
   relatedImages:
   - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:e22dd56a05e44618a10d275d3ff07a38eb364c0f04f86ffe9618d83dd5467860
     name: liberty-sample-app
-  version: 1.2.0
+  version: 1.2.1
