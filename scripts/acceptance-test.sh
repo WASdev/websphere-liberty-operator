@@ -51,9 +51,9 @@ declare -A E2E_TESTS=(
 		EOF
 	)
 )
-else
-	echo "SKIP_KIND_E2E was set or architecture is not X. Skipping kind e2e..."
-fi
+#else
+#	echo "SKIP_KIND_E2E was set or architecture is not X. Skipping kind e2e..."
+#fi
 
 echo "****** Starting e2e tests"
 for test in "${!E2E_TESTS[@]}"; do
