@@ -1,7 +1,3 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestAssert
-timeout: 120
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,8 +19,6 @@ spec:
             successThreshold: 1
             failureThreshold: 20
 status:
-# not checking readyReplicas or replicas while replacing icr.io/appcafe/open-liberty/samples/getting-started 
-# icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi uses different default ports
-#  readyReplicas: 1
-#  replicas: 1
+  readyReplicas: 1
+  replicas: 1
   updatedReplicas: 1

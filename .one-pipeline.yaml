@@ -65,19 +65,19 @@ setup:
       echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
       exit 0
     else
-        export arch=$(get_env architecture)
         git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-        if [[ "$arch" == "X" ]]; then
-          ./scripts/pipeline/getCluster.sh "X"
-        else
+
+        export arch=$(get_env architecture)
+        export test_arch=$(get_env test-architecture)
+        if [[ "$test_arch" == "ZXP" && "$arch" == "ZXP" ]]; then
           ./scripts/pipeline/getCluster.sh "Z"
           ./scripts/pipeline/getCluster.sh "X" 
           ./scripts/pipeline/getCluster.sh "P"
+        else
+          ./scripts/pipeline/getCluster.sh "X"
         fi 
     fi
     
-    
-
 test:
   dind: true
   abort_on_failure: true
@@ -119,6 +119,14 @@ static-scan:
       exit 0
     fi
 
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
     BRANCH=$(get_env branch) 
     read -r SONAR_HOST_URL <<< "$(get_env sonarqube | jq -r '.parameters.dashboard_url' | sed 's:/*$::')"
     read -r SONAR_USER <<< "$(get_env sonarqube | jq -r '.parameters.user_login')"
@@ -140,6 +148,50 @@ static-scan:
     #echo "$SONAR_PASS" >> /tmp/sonarqube-token
     "${COMMONS_PATH}"/static-scan/run.sh
 
+compliance-checks:
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
+  dind: true
+  abort_on_failure: false
+  image_pull_policy: IfNotPresent  
+  sources:
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 38149a3644798c0b5679e6d8cdf999ce7f6e5142
+    path: cra
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 56cb780f891167b93b95d6f477ad7dce79f3df16
+    path: doi
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 7815b2273f9721d6edbdaf9bddb18e44d070b238
+    path: detect-secrets
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 38149a3644798c0b5679e6d8cdf999ce7f6e5142
+    path: compliance-checks
+  - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
+    sha: 3e927695cfdb4f1bb8b25697ae67a10983de9a8c
+    path: mend  
+  
+  script: |
+    #!/usr/bin/env bash
+    
+    echo $STAGE
+    
+    PERIODIC_SCAN=$(get_env periodic-rescan)
+    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      echo "Skipping static-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
+    "${COMMONS_PATH}"/compliance-checks/run.sh
 
 containerize:
   dind: true
@@ -310,7 +362,7 @@ containerize:
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE:$i
-      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+      DIGEST="$(skopeo inspect docker://$IMAGE | jq '.Digest'| sed -e 's/"//g')"
       { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { TYPE="manifest"; }
 
       if [[ "$TYPE" == "manifest" ]]; then
@@ -323,15 +375,15 @@ containerize:
     done
 
     IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-bundle:${RELEASE_TARGET}
-    DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+    DIGEST="$(skopeo inspect docker://$IMAGE | jq '.Digest'| sed -e 's/"//g')"
     echo "Saving artifact bundle-${RELEASE_TARGET} name=$IMAGE digest=$DIGEST"
     save_artifact bundle-${RELEASE_TARGET} type=image name="$IMAGE" "digest=$DIGEST"
 
     for i in "${tags[@]}"
     do
       IMAGE=$PIPELINE_REGISTRY/$PIPELINE_OPERATOR_IMAGE-catalog:$i
-      DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
-      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { ARCH="amd64" && TYPE="manifest"; }
+      DIGEST="$(skopeo inspect docker://$IMAGE | jq '.Digest'| sed -e 's/"//g')"
+      { ARCH="$(echo $i | grep -o '\(amd64\|s390x\|ppc64le\)$')" && TYPE="image"; } || { TYPE="manifest"; }
 
       if [[ "$TYPE" == "manifest" ]]; then
         echo "Saving artifact catalog-$i type=$TYPE name=$IMAGE digest=$DIGEST"
@@ -348,7 +400,7 @@ containerize:
 
     ## Perform lint
     IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-bundle:${RELEASE_TARGET}"
-    DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
+    DIGEST="$(skopeo inspect docker://$IMAGE | jq '.Digest'| sed -e 's/"//g')"
     BUNDLE_IMAGE_WITH_DIGEST="${IMAGE}@${DIGEST}"
     ./scripts/pipeline/static-linter-scan.sh --git-token $(get_env git-token) --bundle-image $BUNDLE_IMAGE_WITH_DIGEST --static-linter-version $(get_env static-linter-version)
 
@@ -365,6 +417,14 @@ sign-artifact:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping sign-artifact. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
 
@@ -388,7 +448,6 @@ deploy:
       env
       set -x
     fi
-    echo "deploy"
 
 dynamic-scan:
   abort_on_failure: false
@@ -403,6 +462,14 @@ dynamic-scan:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping dynamic-scan. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
 
@@ -444,16 +511,15 @@ acceptance-test:
     git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
 
     export arch=$(get_env architecture)
+    export test_arch=$(get_env test-architecture)
     
-    if [[ "$arch" == "ZXP" ]]; then
+    if [[ "$test_arch" == "ZXP" && "$arch" == "ZXP" ]]; then
       source runTest.sh Z
       source runTest.sh X
       source runTest.sh P
     else
       source runTest.sh X
     fi
-
-   
 
 scan-artifact:
   abort_on_failure: false
@@ -462,6 +528,14 @@ scan-artifact:
     #!/usr/bin/env bash
 
     echo $STAGE
+
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
 
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
@@ -479,6 +553,14 @@ release:
 
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       echo "Skipping release. This is a periodic run that is only meant to produce CVE information."
+      exit 0
+    fi
+    
+    SKIP_SCANS=$(get_env SKIP_SCANS)
+    SKIP_SCANS="$(echo "$SKIP_SCANS" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
+      echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
 

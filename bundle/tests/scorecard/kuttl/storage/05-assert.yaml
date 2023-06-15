@@ -1,9 +1,5 @@
 # The RCO travis test cluster only has 1 usable storage class so the test just checks
 # that the statefulSet.storage.* configs are correctly set
-apiVersion: kuttl.dev/v1beta1
-kind: TestAssert
-timeout: 60
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

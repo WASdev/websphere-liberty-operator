@@ -5,8 +5,7 @@ metadata:
 spec:
   license:
     accept: true
-# Replacing icr.io/appcafe/open-liberty/samples/getting-started until it has a ppc64l and s390x image
-  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  applicationImage: icr.io/appcafe/open-liberty/samples/getting-started
   service:
     port: 9443
   replicas: 1
