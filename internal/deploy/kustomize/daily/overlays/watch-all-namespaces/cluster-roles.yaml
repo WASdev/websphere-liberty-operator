@@ -1,38 +1,37 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: wlo-manager-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: websphere-liberty-controller-manager
-  namespace: websphere-liberty
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: websphere-liberty-operator
-    app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
   name: wlo-leader-election-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: websphere-liberty-controller-manager
-  namespace: websphere-liberty
+rules:
+- apiGroups:
+  - ""
+  - coordination.k8s.io
+  resources:
+  - configmaps
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  creationTimestamp: null
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
@@ -107,13 +106,6 @@ rules:
   - list
   - patch
   - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - list
   - watch
 - apiGroups:
   - image.openshift.io
@@ -220,33 +212,43 @@ rules:
   - list
   - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-leader-election-cluster-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: wlo-leader-election-cluster-role
-rules:
-  - apiGroups:
-      - ""
-      - coordination.k8s.io
-    resources:
-      - configmaps
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: wlo-manager-cluster-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: wlo-manager-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
