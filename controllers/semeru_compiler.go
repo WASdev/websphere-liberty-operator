@@ -87,7 +87,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		}
 
 		//create certmanager issuer and certificate if necessary
-		if !r.IsOpenShift() || cmPresent {
+		if cmPresent {
 			err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
 			if err != nil {
 				return err, "Failed to reconcile Certificate Issuer", false
@@ -96,6 +96,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 			if err != nil {
 				return err, "Failed to reconcile Semeru Compiler Certificate", false
 			}
+		} else if !r.IsOpenShift() {
+			return fmt.Errorf("Could not detect a cert-manager installation. Ensure cert-manager is installed and running"), "", false
 		}
 
 		//TLS Secret
