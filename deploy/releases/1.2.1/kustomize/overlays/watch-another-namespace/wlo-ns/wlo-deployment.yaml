@@ -10,5 +10,5 @@ spec:
         - name: manager
           env:
             - name: WATCH_NAMESPACE
-              value: ""
+              value: wlo-watched-ns
               valueFrom:
