@@ -67,7 +67,7 @@ for test in "${!E2E_TESTS[@]}"; do
 	# Establish monitoring variables
 	monitorLoop=false
 	monitorCount=1
-	monitorMax=360  # Set for 360 minutes, or 6 hours  
+	monitorMax=240  # Set for 240 minutes, or 4 hours  
 
 	# wait until we are told to exit the loop either by exceeding runtime or getting an exited notice
 	until [ "$monitorLoop" = true ]; do
