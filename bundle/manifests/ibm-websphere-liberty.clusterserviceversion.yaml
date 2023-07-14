@@ -494,6 +494,19 @@ spec:
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The preferred maximum number of JVMs that should be allocated
+          to a single Semeru Cloud Compiler instance within a zone. This value only
+          applies to multi-zone clusters. New Semeru Cloud Compiler replicas will
+          try to adhere to the limit by avoiding scheduling into zones which have
+          already met the preferred maximum load. Defaults to 12.
+        displayName: Preferred Max Load
+        path: semeruCloudCompiler.preferredMaxLoad
+      - description: Specify the labels of pod(s) that incoming traffic is allowed
+          from.
+        displayName: From Labels
+        path: networkPolicy.fromLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Number of desired pods for the Semeru Cloud Compiler. Defaults
           to 1. For multi-zone clusters, this value should be set to at least the
           number of available zones.
@@ -501,12 +514,6 @@ spec:
         path: semeruCloudCompiler.replicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podCount
-      - description: Specify the labels of pod(s) that incoming traffic is allowed
-          from.
-        displayName: From Labels
-        path: networkPolicy.fromLabels
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Resource requests and limits for the Semeru Cloud Compiler. The
           CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi,
           with a limit of 1200Mi.

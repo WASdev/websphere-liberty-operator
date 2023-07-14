@@ -296,6 +296,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		PeriodSeconds:       5,
 	}
 
+	// Default load is based on the memory limit to JVM ratio (10-20 connected JVMs for a server with 1-2GB RAM)
+	// https://eclipse.dev/openj9/docs/jitserver_tuning/
+	preferredMaxLoad := int32(12)
+	if semeruCloudCompiler.PreferredMaxLoad != nil {
+		preferredMaxLoad = *semeruCloudCompiler.PreferredMaxLoad
+	}
+
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      getLabels(wlva),
@@ -321,9 +328,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 				PodAntiAffinity: &corev1.PodAntiAffinity{
 					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 						{
-							// Weight based on memory limit to JVM ratio (10-20 connected JVMs for a server with 1-2GB RAM)
-							// https://eclipse.dev/openj9/docs/jitserver_tuning/
-							Weight: 12,
+							Weight: preferredMaxLoad,
 							PodAffinityTerm: corev1.PodAffinityTerm{
 								TopologyKey: "topology.kubernetes.io/zone",
 								LabelSelector: &metav1.LabelSelector{
