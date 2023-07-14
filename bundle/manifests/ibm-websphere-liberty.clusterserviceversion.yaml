@@ -494,7 +494,7 @@ spec:
         path: networkPolicy.namespaceLabels
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The preferred maximum number of JVMs that should be allocated
+      - description: The preferred (soft) maximum number of JVMs that should be allocated
           to a single Semeru Cloud Compiler instance within a zone. This value only
           applies to multi-zone clusters. New Semeru Cloud Compiler replicas will
           try to adhere to the limit by avoiding scheduling into zones which have

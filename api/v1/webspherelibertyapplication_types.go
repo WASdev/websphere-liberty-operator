@@ -448,7 +448,7 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Enable the Semeru Cloud Compiler. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	Enable bool `json:"enable,omitempty"`
-	// The preferred maximum number of JVMs that should be allocated to a single Semeru Cloud Compiler instance within a zone. This value only applies to multi-zone clusters. New Semeru Cloud Compiler replicas will try to adhere to the limit by avoiding scheduling into zones which have already met the preferred maximum load. Defaults to 12.
+	// The preferred (soft) maximum number of JVMs that should be allocated to a single Semeru Cloud Compiler instance within a zone. This value only applies to multi-zone clusters. New Semeru Cloud Compiler replicas will try to adhere to the limit by avoiding scheduling into zones which have already met the preferred maximum load. Defaults to 12.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=100
 	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Preferred Max Load"
