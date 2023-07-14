@@ -306,12 +306,29 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 				PodAffinity: &corev1.PodAffinity{
 					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 						{
-							Weight: 50,
+							Weight: 1,
 							PodAffinityTerm: corev1.PodAffinityTerm{
 								TopologyKey: "topology.kubernetes.io/zone",
 								LabelSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{
 										"app.kubernetes.io/instance": wlva.GetName(),
+									},
+								},
+							},
+						},
+					},
+				},
+				PodAntiAffinity: &corev1.PodAntiAffinity{
+					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+						{
+							// Weight based on memory limit to JVM ratio (10-20 connected JVMs for a server with 1-2GB RAM)
+							// https://eclipse.dev/openj9/docs/jitserver_tuning/
+							Weight: 12,
+							PodAffinityTerm: corev1.PodAffinityTerm{
+								TopologyKey: "topology.kubernetes.io/zone",
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{
+										"app.kubernetes.io/name": getSemeruCompilerName(wlva),
 									},
 								},
 							},
@@ -509,6 +526,7 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
 	requiredLabels[getSemeruGenerationLabelName(wlva)] = getGeneration(wlva)
+	requiredLabels["service.kubernetes.io/topology-mode"] = "Auto"
 	return requiredLabels
 }
 
