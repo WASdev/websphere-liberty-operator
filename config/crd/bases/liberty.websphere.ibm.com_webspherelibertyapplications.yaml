@@ -3700,17 +3700,6 @@ spec:
                   enable:
                     description: Enable the Semeru Cloud Compiler. Defaults to false.
                     type: boolean
-                  preferredMaxLoad:
-                    description: The preferred (soft) maximum number of JVMs that
-                      should be allocated to a single Semeru Cloud Compiler instance
-                      within a zone. This value only applies to multi-zone clusters.
-                      New Semeru Cloud Compiler replicas will try to adhere to the
-                      limit by avoiding scheduling into zones which have already met
-                      the preferred maximum load. Defaults to 12.
-                    format: int32
-                    maximum: 100
-                    minimum: 1
-                    type: integer
                   replicas:
                     description: Number of desired pods for the Semeru Cloud Compiler.
                       Defaults to 1. For multi-zone clusters, this value should be

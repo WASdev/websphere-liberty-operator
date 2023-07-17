@@ -448,16 +448,11 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Enable the Semeru Cloud Compiler. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	Enable bool `json:"enable,omitempty"`
-	// The preferred (soft) maximum number of JVMs that should be allocated to a single Semeru Cloud Compiler instance within a zone. This value only applies to multi-zone clusters. New Semeru Cloud Compiler replicas will try to adhere to the limit by avoiding scheduling into zones which have already met the preferred maximum load. Defaults to 12.
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=100
-	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Preferred Max Load"
-	PreferredMaxLoad *int32 `json:"preferredMaxLoad,omitempty"`
 	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1. For multi-zone clusters, this value should be set to at least the number of available zones.
-	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
+	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
-	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
@@ -1238,12 +1233,13 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 // GetLabels returns set of labels to be added to all resources
 func (cr *WebSphereLibertyApplication) GetLabels() map[string]string {
 	labels := map[string]string{
-		"app.kubernetes.io/instance":     cr.Name,
-		"app.kubernetes.io/name":         cr.Name,
-		"app.kubernetes.io/managed-by":   "websphere-liberty-operator",
-		"app.kubernetes.io/component":    "backend",
-		"app.kubernetes.io/part-of":      cr.Spec.ApplicationName,
-		common.GetComponentNameLabel(cr): cr.Name,
+		"app.kubernetes.io/instance":          cr.Name,
+		"app.kubernetes.io/name":              cr.Name,
+		"app.kubernetes.io/managed-by":        "websphere-liberty-operator",
+		"app.kubernetes.io/component":         "backend",
+		"app.kubernetes.io/part-of":           cr.Spec.ApplicationName,
+		common.GetComponentNameLabel(cr):      cr.Name,
+		"service.kubernetes.io/topology-mode": "Auto",
 	}
 
 	if cr.Spec.ApplicationVersion != "" {
