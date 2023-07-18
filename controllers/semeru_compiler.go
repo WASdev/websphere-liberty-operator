@@ -524,7 +524,6 @@ func getLabels(wlva *wlv1.WebSphereLibertyApplication) map[string]string {
 	requiredLabels["app.kubernetes.io/component"] = SemeruLabelName
 	requiredLabels["app.kubernetes.io/part-of"] = wlva.GetName()
 	requiredLabels[getSemeruGenerationLabelName(wlva)] = getGeneration(wlva)
-	requiredLabels["service.kubernetes.io/topology-mode"] = "Auto"
 	return requiredLabels
 }
 

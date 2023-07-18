@@ -1233,13 +1233,12 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 // GetLabels returns set of labels to be added to all resources
 func (cr *WebSphereLibertyApplication) GetLabels() map[string]string {
 	labels := map[string]string{
-		"app.kubernetes.io/instance":          cr.Name,
-		"app.kubernetes.io/name":              cr.Name,
-		"app.kubernetes.io/managed-by":        "websphere-liberty-operator",
-		"app.kubernetes.io/component":         "backend",
-		"app.kubernetes.io/part-of":           cr.Spec.ApplicationName,
-		common.GetComponentNameLabel(cr):      cr.Name,
-		"service.kubernetes.io/topology-mode": "Auto",
+		"app.kubernetes.io/instance":     cr.Name,
+		"app.kubernetes.io/name":         cr.Name,
+		"app.kubernetes.io/managed-by":   "websphere-liberty-operator",
+		"app.kubernetes.io/component":    "backend",
+		"app.kubernetes.io/part-of":      cr.Spec.ApplicationName,
+		common.GetComponentNameLabel(cr): cr.Name,
 	}
 
 	if cr.Spec.ApplicationVersion != "" {
