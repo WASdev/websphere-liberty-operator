@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../rbac
+
+namespace: wlo-watched-ns
+
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/instance: websphere-liberty-operator
+  app.kubernetes.io/name: websphere-liberty-operator
+
+patches:
+- path: patches/delete-service-account.yaml
+  target:
+    kind: ServiceAccount
+
+patchesJson6902:
+  - target:
+      kind: RoleBinding
+      name: manager-rolebinding
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: wlo-watched-rolebinding
+      - op: replace
+        path: /roleRef/name
+        value: wlo-watched-role
+  - target:
+      kind: RoleBinding
+      name: leader-election-rolebinding
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: wlo-leader-election-watched-rolebinding
+      - op: replace
+        path: /roleRef/name
+        value: wlo-leader-election-watched-role
+  - target:
+      kind: RoleBinding
+      name: .*
+    patch: |-
+      - op: replace
+        path: /subjects/0/namespace
+        value: wlo-ns
+      - op: replace
+        path: /subjects/0/name
+        value: websphere-liberty-controller-manager
+  - target:
+      kind: Role
+      name: leader-election-role
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: wlo-leader-election-watched-role
+  - target:
+      kind: Role
+      name: manager-role
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: wlo-watched-role
