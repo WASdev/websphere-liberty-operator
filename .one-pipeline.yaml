@@ -249,6 +249,10 @@ containerize:
       make setup-go GO_RELEASE_VERSION=$(get_env go-version)
       export PATH=$PATH:/usr/local/go/bin
       yum -y -q update
+      if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+        sudo snap install yq 
+        sudo snap install jq 
+      fi
 
       export RELEASE_TARGET=$(get_env branch)
       
@@ -393,6 +397,19 @@ containerize:
         save_artifact catalog-$i type=$TYPE name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
       fi
     done
+
+    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
+      CSV_URL="https://raw.githubusercontent.com/WASdev/websphere-liberty-operator/$RELEASE_TARGET/bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml"
+      echo "CSV URL: ${CSV_URL}"
+      MANIFEST=$(curl $CSV_URL | yq '.spec.relatedImages[] | select (.name = "liberty-sample-app") | .image')
+      IMAGE="${MANIFEST%%@*}"
+      for row in $(docker manifest inspect $MANIFEST | jq -c '.manifests[]'); do
+        DIGEST=$(echo "${row}" | jq -r '.digest')
+        ARCH=$(echo "${row}" | jq -r '.platform.architecture')
+        echo "Saving artifact sample-$RELEASE_TARGET type=image name=$IMAGE digest=$DIGEST arch=$ARCH"
+        save_artifact sample-$RELEASE_TARGET type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+      done
+    fi    
 
     echo "MEND unified agent scan"
     chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
