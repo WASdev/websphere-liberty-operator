@@ -24,7 +24,7 @@ declare -A E2E_TESTS=(
 		--env CLUSTER_TOKEN=${CLUSTER_TOKEN} \
 		--env TRAVIS_BUILD_NUMBER=${BUILD_NUMBER} \
 		--env RELEASE_TARGET=${RELEASE_TARGET} \
-		--env CATALOG_IMAGE=${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET} \
+		--env CATALOG_IMAGE=${CATALOG_IMAGE} \
 		--env DEBUG_FAILURE=${DEBUG_FAILURE} \
 		--env INSTALL_MODE=${INSTALL_MODE} \
 		--env ARCHITECTURE=${ARCHITECTURE} \
@@ -63,10 +63,40 @@ done
 
 echo "****** Waiting for e2e tests to finish"
 for test in "${!E2E_TESTS[@]}"; do
-	until docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}' | grep -q Exited; do
-		sleep 60
-	done
-	echo "${test} finished"
+	
+	# Establish monitoring variables
+	monitorLoop=false
+	monitorCount=1
+	monitorMax=240  # Set for 240 minutes, or 4 hours  
+
+	# wait until we are told to exit the loop either by exceeding runtime or getting an exited notice
+	until [ "$monitorLoop" = true ]; do
+	
+		# sleep 60 seconds
+        sleep 60
+        
+		# increment counter  
+        ((monitorCount++))
+
+        # check to see if we've exceeded time
+        if  (($monitorCount>$monitorMax)); then
+            monitorLoop=true
+            echo "****** The max time to wait for the e2e tests to finish has elapsed"
+        fi
+
+        # check to see if tests have completed
+        status="$(docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}')" 
+        if  ( echo "${status}" | grep -q "Exited" ); then
+            monitorLoop=true
+            echo "****** The e2e tests have completed"
+        fi
+    done
+
+	#until docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}' | grep -q Exited; do
+	#	sleep 60
+	#done
+	
+	echo "****** e2e test '${test}' have completed"
 	docker logs ${test}
 done
 
