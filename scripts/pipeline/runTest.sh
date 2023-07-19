@@ -14,8 +14,12 @@ oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
 echo "Open Shift Console:"
 console=$(oc whoami --show-console)
 echo $console
-echo "*** after issuing oc login"
-operators/scripts/configure-cluster/configure-cluster.sh -p $token -k $(get_env ibmcloud-api-key-staging) --arch $arch -A
+echo "*** after issuing oc login" 
+RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+  CLUSTER_CONFIG_OPTIONS=" --skip-create-icsp"
+fi
+operators/scripts/configure-cluster/configure-cluster.sh -p $token -k $(get_env ibmcloud-api-key-staging) --arch $arch -A $CLUSTER_CONFIG_OPTIONS
 
 export GO_VERSION=$(get_env go-version)
 make setup-go GO_RELEASE_VERSION=$GO_VERSION
@@ -45,8 +49,17 @@ export FYRE_PASS=$(get_env fyre-pass)
 export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
 echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
-IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}:${RELEASE_TARGET}"
-echo "one-pipline Image value: ${IMAGE}"
+if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+  RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
+  PIPELINE_PRODUCTION_IMAGE=$(get_env pipeline-production-image)
+  IMAGE="${PIPELINE_PRODUCTION_IMAGE}:${RELEASE_TARGET}"
+  export CATALOG_IMAGE="${PIPELINE_PRODUCTION_IMAGE}-catalog:${RELEASE_TARGET}"
+else
+  IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}:${RELEASE_TARGET}"
+  export CATALOG_IMAGE="${PIPELINE_REGISTRY}/${PIPELINE_OPERATOR_IMAGE}-catalog:${RELEASE_TARGET}"
+fi
+echo "one-pipeline Image value: ${IMAGE}"
+echo "one-pipeline Catalog Image value: ${CATALOG_IMAGE}"
 DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
 
 export DIGEST
