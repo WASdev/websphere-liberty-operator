@@ -59,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-06-26T17:52:19Z"
+    createdAt: "2023-07-20T10:35:34Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -860,6 +860,8 @@ spec:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
                   value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:d3c67c4a15c97b0fb82f9ef4a2ccf474232b878787e9eea39af75a3ac78469e3
+                - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
+                  value: icr.io/cpopen/websphere-liberty-operator:daily
                 image: icr.io/cpopen/websphere-liberty-operator:daily
                 livenessProbe:
                   failureThreshold: 3
@@ -1134,4 +1136,6 @@ spec:
   relatedImages:
   - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:d3c67c4a15c97b0fb82f9ef4a2ccf474232b878787e9eea39af75a3ac78469e3
     name: liberty-sample-app
+  - image: icr.io/cpopen/websphere-liberty-operator:daily
+    name: websphere-liberty-operator
   version: 1.2.1
