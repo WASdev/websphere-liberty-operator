@@ -2,6 +2,8 @@ apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
   name: service-with-cert-annotations-liberty
+  annotations:
+    key3: value3
 spec:
   license:
     accept: true
