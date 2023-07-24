@@ -427,19 +427,22 @@ containerize:
       fi
     done
 
+
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       CSV_URL="https://raw.githubusercontent.com/WASdev/websphere-liberty-operator/$RELEASE_TARGET/bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml"
       echo "CSV URL: ${CSV_URL}"
       MANIFEST=$(curl $CSV_URL | yq '.spec.relatedImages[] | select (.name = "liberty-sample-app") | .image')
-      IMAGE="${MANIFEST%%@*}"
-      for row in $(docker manifest inspect $MANIFEST | jq -c '.manifests[]'); do
-        DIGEST=$(echo "${row}" | jq -r '.digest')
-        ARCH=$(echo "${row}" | jq -r '.platform.architecture')
-        echo "Saving artifact sample-$RELEASE_TARGET type=image name=$IMAGE digest=$DIGEST arch=$ARCH"
-        save_artifact sample-$RELEASE_TARGET type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
-      done
+    else
+      MANIFEST=$(cat bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml | yq '.spec.relatedImages[] | select (.name = "liberty-sample-app") | .image')
     fi    
-
+    IMAGE="${MANIFEST%%@*}"
+    for row in $(docker manifest inspect $MANIFEST | jq -c '.manifests[]'); do
+      DIGEST=$(echo "${row}" | jq -r '.digest')
+      ARCH=$(echo "${row}" | jq -r '.platform.architecture')
+      echo "Saving artifact sample-$RELEASE_TARGET type=image name=$IMAGE digest=$DIGEST arch=$ARCH"
+      save_artifact sample-$RELEASE_TARGET type=image name="$IMAGE" "digest=$DIGEST" "arch=$ARCH"
+    done
+    
     echo "MEND unified agent scan"
     chmod +x "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
     source "${COMMONS_PATH}/whitesource/whitesource_unified_agent_scan.sh"
