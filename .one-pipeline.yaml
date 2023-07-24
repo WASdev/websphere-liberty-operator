@@ -147,13 +147,14 @@ acceptance-test:
     export arch=$(get_env architecture)
     export test_arch=$(get_env test-architecture)
     
-    if [[ "$test_arch" == "ZXP" && "$arch" == "ZXP" ]]; then
-      source runTest.sh Z
-      source runTest.sh X
-      source runTest.sh P
-    else
-      source runTest.sh X
-    fi
+    source acceptance-test-stage.sh $test_arch
+    # if [[ "$test_arch" == "ZXP" && "$arch" == "ZXP" ]]; then
+    #  source runTest.sh Z
+    #  source runTest.sh X
+    #  source runTest.sh P
+    # else
+    #  source runTest.sh X
+    # fi
 
 scan-artifact:
   abort_on_failure: false
