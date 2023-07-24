@@ -1,10 +1,20 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-role
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
+  name: websphere-liberty-leader-election-role
+  namespace: websphere-liberty
 rules:
 - apiGroups:
   - ""
@@ -29,13 +39,14 @@ rules:
   - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   creationTimestamp: null
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-role
+  name: websphere-liberty-manager-role
+  namespace: websphere-liberty
 rules:
 - apiGroups:
   - apps
@@ -212,42 +223,36 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-rolebinding
+  name: websphere-liberty-leader-election-rolebinding
+  namespace: websphere-liberty
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: wlo-leader-election-cluster-role
+  kind: Role
+  name: websphere-liberty-leader-election-role
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager
   namespace: websphere-liberty
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-rolebinding
+  name: websphere-liberty-manager-rolebinding
+  namespace: websphere-liberty
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: wlo-manager-cluster-role
+  kind: Role
+  name: websphere-liberty-manager-role
 subjects:
 - kind: ServiceAccount
   name: websphere-liberty-controller-manager

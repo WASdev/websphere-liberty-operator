@@ -306,7 +306,7 @@ spec:
           value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
         - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
           value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:d3c67c4a15c97b0fb82f9ef4a2ccf474232b878787e9eea39af75a3ac78469e3
-        image: icr.io/cpopen/websphere-liberty-operator:daily
+        image: icr.io/cpopen/websphere-liberty-operator@sha256:2fa8110a6769cee16a90ccc6e51d9632c81ccf6a2a5f854ea18b42938886c670
         livenessProbe:
           failureThreshold: 3
           httpGet:

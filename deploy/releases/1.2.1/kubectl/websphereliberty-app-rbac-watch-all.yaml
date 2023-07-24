@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-role
+  name: wlo-cluster-leader-election-role
 rules:
 - apiGroups:
   - ""
@@ -35,7 +35,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-role
+  name: wlo-cluster-manager-role
 rules:
 - apiGroups:
   - apps
@@ -227,15 +227,15 @@ metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-leader-election-cluster-rolebinding
+  name: wlo-cluster-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: wlo-leader-election-cluster-role
+  name: wlo-cluster-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: websphere-liberty-controller-manager
-  namespace: websphere-liberty
+  name: wlo-controller-manager
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -243,12 +243,12 @@ metadata:
   labels:
     app.kubernetes.io/instance: websphere-liberty-operator
     app.kubernetes.io/name: websphere-liberty-operator
-  name: wlo-manager-cluster-rolebinding
+  name: wlo-cluster-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: wlo-manager-cluster-role
+  name: wlo-cluster-manager-role
 subjects:
 - kind: ServiceAccount
-  name: websphere-liberty-controller-manager
-  namespace: websphere-liberty
+  name: wlo-controller-manager
+  namespace: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
