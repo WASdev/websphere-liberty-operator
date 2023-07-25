@@ -95,6 +95,14 @@ test:
       exit 0
     fi
 
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping unit-tests. This run is for a release acceptance test only."
+      exit 0
+    fi
+
     ## Setup required tooling
     make setup-go GO_RELEASE_VERSION=$(get_env go-version)
     export PATH=$PATH:/usr/local/go/bin
@@ -124,6 +132,14 @@ static-scan:
 
     if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
       echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+    
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping static-scan. This run is for a release acceptance test only."
       exit 0
     fi
 
@@ -210,6 +226,8 @@ containerize:
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
     PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
     #  Build images
     export PIPELINE_USERNAME=$(get_env ibmcloud-api-user)
     export PIPELINE_PASSWORD=$(get_env ibmcloud-api-key-staging)
@@ -234,8 +252,19 @@ containerize:
     echo "skopeo version"
     skopeo --version || exit 1
 
+    BUILD_RELEASE_TARGET_FROM_KNOWN_IMAGES="false"
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-      echo "Skipping containerize, but generating list of images. This is a periodic run that is only meant to produce CVE information."
+      echo "This is a periodic run that is only meant to produce CVE information."
+      BUILD_RELEASE_TARGET_FROM_KNOWN_IMAGES="true"
+    fi
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "This run is for a release acceptance test only."
+      BUILD_RELEASE_TARGET_FROM_KNOWN_IMAGES="true"
+    fi
+
+    if [[ "$BUILD_RELEASE_TARGET_FROM_KNOWN_IMAGES" == "true" ]]; then
+      echo "Skipping containerize, but generating list of images."
       RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
       #RELEASE_TARGET=$(get_env branch)
     else
@@ -428,6 +457,16 @@ sign-artifact:
       exit 0
     fi
 
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping sign-artifact. This run is for a release acceptance test only."
+      exit 0
+    fi
+
+
+
 deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
@@ -470,6 +509,14 @@ dynamic-scan:
 
     if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
       echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+    
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping dynamic-scan. This run is for a release acceptance test only."
       exit 0
     fi
 
@@ -536,6 +583,14 @@ scan-artifact:
       echo "Skipping static-scan. This is a test run only"
       exit 0
     fi
+    
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping scan-artifact. This run is for a release acceptance test only."
+      exit 0
+    fi
 
     # ========== Security Scanner ==========
     ./scripts/pipeline/ci_to_secure_pipeline_scan.sh
@@ -561,6 +616,14 @@ release:
 
     if [[ ! -z "$SKIP_SCANS" && "$SKIP_SCANS" != "false" && "$SKIP_SCANS" != "no"  ]]; then
       echo "Skipping static-scan. This is a test run only"
+      exit 0
+    fi
+
+    RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
+    RELEASE_ACCEPTANCE_TEST="$(echo "$RELEASE_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
+      echo "Skipping release. This run is for a release acceptance test only."
       exit 0
     fi
 
