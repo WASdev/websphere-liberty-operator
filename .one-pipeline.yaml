@@ -242,11 +242,12 @@ containerize:
     export DISABLE_ARTIFACTORY=$(get_env disable-artifactory)
     export W3_USERNAME=$(get_env w3_username)
     export W3_PASSWORD=$(get_env w3_password)
+    export COMMON_OPERATORS_BRANCH=$(get_env common-operators-branch)
 
     # flags for P and/or Z
     export arch=$(get_env architecture)
 
-    git clone https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+    git clone --single-branch --branch $COMMON_OPERATORS_BRANCH https://$(get_env git-token)@github.ibm.com/websphere/operators.git
     cp -rf operators/scripts/build ./scripts/
 
     echo "skopeo version"
@@ -294,7 +295,7 @@ containerize:
       # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
       if [[ "$arch" == "ZXP" ]]; then
         echo "<ciorchestrator> Sending request to build P and Z"
-        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --commonOperatorsBranch "$COMMON_OPERATORS_BRANCH" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml"
         pipelineid=$(cat ciorchestrator-submit.id)
       fi
         
@@ -316,7 +317,7 @@ containerize:
       make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}
       if [[ "$arch" == "ZXP" ]]; then
         echo "<ciorchestrator> Sending request to build P and Z catalogs"
-        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+        DISABLE_ARTIFACTORY=true ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${PIPELINE_REGISTRY}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --commonOperatorsBranch "$COMMON_OPERATORS_BRANCH" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml"
         pipelineid=$(cat ciorchestrator-submit.id)
         echo "<ciorchestrator> waiting on request to build P and Z catalogs"
         ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
@@ -342,7 +343,7 @@ containerize:
         # update Jenkins job to run shallow clone and scripts/build/build-initialize.sh
         if [[ "$arch" == "ZXP" ]]; then
           echo "<ciorchestrator> Sending request to build P and Z ( artifactory )"
-          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-operator-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --commonOperatorsBranch "$COMMON_OPERATORS_BRANCH" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml"
           pipelineid=$(cat ciorchestrator-submit.id)
         fi
         
@@ -364,7 +365,7 @@ containerize:
         make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}
         if [[ "$arch" == "ZXP" ]]; then
            echo "<ciorchestrator> Sending request to build P and Z catalogs ( artifactory )"
-          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml" 
+          ./scripts/pipeline/request-ciorchestrator.sh --command "make build-catalog-pipeline REGISTRY=${ARTIFACTORY_REPO_URL}" --user "$W3_USERNAME" --password "$W3_PASSWORD" --branch "$RELEASE_TARGET" --repository "websphere-liberty-operator" --org "WASdev" --commonOperatorsBranch "$COMMON_OPERATORS_BRANCH" --trigger "wlodocker" --configFile ".ci-orchestrator/websphere-liberty-operator-build.yml"
           pipelineid=$(cat ciorchestrator-submit.id)
           echo "<ciorchestrator> waiting on request to build P and Z catalogs ( artifactory )"
           ./scripts/pipeline/await-ciorchestrator.sh --user "$W3_USERNAME" --password "$W3_PASSWORD" --pipelineId "$pipelineid"
