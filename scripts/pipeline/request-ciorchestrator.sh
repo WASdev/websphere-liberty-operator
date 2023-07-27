@@ -27,8 +27,8 @@ function print_usage() {
     echo "   -b, --branch               string  Github Repository branch"
     echo "   -r, --repository           string  GitHub Repository to use"
     echo "   --org                      string  Github Organisation containing repository"
-    echo "   --trigger                  string  Name of trigger within CI Orchestrator config file"
     echo "   --commonOperatorsBranch    string  websphere/operators Repository branch"
+    echo "   --trigger                  string  Name of trigger within CI Orchestrator config file"
     echo "   --configFile               string  Location of CI Orchestrator config file"
     echo "   --command                  string  Command to execute on remote machine"
     echo "   -h, --help                         Print usage information"
@@ -65,13 +65,13 @@ function parse_arguments() {
             shift
             GH_ORG=$1
             ;;
-        --trigger)
-            shift
-            CI_TRIGGER=$1
-            ;;
         --commonOperatorsBranch)
             shift
             COMMON_OPERATORS_BRANCH=$1
+            ;;
+        --trigger)
+            shift
+            CI_TRIGGER=$1
             ;;
         --configFile)
             shift
