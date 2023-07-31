@@ -10,4 +10,4 @@ spec:
   maxFileSize: 20
   maxFiles: 5
   versions:
-    reconciled: 1.2.1
+    reconciled: 1.2.2
