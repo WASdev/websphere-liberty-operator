@@ -190,6 +190,8 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 .PHONY: bundle
 bundle: manifests setup kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	scripts/update-sample.sh
+	
+	sed -i.bak "s,OPERATOR_IMAGE,${IMG},g" config/manager/manager.yaml
 	sed -i.bak "s,IMAGE,${IMG},g;s,CREATEDAT,${CREATEDAT},g" config/manifests/patches/csvAnnotations.yaml
 	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
@@ -202,9 +204,6 @@ bundle: manifests setup kustomize ## Generate bundle manifests and metadata, the
 	sed -i.bak "s,${IMG},${KUSTOMIZE_IMG},g;s,serviceAccountName: controller-manager,serviceAccountName: websphere-liberty-controller-manager,g" internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml
 	$(KUSTOMIZE) build config/kustomize/roles -o internal/deploy/kustomize/daily/base/websphere-liberty-roles.yaml
 
-	mv config/manifests/patches/csvAnnotations.yaml.bak config/manifests/patches/csvAnnotations.yaml
-	rm internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml.bak
-
 	$(KUSTOMIZE) build config/kubectl/crd -o internal/deploy/kubectl/websphereliberty-app-crd.yaml
 	$(KUSTOMIZE) build config/kubectl/operator -o internal/deploy/kubectl/websphereliberty-app-operator.yaml
 	$(KUSTOMIZE) build config/kubectl/rbac-watch-all -o internal/deploy/kubectl/websphereliberty-app-rbac-watch-all.yaml
@@ -212,6 +211,10 @@ bundle: manifests setup kustomize ## Generate bundle manifests and metadata, the
 
 	$(KUSTOMIZE) build config/kustomize/watch-all -o internal/deploy/kustomize/daily/overlays/watch-all-namespaces/cluster-roles.yaml
 	$(KUSTOMIZE) build config/kustomize/watch-another -o internal/deploy/kustomize/daily/overlays/watch-another-namespace/wlo-watched-ns/watched-roles.yaml
+
+	mv config/manager/manager.yaml.bak config/manager/manager.yaml
+	mv config/manifests/patches/csvAnnotations.yaml.bak config/manifests/patches/csvAnnotations.yaml
+	rm internal/deploy/kustomize/daily/base/websphere-liberty-deployment.yaml.bak
 
 	operator-sdk bundle validate ./bundle
 
