@@ -10,4 +10,4 @@ spec:
     - thread
     - heap
   versions:
-    reconciled: 1.2.1
+    reconciled: 1.2.2

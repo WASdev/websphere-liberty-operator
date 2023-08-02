@@ -13,5 +13,5 @@ metadata:
   name: my-wsliberty-app
 status:
   versions:
-    reconciled: 1.2.1
+    reconciled: 1.2.2
 
