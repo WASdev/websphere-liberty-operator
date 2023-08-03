@@ -9,11 +9,13 @@ if which list_artifacts >/dev/null; then
     IMAGE_NAME="$(load_artifact "$ARTIFACT_IMAGE" "name" 2>/dev/null)"
     IMAGE_TYPE="$(load_artifact "$ARTIFACT_IMAGE" "type" 2>/dev/null)"
 
-    # Ensure "cp." is in front of image name
-    if [[ ${IMAGE_NAME%%"."*} != "cp" ]]; then
-        IMAGE_NAME="cp.${IMAGE_NAME}"
+    # Ensure "cp." is in front of image name, except in samples case
+    if [[ ${IMAGE_NAME} != *"samples"* ]];then
+        if [[ ${IMAGE_NAME%%"."*} != "cp" ]]; then
+            IMAGE_NAME="cp.${IMAGE_NAME}"
+        fi
     fi
-    
+       
     if [[ -z "${IMAGE_NAME}" || "$(echo "$IMAGE_TYPE" | tr '[:upper:]' '[:lower:]')" != "image" ]]; then 
         continue
     else
