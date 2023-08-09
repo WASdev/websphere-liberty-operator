@@ -59,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-07-31T18:03:44Z"
+    createdAt: "2023-08-09T13:09:56Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.2'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -382,6 +382,9 @@ spec:
         path: statefulSet.storage.volumeClaimTemplate
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim
+      - description: Security context for the application pod.
+        displayName: Pod Security Context
+        path: podSecurityContext
       - description: Security context for the application container.
         displayName: Security Context
         path: securityContext
