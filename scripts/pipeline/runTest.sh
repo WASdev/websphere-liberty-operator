@@ -91,6 +91,19 @@ echo "switching back to ebc-gateway-http directory"
 cd scripts/pipeline/ebc-gateway-http
 
 if [[ "$keep_cluster" == 0 ]]; then
+    if (( (rc & KIND_E2E_TEST) >0 )); then
+      slack_users=$(get_env slack_users)
+      echo "slack_users=$slack_users"
+      eval "arr=($slack_users)"
+      for user in "${arr[@]}"; do 
+        echo "user=$user"
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  kind accceptance test failure see below "}' $(get_env slack_web_hook_url)
+        echo " "
+      done
+      pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}?env_id=ibm:yp:us-south"
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Your kind acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Failing pipeline: '$pipeline_url'"}' $(get_env slack_web_hook_url) </dev/null
+    fi
     ./ebc_complete.sh
 else
     hours=$(get_env ebc_autocomplete_hours "6")
@@ -103,9 +116,9 @@ else
     echo "slack_users=$slack_users"
     eval "arr=($slack_users)"
     for user in "${arr[@]}"; do 
-    echo "user=$user"
-    curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
-    echo " "
+      echo "user=$user"
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
+      echo " "
     done
     pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}?env_id=ibm:yp:us-south"
     curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
