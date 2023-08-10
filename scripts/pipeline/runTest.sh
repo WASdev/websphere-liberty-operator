@@ -48,6 +48,13 @@ export FYRE_KEY=$(get_env fyre-key)
 export FYRE_PASS=$(get_env fyre-pass)
 export FYRE_PRODUCT_GROUP_ID=$(get_env fyre-product-group-id)
 
+# acceptance-test.sh return values
+export KIND_E2E_TEST=1
+export OCP_E2E_X_TEST=2
+export OCP_E2E_P_TEST=4
+export OCP_E2E_Z_TEST=8
+export UNKNOWN_E2E_TEST=256
+
 echo "${PIPELINE_PASSWORD}" | docker login "${PIPELINE_REGISTRY}" -u "${PIPELINE_USERNAME}" --password-stdin
 if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
   RELEASE_TARGET=$(curl --silent "https://api.github.com/repos/WASdev/websphere-liberty-operator/releases/latest" | jq -r .tag_name)
@@ -71,11 +78,32 @@ pwd
 
 scripts/acceptance-test.sh
 rc=$?
+keep_cluster=0
+
+if (( (rc & OCP_E2E_X_TEST) >0 )) || 
+   (( (rc & OCP_E2E_P_TEST) >0 )) ||
+   (( (rc & OCP_E2E_Z_TEST) >0 )) ||
+   (( (rc & UNKNOWN_E2E_TEST) >0 )); then
+   keep_cluster=1
+fi
 
 echo "switching back to ebc-gateway-http directory"
 cd scripts/pipeline/ebc-gateway-http
 
-if [[ "$rc" == 0 ]]; then
+if [[ "$keep_cluster" == 0 ]]; then
+    if (( (rc & KIND_E2E_TEST) >0 )); then
+      slack_users=$(get_env slack_users)
+      echo "slack_users=$slack_users"
+      eval "arr=($slack_users)"
+      for user in "${arr[@]}"; do 
+        echo "user=$user"
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  kind accceptance test failure see below "}' $(get_env slack_web_hook_url)
+        echo " "
+      done
+      pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}?env_id=ibm:yp:us-south"
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Your kind acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"Failing pipeline: '$pipeline_url'"}' $(get_env slack_web_hook_url) </dev/null
+    fi
     ./ebc_complete.sh
 else
     hours=$(get_env ebc_autocomplete_hours "6")
@@ -88,9 +116,9 @@ else
     echo "slack_users=$slack_users"
     eval "arr=($slack_users)"
     for user in "${arr[@]}"; do 
-    echo "user=$user"
-    curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
-    echo " "
+      echo "user=$user"
+      curl -X POST -H 'Content-type: application/json' --data '{"text":"<'$user'>  accceptance test failure see below "}' $(get_env slack_web_hook_url)
+      echo " "
     done
     pipeline_url="https://cloud.ibm.com/devops/pipelines/tekton/${PIPELINE_ID}/runs/${PIPELINE_RUN_ID}?env_id=ibm:yp:us-south"
     curl -X POST -H 'Content-type: application/json' --data '{"text":"Your acceptance test failed."}' $(get_env slack_web_hook_url) </dev/null
