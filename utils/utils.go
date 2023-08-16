@@ -20,14 +20,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,6 +50,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
+const ltpaTokenMountPath = "/config/resources/security"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
 
@@ -584,4 +588,110 @@ func GetWLOLicenseAnnotations() map[string]string {
 	annotations["productMetric"] = "FREE"
 	annotations["productChargedContainers"] = "ALL"
 	return annotations
+}
+
+// ConfigureLTPA setups the shared-storage for LTPA token generation
+func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
+	ltpaVolumeMount := GetLTPAVolumeMount(la, true)
+
+	foundVolumeMount := false
+	for _, v := range pts.Spec.Containers[0].VolumeMounts {
+		if v.Name == ltpaVolumeMount.Name {
+			foundVolumeMount = true
+		}
+	}
+
+	if !foundVolumeMount {
+		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaVolumeMount)
+	}
+
+	foundVolume := false
+	for _, v := range pts.Spec.Volumes {
+		if v.Name == ltpaVolumeMount.Name {
+			foundVolume = true
+		}
+	}
+
+	if !foundVolume {
+		claimName := la.GetName() + "-ltpa-token-pvc"
+		vol := corev1.Volume{
+			Name: ltpaVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: claimName,
+				},
+			},
+		}
+		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
+	}
+}
+
+func CustomizeLTPAPersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, la *wlv1.WebSphereLibertyApplication) {
+	pvc.Spec = corev1.PersistentVolumeClaimSpec{
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceStorage: resource.MustParse("500Mi"),
+			},
+		},
+		AccessModes: []corev1.PersistentVolumeAccessMode{
+			corev1.ReadWriteMany,
+		},
+	}
+}
+
+func GenerateRandomString(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	alphabetLength := len(alphabet)
+	buffer := make([]byte, length)
+	for i := range buffer {
+		buffer[i] = alphabet[rand.Intn(alphabetLength)]
+	}
+	return string(buffer)
+
+}
+
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, password string) {
+	job.Spec.Template.ObjectMeta.Name = "liberty"
+	job.Spec.Template.Spec.Containers = []corev1.Container{
+		{
+			Name:    job.Spec.Template.ObjectMeta.Name,
+			Image:   la.GetApplicationImage(),
+			Command: []string{"/bin/bash", "-c"},
+			Args:    []string{"mkdir -p " + ltpaTokenMountPath + " && cd " + ltpaTokenMountPath + " && rm -f " + ltpaTokenMountPath + "/ltpa.keys && securityUtility createLTPAKeys --file=" + ltpaTokenMountPath + "/ltpa.keys --password=" + password + " --passwordEncoding=aes"},
+			VolumeMounts: []corev1.VolumeMount{
+				// Set the LTPA Job's volume mount as non-read-only
+				GetLTPAVolumeMount(la, false),
+			},
+		},
+	}
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
+	job.Spec.Template.Spec.Volumes = GetLTPAVolume(la)
+}
+
+func CustomizeLTPASecret(secret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, password string) {
+	secret.Type = corev1.SecretTypeOpaque
+	secretStringData := make(map[string]string)
+	secretStringData["password"] = password
+	secretStringData["lastRotation"] = time.Now().UTC().String()
+	secret.StringData = secretStringData
+}
+
+func GetLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, isReadOnly bool) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      la.GetName() + "-shared-ltpa-volume",
+		MountPath: ltpaTokenMountPath,
+		ReadOnly:  isReadOnly,
+	}
+}
+
+func GetLTPAVolume(la *wlv1.WebSphereLibertyApplication) []corev1.Volume {
+	return []corev1.Volume{{
+		Name: la.GetName() + "-shared-ltpa-volume",
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: la.GetName() + "-ltpa-token-pvc",
+			},
+		},
+	}}
 }
