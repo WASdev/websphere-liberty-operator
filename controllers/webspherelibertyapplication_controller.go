@@ -22,11 +22,13 @@ import (
 	"os"
 	"strings"
 
+	v1 "k8s.io/api/batch/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/go-logr/logr"
 
+	"github.com/WASdev/websphere-liberty-operator/utils"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
 	oputils "github.com/application-stacks/runtime-component-operator/utils"
 
@@ -712,6 +714,46 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 		return statusCondition != nil && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
 	}
 	return false
+}
+
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication) {
+	// Create ReadWriteMany persistent volume to share amongst Liberty pods in a single WebSphereLibertyApplication
+	ltpaPVC := &corev1.PersistentVolumeClaim{}
+	ltpaPVC.Name = instance.GetName() + "-ltpa-token-pvc"
+	ltpaPVC.Namespace = instance.GetNamespace()
+	r.CreateOrUpdate(ltpaPVC, instance, func() error {
+		utils.CustomizeLTPAPersistentVolumeClaim(ltpaPVC, instance)
+		return nil
+	})
+
+	ltpaSecret := &corev1.Secret{}
+	ltpaSecret.Name = instance.GetName() + "-ltpa-secret"
+	ltpaSecret.Namespace = instance.GetNamespace()
+	// If the LTPA Secret does not exist, generate a new LTPA token
+	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
+	if err != nil && kerrors.IsNotFound(err) {
+		// Create the Secret storing metadata about the LTPA token
+		password := utils.GenerateRandomString(15)
+		ltpaSecret := &corev1.Secret{}
+		ltpaSecret.Name = instance.GetName() + "-ltpa-secret"
+		ltpaSecret.Namespace = instance.GetNamespace()
+		r.CreateOrUpdate(ltpaSecret, instance, func() error {
+			utils.CustomizeLTPASecret(ltpaSecret, instance, password)
+			return nil
+		})
+
+		// Delete a potentially hanging LTPA job
+		ltpaTokenJob := &v1.Job{}
+		ltpaTokenJob.Name = instance.GetName() + "-ltpa-token-job"
+		ltpaTokenJob.Namespace = instance.GetNamespace()
+		r.GetClient().Delete(context.TODO(), ltpaTokenJob)
+
+		// Generate an LTPA token in the shared volume
+		r.CreateOrUpdate(ltpaTokenJob, instance, func() error {
+			utils.CustomizeLTPAJob(ltpaTokenJob, instance, password)
+			return nil
+		})
+	}
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
