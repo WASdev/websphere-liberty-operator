@@ -1,0 +1,31 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: websphere-liberty-leader-election-role
+  namespace: websphere-liberty
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: websphere-liberty-manager-role
+  namespace: websphere-liberty
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: websphere-liberty-leader-election-rolebinding
+  namespace: websphere-liberty
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: websphere-liberty-manager-rolebinding
+  namespace: websphere-liberty
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
