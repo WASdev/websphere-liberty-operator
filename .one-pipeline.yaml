@@ -442,9 +442,9 @@ containerize:
     if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
       CSV_URL="https://raw.githubusercontent.com/WASdev/websphere-liberty-operator/$RELEASE_TARGET/bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml"
       echo "CSV URL: ${CSV_URL}"
-      MANIFEST=$(curl $CSV_URL | yq '.spec.relatedImages[] | select (.name = "liberty-sample-app") | .image')
+      MANIFEST=$(curl $CSV_URL | yq '.spec.relatedImages[] | select (.name == "liberty-sample-app") | .image')
     else
-      MANIFEST=$(cat bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml | yq '.spec.relatedImages[] | select (.name = "liberty-sample-app") | .image')
+      MANIFEST=$(cat bundle/manifests/ibm-websphere-liberty.clusterserviceversion.yaml | yq '.spec.relatedImages[] | select (.name == "liberty-sample-app") | .image')
     fi    
     IMAGE="${MANIFEST%%@*}"
     for row in $(docker manifest inspect $MANIFEST | jq -c '.manifests[]'); do
