@@ -7,7 +7,7 @@ echo "in directory"
 pwd
 
 echo "running configure-cluster.sh"
-git clone --single-branch --branch main https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+git clone --single-branch --branch cosolidate-tests https://$(get_env git-token)@github.ibm.com/websphere/operators.git
 ls -l operators/scripts/configure-cluster/configure-cluster.sh
 echo "**** issuing oc login"
 oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
@@ -72,10 +72,33 @@ DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
 export DIGEST
 echo "one-pipeline Digest Value: ${DIGEST}"
 
+echo "setting up tests from operators repo - runTest.sh"
+mkdir -p ../../bundle/tests/scorecard/kuttl
+mkdir -p ../../bundle/tests/scorecard/kind-kuttl
+
+# Copying all the relevent kuttl test and config file
+cp operators/tests/config.yaml ../../bundle/tests/scorecard/
+cp -rf operators/tests/common/* ../../bundle/tests/scorecard/kuttl
+cp -rf operators/tests/all-liberty/* ../../bundle/tests/scorecard/kuttl
+cp -rf operators/tests/websphere-liberty/* ../../bundle/tests/scorecard/kuttl
+
+# Copying all the kind only kuttl tests. Deciding if the run is a kind run is done in the acceptance-test.sh script
+cp -rf operators/tests/kind/* ../../bundle/tests/scorecard/kind-kuttl
+
+# Copying the common test scripts
+mkdir ../test
+cp -rf operators/scripts/test/* ../test
+
 cd ../..
 echo "directory before acceptance-test.sh"
 pwd
+echo "Getting the operator short name"
+export OP_SHORT_NAME=$(get_env operator-short-name)
+echo "Operator shortname is: ${OP_SHORT_NAME}"
+echo "Running modify-tests.sh script"
+scripts/test/modify-tests.sh --operator ${OP_SHORT_NAME} --arch ${ARCHITECTURE}
 
+echo "Running acceptance-test.sh script"
 scripts/acceptance-test.sh
 rc=$?
 keep_cluster=0
@@ -132,5 +155,8 @@ fi
 echo "Cleaning up after tests have be completed"
 echo "switching back to scripts/pipeline directory"
 cd ..
+echo "Deleting test scripts ready for another run..."
+rm -rf ../../bundle/tests/scorecard/kuttl/*
+rm -rf ../../bundle/tests/scorecard/kind-kuttl/*
 oc logout
 export CLUSTER_URL=""

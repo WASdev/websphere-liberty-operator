@@ -33,7 +33,7 @@ declare -A E2E_TESTS=(
 		make test-pipeline-e2e
 		EOF
 	)
-)
+) 
 
 if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
 	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
@@ -98,6 +98,7 @@ for test in "${!E2E_TESTS[@]}"; do
 	
 	echo "****** e2e test '${test}' have completed"
 	docker logs ${test}
+	sleep 60
 done
 
 echo "****** Test results"
