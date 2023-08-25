@@ -145,6 +145,8 @@ setup_test() {
     mv bundle/tests/scorecard/kind-kuttl/ingress bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/ingress-certificate bundle/tests/scorecard/kuttl/
     mv bundle/tests/scorecard/kind-kuttl/ingress-manage-tls bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/kind-network-policy bundle/tests/scorecard/kuttl/
+    mv bundle/tests/scorecard/kind-kuttl/kind-network-policy-multiple-apps bundle/tests/scorecard/kuttl/
     
     ## Remove tests that do not apply for kind cluster
     mv bundle/tests/scorecard/kuttl/network-policy bundle/tests/scorecard/kind-kuttl/
