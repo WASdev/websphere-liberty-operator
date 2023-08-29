@@ -89,6 +89,8 @@ rules:
   - services
   verbs:
   - get
+  - create
+  - delete
 - apiGroups:
   - liberty.websphere.ibm.com
   resources:
@@ -128,3 +130,4 @@ rules:
   verbs:
   - get
   - list
+  - delete

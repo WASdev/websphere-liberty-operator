@@ -1,10 +1,9 @@
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:
-  name: route
+  name: resource-conflict-wsliberty
 spec:
   license:
     accept: true
-  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
+  applicationImage: registry.k8s.io/pause:3.2
   replicas: 1
-  expose: false

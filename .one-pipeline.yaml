@@ -85,7 +85,7 @@ containerize:
 
     # instruct bash to exit if any command fails
     set -e
-
+    
     ./scripts/pipeline/containerize-stage.sh
 
 sign-artifact:
