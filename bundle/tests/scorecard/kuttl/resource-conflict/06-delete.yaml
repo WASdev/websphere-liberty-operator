@@ -1,5 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-delete:
-- apiVersion: liberty.websphere.ibm.com/v1
-  kind: WebSphereLibertyApplication
