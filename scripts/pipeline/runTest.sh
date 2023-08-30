@@ -90,7 +90,6 @@ cp -rf operators/tests/kind/* bundle/tests/scorecard/kind-kuttl
 mkdir scripts/test
 cp -rf operators/scripts/test/* scripts/test
 
-cd ../..
 echo "directory before acceptance-test.sh"
 pwd
 echo "Getting the operator short name"
