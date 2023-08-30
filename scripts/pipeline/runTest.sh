@@ -3,11 +3,11 @@ arch=$1
 source ./clusterWait.sh $arch
 clusterurl="$ip:6443"
 
+cd ../..
 echo "in directory"
 pwd
 
-echo "running configure-cluster.sh"
-git clone --single-branch --branch cosolidate-tests https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+## git clone --single-branch --branch cosolidate-tests https://$(get_env git-token)@github.ibm.com/websphere/operators.git
 ls -l operators/scripts/configure-cluster/configure-cluster.sh
 echo "**** issuing oc login"
 oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
@@ -19,6 +19,7 @@ RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
 if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
   CLUSTER_CONFIG_OPTIONS=" --skip-create-icsp"
 fi
+echo "running configure-cluster.sh"
 operators/scripts/configure-cluster/configure-cluster.sh -p $token -k $(get_env ibmcloud-api-key-staging) --arch $arch -A $CLUSTER_CONFIG_OPTIONS
 
 export GO_VERSION=$(get_env go-version)
@@ -73,21 +74,21 @@ export DIGEST
 echo "one-pipeline Digest Value: ${DIGEST}"
 
 echo "setting up tests from operators repo - runTest.sh"
-mkdir -p ../../bundle/tests/scorecard/kuttl
-mkdir -p ../../bundle/tests/scorecard/kind-kuttl
+mkdir -p bundle/tests/scorecard/kuttl
+mkdir -p bundle/tests/scorecard/kind-kuttl
 
 # Copying all the relevent kuttl test and config file
-cp operators/tests/config.yaml ../../bundle/tests/scorecard/
-cp -rf operators/tests/common/* ../../bundle/tests/scorecard/kuttl
-cp -rf operators/tests/all-liberty/* ../../bundle/tests/scorecard/kuttl
-cp -rf operators/tests/websphere-liberty/* ../../bundle/tests/scorecard/kuttl
+cp operators/tests/config.yaml bundle/tests/scorecard/
+cp -rf operators/tests/common/* bundle/tests/scorecard/kuttl
+cp -rf operators/tests/all-liberty/* bundle/tests/scorecard/kuttl
+cp -rf operators/tests/websphere-liberty/* bundle/tests/scorecard/kuttl
 
 # Copying all the kind only kuttl tests. Deciding if the run is a kind run is done in the acceptance-test.sh script
-cp -rf operators/tests/kind/* ../../bundle/tests/scorecard/kind-kuttl
+cp -rf operators/tests/kind/* bundle/tests/scorecard/kind-kuttl
 
 # Copying the common test scripts
-mkdir ../test
-cp -rf operators/scripts/test/* ../test
+mkdir scripts/test
+cp -rf operators/scripts/test/* scripts/test
 
 cd ../..
 echo "directory before acceptance-test.sh"
