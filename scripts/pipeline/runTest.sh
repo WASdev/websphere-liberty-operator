@@ -3,11 +3,11 @@ arch=$1
 source ./clusterWait.sh $arch
 clusterurl="$ip:6443"
 
+# Moving to operator base directory
 cd ../..
 echo "in directory"
 pwd
 
-## git clone --single-branch --branch cosolidate-tests https://$(get_env git-token)@github.ibm.com/websphere/operators.git
 ls -l operators/scripts/configure-cluster/configure-cluster.sh
 echo "**** issuing oc login"
 oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
@@ -90,8 +90,7 @@ cp -rf operators/tests/kind/* bundle/tests/scorecard/kind-kuttl
 mkdir scripts/test
 cp -rf operators/scripts/test/* scripts/test
 
-echo "directory before acceptance-test.sh"
-pwd
+# Modifying the kuttl tests for operator and architecture to be tested
 echo "Getting the operator short name"
 export OP_SHORT_NAME=$(get_env operator-short-name)
 echo "Operator shortname is: ${OP_SHORT_NAME}"
@@ -103,6 +102,7 @@ scripts/acceptance-test.sh
 rc=$?
 keep_cluster=0
 
+# Checking to see it the cluster should be kept based on test results
 if (( (rc & OCP_E2E_X_TEST) >0 )) || 
    (( (rc & OCP_E2E_P_TEST) >0 )) ||
    (( (rc & OCP_E2E_Z_TEST) >0 )) ||
