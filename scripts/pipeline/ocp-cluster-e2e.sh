@@ -222,11 +222,6 @@ main() {
     setup_env
     setup_namespaces
 
-    if [[ "${ARCHITECTURE}" != "X" ]]; then
-        echo "****** Setting up tests for ${ARCHITECTURE} architecture"
-        setup_tests
-    fi
-
     if [[ -z "${DEBUG_FAILURE}" ]]; then
         trap trap_cleanup EXIT
     else
@@ -326,11 +321,6 @@ test_common() {
     }
     fi
     result=$?
-
-    echo "****** Cleaning up test environment..."
-    if [[ "${ARCHITECTURE}" != "X" ]]; then
-      revert_tests
-    fi
     cleanup_env
 
     return $result
@@ -385,39 +375,6 @@ spec:
   installPlanApproval: Automatic
   startingCSV: ibm-websphere-liberty.v${VERSION}
 EOF
-}
-
-# Substitutions to kuttl test files so that they will run on various architectures
-setup_tests () {
-  echo " As the architecture is ${ARCHITECTURE}..."
-  if [[ "$ARCHITECTURE" == "P" ]]; then
-  echo "Change affinity tests to look for ppc64le nodes"
-  sed -i.bak "s,amd64,ppc64le," $(find ./bundle/tests/scorecard/kuttl/affinity -type f)
-  echo "Change storage test to set storageclass to managed-nfs-storage"
-  sed -i.bak "s,rook-cephfs,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
-  # These will need changing if a different image is used
-  echo "Change image-stream tests to the correct digest for correct architecture"
-  sed -i.bak "s,sha256:0796d9d800932a0da80d91fea720c12977bab871f8bf33b6e353b2c58aff23f1,sha256:5325d35a0c219ff545c6f906aa35b5d84a953493166c43aecd37ecc0d5e64fa6," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
-  sed -i.bak "s,sha256:5db4910bb5d5f479c55cba3ed0d9572676d50e30bf61b4a00d086f79016b8d53,sha256:f8a554c41d74dec15aab6c6f71aec741c8cb33eb2f587449e5bd7b8c46dd25b5," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
-  elif [[ "$ARCHITECTURE" == "Z" ]]; then
-  echo "Change affinity tests to look for s390x nodes"
-  sed -i.bak "s,amd64,s390x," $(find ./bundle/tests/scorecard/kuttl/affinity -type f)
-  echo "Change storage test to set storageclass to managed-nfs-storage"
-  sed -i.bak "s,rook-cephfs,managed-nfs-storage," $(find ./bundle/tests/scorecard/kuttl/storage -type f)
-  # These will need changing if a different image is used
-  echo "Change image-stream tests to the correct digest for correct architecture"
-  sed -i.bak "s,sha256:0796d9d800932a0da80d91fea720c12977bab871f8bf33b6e353b2c58aff23f1,sha256:d622c05f4d62fc1f3cccc674c9f68cf57822c022fdd37af17bb1a7303f998ff5," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
-  sed -i.bak "s,sha256:5db4910bb5d5f479c55cba3ed0d9572676d50e30bf61b4a00d086f79016b8d53,sha256:fae90792e698d6e687c0c3b44db56f062f6374eb5fef039882308c048c9e0cbe," $(find ./bundle/tests/scorecard/kuttl/image-stream -type f)
-  else
-    echo "${ARCHITECTURE} is an invalid architecture type"
-    exit 1
-  fi
-}
-
-# As there maybe multiple runs over various architectures revert the substitutions back to amd64 defaults
-revert_tests() {
-  echo "Reverting test changes back to amd64"
-  find ./bundle/tests/scorecard/kuttl/* -name "*.bak" -exec sh -c 'mv -f $0 ${0%.bak}' {} \;
 }
 
 parse_args() {
