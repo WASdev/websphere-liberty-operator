@@ -121,40 +121,11 @@ acceptance-test:
     #!/usr/bin/env bash
     echo $STAGE
 
-    PERIODIC_SCAN=$(get_env periodic-rescan)
-    PERIODIC_SCAN="$(echo "$PERIODIC_SCAN" | tr '[:upper:]' '[:lower:]')"
+    source ./scripts/pipeline/common-functions.sh
+    check_periodic_scan_env
+    check_release_acceptance_test_env
 
-    if [[ ! -z "$PERIODIC_SCAN" && "$PERIODIC_SCAN" != "false" && "$PERIODIC_SCAN" != "no"  ]]; then
-      echo "Skipping acceptance-test. This is a periodic run that is only meant to produce CVE information."
-      exit 0
-    fi
-
-    SKIP_ACCEPTANCE_TEST=$(get_env SKIP_ACCEPTANCE_TEST)
-    SKIP_ACCEPTANCE_TEST="$(echo "$SKIP_ACCEPTANCE_TEST" | tr '[:upper:]' '[:lower:]')"
-    if [[ ! -z "$SKIP_ACCEPTANCE_TEST" && "$SKIP_ACCEPTANCE_TEST" != "false" && "$SKIP_ACCEPTANCE_TEST" != "no"  ]]; then
-      echo "Skipping acceptance-test, SKIP_ACCEPTANCE_TEST=$SKIP_ACCEPTANCE_TEST"
-      exit 0
-    fi
-
-    export intranetId_USR=$(get_env ebc_id)
-    export intranetId_PSW=$(get_env ebc_pw)
-    export ebcEnvironment=prod
-
-    cd scripts/pipeline
-    rm -rf .git
-    git clone https://$(get_env git-token)@github.ibm.com/elastic-build-cloud/ebc-gateway-http.git
-
-    export arch=$(get_env architecture)
-    export test_arch=$(get_env test-architecture)
-    
     source acceptance-test-stage.sh $test_arch
-    # if [[ "$test_arch" == "ZXP" && "$arch" == "ZXP" ]]; then
-    #  source runTest.sh Z
-    #  source runTest.sh X
-    #  source runTest.sh P
-    # else
-    #  source runTest.sh X
-    # fi
 
 scan-artifact:
   abort_on_failure: false
