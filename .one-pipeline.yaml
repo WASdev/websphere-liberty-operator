@@ -125,7 +125,7 @@ acceptance-test:
     check_periodic_scan_env
     check_release_acceptance_test_env
 
-    source acceptance-test-stage.sh $test_arch
+    ./scripts/pipeline/acceptance-test-stage.sh
 
 scan-artifact:
   abort_on_failure: false
