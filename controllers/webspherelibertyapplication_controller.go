@@ -772,7 +772,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 			return nil
 		})
 
-		// Generate an LTPA token in the shared volume
+		// Determine the LTPA encrypted password to pass into server.xml
 		r.CreateOrUpdate(ltpaEncryptedPasswordJob, instance, func() error {
 			utils.CustomizeLTPAEncryptedPasswordJob(ltpaEncryptedPasswordJob, instance, password)
 			return nil
@@ -798,22 +798,25 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 			stream, err := req.Stream(context.TODO())
 			if err == nil {
 				defer stream.Close()
-				var encryptedPassword string
+				encryptedPassword := ""
+				// Read the first line of the Pod's log
 				for {
-					buf := make([]byte, 2000)
+					buf := make([]byte, 64)
 					numBytes, err := stream.Read(buf)
 					if numBytes == 0 {
 						continue
+					} else {
+						// Use the newline character as the exit condition
+						if buf[numBytes-1] == '\n' {
+							encryptedPassword += string(buf[:numBytes-1])
+							break
+						} else {
+							encryptedPassword += string(buf[:numBytes])
+						}
 					}
 					if err == io.EOF {
 						break
 					}
-					// Use the first newline character as the exit condition
-					if numBytes >= 1 && buf[numBytes-1] == '\n' {
-						encryptedPassword = string(buf[:numBytes-1])
-						break
-					}
-
 				}
 				// Generate ConfigMap for the server.xml
 				ltpaConfigMap := &corev1.ConfigMap{}
