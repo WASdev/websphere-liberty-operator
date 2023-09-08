@@ -49,7 +49,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ltpaTokenEmptyDirMountPath = "/config/resources/security"
-const ltpaTokenMountPath = "/output/ltpa"
+const ltpaTokenMountPath = "/config/ltpa"
 const ltpaServerXMLMountPath = "/config/configDropins/overrides/"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.3.0"
@@ -678,14 +678,13 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Create initContainer. Copy the LTPA key from the volume containing server.xml into the emptyDir volume
+	// Create an initContainer to copy the LTPA server.xml into the config overrides folder
 	ltpaKeyInitContainer := corev1.Container{
-		Name:         "copy-ltpa-keys",
+		Name:         "copy-ltpa-server-xml",
 		Image:        "registry.access.redhat.com/ubi9/ubi",
-		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/keys/ltpa.keys " + ltpaTokenEmptyDirMountPath + "; cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
+		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
 		VolumeMounts: []corev1.VolumeMount{},
 	}
-	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaKeyVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaXMLVolumeMount)
