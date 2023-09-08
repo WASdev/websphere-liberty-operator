@@ -3,11 +3,11 @@ arch=$1
 source ./clusterWait.sh $arch
 clusterurl="$ip:6443"
 
+# Moving to operator base directory
+cd ../..
 echo "in directory"
 pwd
 
-echo "running configure-cluster.sh"
-git clone --single-branch --branch main https://$(get_env git-token)@github.ibm.com/websphere/operators.git
 ls -l operators/scripts/configure-cluster/configure-cluster.sh
 echo "**** issuing oc login"
 oc login --insecure-skip-tls-verify $clusterurl -u kubeadmin -p $token
@@ -19,6 +19,7 @@ RELEASE_ACCEPTANCE_TEST=$(get_env release-acceptance-test)
 if [[ ! -z "$RELEASE_ACCEPTANCE_TEST" && "$RELEASE_ACCEPTANCE_TEST" != "false" && "$RELEASE_ACCEPTANCE_TEST" != "no"  ]]; then
   CLUSTER_CONFIG_OPTIONS=" --skip-create-icsp"
 fi
+echo "running configure-cluster.sh"
 operators/scripts/configure-cluster/configure-cluster.sh -p $token -k $(get_env ibmcloud-api-key-staging) --arch $arch -A $CLUSTER_CONFIG_OPTIONS
 
 export GO_VERSION=$(get_env go-version)
@@ -72,14 +73,36 @@ DIGEST="$(skopeo inspect docker://$IMAGE | grep Digest | grep -o 'sha[^\"]*')"
 export DIGEST
 echo "one-pipeline Digest Value: ${DIGEST}"
 
-cd ../..
-echo "directory before acceptance-test.sh"
-pwd
+echo "setting up tests from operators repo - runTest.sh"
+mkdir -p bundle/tests/scorecard/kuttl
+mkdir -p bundle/tests/scorecard/kind-kuttl
 
+# Copying all the relevent kuttl test and config file
+cp operators/tests/config.yaml bundle/tests/scorecard/
+cp -rf operators/tests/common/* bundle/tests/scorecard/kuttl
+cp -rf operators/tests/all-liberty/* bundle/tests/scorecard/kuttl
+cp -rf operators/tests/websphere-liberty/* bundle/tests/scorecard/kuttl
+
+# Copying all the kind only kuttl tests. Deciding if the run is a kind run is done in the acceptance-test.sh script
+cp -rf operators/tests/kind/* bundle/tests/scorecard/kind-kuttl
+
+# Copying the common test scripts
+mkdir scripts/test
+cp -rf operators/scripts/test/* scripts/test
+
+# Modifying the kuttl tests for operator and architecture to be tested
+echo "Getting the operator short name"
+export OP_SHORT_NAME=$(get_env operator-short-name)
+echo "Operator shortname is: ${OP_SHORT_NAME}"
+echo "Running modify-tests.sh script"
+scripts/test/modify-tests.sh --operator ${OP_SHORT_NAME} --arch ${ARCHITECTURE}
+
+echo "Running acceptance-test.sh script"
 scripts/acceptance-test.sh
 rc=$?
 keep_cluster=0
 
+# Checking to see it the cluster should be kept based on test results
 if (( (rc & OCP_E2E_X_TEST) >0 )) || 
    (( (rc & OCP_E2E_P_TEST) >0 )) ||
    (( (rc & OCP_E2E_Z_TEST) >0 )) ||
@@ -132,5 +155,8 @@ fi
 echo "Cleaning up after tests have be completed"
 echo "switching back to scripts/pipeline directory"
 cd ..
+echo "Deleting test scripts ready for another run..."
+rm -rf ../../bundle/tests/scorecard/kuttl/*
+rm -rf ../../bundle/tests/scorecard/kind-kuttl/*
 oc logout
 export CLUSTER_URL=""
