@@ -51,7 +51,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ltpaTokenEmptyDirMountPath = "/config/resources/security"
-const ltpaTokenMountPath = "/output/ltpa"
+const ltpaTokenMountPath = "/config/ltpa"
 const ltpaServerXMLMountPath = "/config/configDropins/overrides/"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
@@ -612,20 +612,6 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 
 // ConfigureLTPA setups the shared-storage for LTPA token generation
 func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
-	// Create emptyDir at /output/resources/security
-	emptyDirLtpaVolumeMount := GetEmptyDirLTPAVolumeMount(la, false)
-	if !isVolumeMountFound(pts, emptyDirLtpaVolumeMount.Name) {
-		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, emptyDirLtpaVolumeMount)
-	}
-	if !isVolumeFound(pts, emptyDirLtpaVolumeMount.Name) {
-		vol := corev1.Volume{
-			Name: emptyDirLtpaVolumeMount.Name,
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		}
-		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
-	}
 	// Create emptyDir at /config/configDropins/overrides
 	emptyDirLtpaServerXMLVolumeMount := GetEmptyDirLTPAServerXMLVolumeMount(la)
 	if !isVolumeMountFound(pts, emptyDirLtpaServerXMLVolumeMount.Name) {
@@ -642,7 +628,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 	}
 
 	// Add LTPA key into the ltpa folder
-	ltpaKeyVolumeMount := GetLTPAVolumeMount(la, "keys", true)
+	ltpaKeyVolumeMount := GetLTPAVolumeMount(la, "keys", false)
 	if !isVolumeMountFound(pts, ltpaKeyVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaKeyVolumeMount)
 	}
@@ -678,14 +664,13 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Create initContainer. Copy the LTPA key from the volume containing server.xml into the emptyDir volume
+	// Create an initContainer to copy the LTPA server.xml into the config overrides folder
 	ltpaKeyInitContainer := corev1.Container{
-		Name:         "copy-ltpa-keys",
+		Name:         "copy-ltpa-server-xml",
 		Image:        "registry.access.redhat.com/ubi9/ubi",
-		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/keys/ltpa.keys " + ltpaTokenEmptyDirMountPath + "; cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
+		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
 		VolumeMounts: []corev1.VolumeMount{},
 	}
-	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaKeyVolumeMount)
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaXMLVolumeMount)
@@ -719,7 +704,7 @@ func GenerateRandomString(length int) string {
 
 func CustomizeLTPAServerXML(configMap *corev1.ConfigMap, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) {
 	configMap.Data = make(map[string]string)
-	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + ltpaTokenEmptyDirMountPath + "/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
+	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + ltpaTokenMountPath + "/keys/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
 }
 
 func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, password string) {
@@ -761,14 +746,6 @@ func CustomizeLTPASecret(secret *corev1.Secret, la *wlv1.WebSphereLibertyApplica
 	secretStringData["password"] = password
 	secretStringData["lastRotation"] = time.Now().UTC().String()
 	secret.StringData = secretStringData
-}
-
-func GetEmptyDirLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, isReadOnly bool) corev1.VolumeMount {
-	return corev1.VolumeMount{
-		Name:      la.GetName() + "-shared-empty-dir-ltpa-volume",
-		MountPath: ltpaTokenEmptyDirMountPath,
-		ReadOnly:  isReadOnly,
-	}
 }
 
 func GetLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, subFolder string, isReadOnly bool) corev1.VolumeMount {
