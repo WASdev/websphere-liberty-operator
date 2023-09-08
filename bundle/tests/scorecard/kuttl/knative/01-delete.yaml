@@ -1,6 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-delete:
-# Delete all WebSphere LibertyApplications in the test namespace
-- apiVersion: liberty.websphere.ibm.com/v1
-  kind: WebSphereLibertyApplication
