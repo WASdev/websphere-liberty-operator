@@ -722,7 +722,7 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 	return false
 }
 
-func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication) {
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) {
 	// Create ReadWriteMany persistent volume to share amongst Liberty pods in a single WebSphereLibertyApplication
 	ltpaPVC := &corev1.PersistentVolumeClaim{}
 	ltpaPVC.Name = instance.GetName() + "-ltpa-token-pvc"
@@ -754,8 +754,17 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 	// If the LTPA Secret does not exist, generate a new LTPA token
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
+		// Delete existing Liberty apps because a new LTPA password needs to be loaded into the pod by initContainer
+		if instance.Spec.StatefulSet != nil {
+			statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
+			r.DeleteResource(statefulSet)
+		} else {
+			deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
+			r.DeleteResource(deploy)
+		}
+
 		// Clear all LTPA-related resources from a prior reconcile
-		r.GetClient().Delete(context.TODO(), ltpaConfigMap)
+		r.DeleteResource(ltpaConfigMap)
 		r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 		r.GetClient().Delete(context.TODO(), ltpaEncryptedPasswordJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 
