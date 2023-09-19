@@ -10,6 +10,7 @@ setup:
     
     cp operators/scripts/pipeline/* ./scripts/pipeline/
     cp -rf operators/scripts/build ./scripts/
+    cp -rf operators/scripts/test ./scripts/
 
     ./scripts/pipeline/code-setup-stage.sh
     
