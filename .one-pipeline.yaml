@@ -20,6 +20,7 @@ detect-secrets:
   skip: true
   script: |
     #!/usr/bin/env bash
+
     echo "Skipping detect-secrets as it's already run as part of code-compliance-checks"
     exit 0
     
@@ -69,11 +70,7 @@ compliance-checks:
     #!/usr/bin/env bash
     echo $STAGE
 
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-    check_skip_scans_env
-
-    "${COMMONS_PATH}"/compliance-checks/run.sh
+    ./scripts/pipeline/compliance-checks.stage.sh
 
 containerize:
   dind: true
@@ -95,43 +92,24 @@ sign-artifact:
     #!/usr/bin/env bash
     echo $STAGE
     
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-    check_skip_scans_env
-    check_release_acceptance_test_env
+    ./scripts/pipeline/sign-artifact-stage.sh
 
 deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    echo $STAGE
-
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-
-    if [[ "$PIPELINE_DEBUG" == 1 ]]; then
-      trap env EXIT
-      env
-      set -x
-    fi
+    
+    echo "Skipping deploy as it's already run as part of acceptance-test"
+    exit 0
 
 dynamic-scan:
   abort_on_failure: false
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-
     echo $STAGE
 
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-    check_skip_scans_env
-    check_release_acceptance_test_env
-
-    #export APP_URL=$(cat ../app-url)
-    # feature preview this until evidence locker v2 usage is full feature ready
-    # can be triggered, and owasp will run for preview purposes
-    #source scripts/zap/trigger_api_scan.sh
+    ./scripts/pipeline/dynamic-scan-stage.sh
 
 acceptance-test:
   dind: true
@@ -183,12 +161,7 @@ scan-artifact:
     #!/usr/bin/env bash
     echo $STAGE
 
-    source ./scripts/pipeline/common-functions.sh
-    check_skip_scans_env
-    check_release_acceptance_test_env
-
-    # ========== Security Scanner ==========
-    ./scripts/pipeline/scan-artifact.sh
+    ./scripts/pipeline/scan-artifact-stage.sh
 
 release:
   abort_on_failure: false
@@ -196,10 +169,5 @@ release:
   script: |
     #!/usr/bin/env bash
     echo $STAGE
-
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-    check_skip_scans_env
-    check_release_acceptance_test_env
 
     ./scripts/pipeline/release-stage.sh
