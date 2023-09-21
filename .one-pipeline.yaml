@@ -70,7 +70,7 @@ compliance-checks:
     #!/usr/bin/env bash
     echo $STAGE
 
-    ./scripts/pipeline/compliance-checks.stage.sh
+    ./scripts/pipeline/compliance-checks-stage.sh
 
 containerize:
   dind: true
