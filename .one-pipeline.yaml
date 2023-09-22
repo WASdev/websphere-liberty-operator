@@ -20,6 +20,7 @@ detect-secrets:
   skip: true
   script: |
     #!/usr/bin/env bash
+    echo $STAGE
 
     echo "Skipping detect-secrets as it's already run as part of code-compliance-checks"
     exit 0
@@ -98,6 +99,7 @@ deploy:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
+    echo $STAGE
     
     echo "Skipping deploy as it's already run as part of acceptance-test"
     exit 0
@@ -117,7 +119,6 @@ acceptance-test:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-
     echo $STAGE
 
     PERIODIC_SCAN=$(get_env periodic-rescan)
