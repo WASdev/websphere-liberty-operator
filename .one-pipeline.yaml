@@ -123,10 +123,6 @@ acceptance-test:
     #!/usr/bin/env bash
     echo $STAGE
 
-    source ./scripts/pipeline/common-functions.sh
-    check_periodic_scan_env
-    check_release_acceptance_test_env
-
     ./scripts/pipeline/acceptance-test-stage.sh
 
 scan-artifact:
