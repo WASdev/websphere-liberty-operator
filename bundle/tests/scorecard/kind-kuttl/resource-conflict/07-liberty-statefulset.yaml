@@ -1,3 +1,4 @@
+# Create an operator CR instance that tries to override the abandoned StatefulSet
 apiVersion: liberty.websphere.ibm.com/v1
 kind: WebSphereLibertyApplication
 metadata:

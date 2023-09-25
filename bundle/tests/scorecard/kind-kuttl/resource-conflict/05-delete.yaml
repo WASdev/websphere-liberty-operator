@@ -1,6 +1,9 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 delete:
+- apiVersion: liberty.websphere.ibm.com/v1
+  kind: WebSphereLibertyApplication
+  name: resource-conflict-wsliberty
 - apiVersion: apps/v1
   kind: Deployment
   name: resource-conflict-wsliberty

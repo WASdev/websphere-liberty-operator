@@ -3,3 +3,7 @@ kind: TestStep
 delete:
 - apiVersion: liberty.websphere.ibm.com/v1
   kind: WebSphereLibertyApplication
+  name: resource-conflict-wsliberty
+- apiVersion: serving.knative.dev/v1
+  kind: Service
+  name: resource-conflict-wsliberty

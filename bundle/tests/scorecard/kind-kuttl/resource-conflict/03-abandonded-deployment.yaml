@@ -1,3 +1,4 @@
+# Create an abandoned Deployment not owned by the operator
 apiVersion: apps/v1
 kind: Deployment
 metadata:
