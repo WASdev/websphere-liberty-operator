@@ -33,7 +33,7 @@ declare -A E2E_TESTS=(
 		make test-pipeline-e2e
 		EOF
 	)
-)
+) 
 
 if [[ "${SKIP_KIND_E2E_TEST}" != true && "${ARCHITECTURE}" == "X" ]]; then
 	E2E_TESTS[kind-e2e-run]=$(cat <<- EOF
@@ -98,17 +98,30 @@ for test in "${!E2E_TESTS[@]}"; do
 	
 	echo "****** e2e test '${test}' have completed"
 	docker logs ${test}
+	sleep 60
 done
 
 echo "****** Test results"
 exit_code=0
 for test in "${!E2E_TESTS[@]}"; do
+    if [[ "${test}" == "kind-e2e-run" ]]; then
+        TEST_ID=$KIND_E2E_TEST;
+    elif [[ "${test}" == "ocp-e2e-run-X" ]]; then
+        TEST_ID=$OCP_E2E_X_TEST;
+    elif [[ "${test}" == "ocp-e2e-run-P" ]]; then
+        TEST_ID=$OCP_E2E_P_TEST;
+    elif [[ "${test}" == "ocp-e2e-run-Z" ]]; then
+        TEST_ID=$OCP_E2E_Z_TEST;
+	else
+	    TEST_ID=$UNKNOWN_E2E_TEST
+    fi
+
 	status="$(docker ps --all --no-trunc --filter name="^/${test}$" --format='{{.Status}}')"
 	if echo "${status}" | grep -q "Exited (0)"; then
 		echo "[PASSED] ${test}"
 	else
 		echo "[FAILED] ${test}: ${status}"
-		exit_code=1
+		exit_code=$((exit_code + $TEST_ID))
 	fi
 done
 exit ${exit_code}

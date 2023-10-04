@@ -1,9 +1,0 @@
-apiVersion: liberty.websphere.ibm.com/v1
-kind: WebSphereLibertyApplication
-metadata:
-  name: ingress-with-cert-rc
-spec:
-  license:
-    accept: true
-  expose: false
-

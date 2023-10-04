@@ -1,8 +1,0 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-wsliberty-app
-status:
-  replicas: 1
-  readyReplicas: 1
-  updatedReplicas: 1
