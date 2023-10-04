@@ -1,9 +1,0 @@
-apiVersion: liberty.websphere.ibm.com/v1
-kind: WebSphereLibertyApplication
-metadata:
-  name: my-wsliberty-app
-spec:
-  applicationImage: icr.io/appcafe/websphere-liberty:full-java8-openj9-ubi
-  license:
-    accept: true
-  replicas: 2
