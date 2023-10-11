@@ -24,7 +24,6 @@ import (
 
 	v1 "k8s.io/api/batch/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"k8s.io/client-go/rest"
 
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/go-logr/logr"
@@ -66,7 +65,6 @@ type ReconcileWebSphereLiberty struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	oputils.ReconcilerBase
-	RestConfig      *rest.Config
 	Log             logr.Logger
 	watchNamespaces []string
 }
