@@ -19,13 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	v1 "k8s.io/api/batch/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -45,10 +43,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -702,113 +699,102 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 		return nil
 	})
 
-	// Initialize ConfigMap
+	// Initialize LTPA resources
 	ltpaConfigMap := &corev1.ConfigMap{}
 	ltpaConfigMap.Name = instance.GetName() + "-ltpa-server-xml"
 	ltpaConfigMap.Namespace = instance.GetNamespace()
 
-	// Initialize Jobs
 	ltpaTokenJob := &v1.Job{}
 	ltpaTokenJob.Name = instance.GetName() + "-ltpa-token-job"
 	ltpaTokenJob.Namespace = instance.GetNamespace()
-
-	ltpaEncryptedPasswordJob := &v1.Job{}
-	ltpaEncryptedPasswordJob.Name = instance.GetName() + "-ltpa-encrypted-token-job"
-	ltpaEncryptedPasswordJob.Namespace = instance.GetNamespace()
 
 	deletePropagationBackground := metav1.DeletePropagationBackground
 
 	ltpaSecret := &corev1.Secret{}
 	ltpaSecret.Name = instance.GetName() + "-ltpa-secret"
 	ltpaSecret.Namespace = instance.GetNamespace()
+
 	// If the LTPA Secret does not exist, generate a new LTPA token
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
 		// Delete existing Liberty apps because a new LTPA password needs to be loaded into the pod by initContainer
+		var libertyApps client.Object
 		if instance.Spec.StatefulSet != nil {
-			statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
-			r.DeleteResource(statefulSet)
+			libertyApps = &appsv1.StatefulSet{ObjectMeta: defaultMeta}
+
 		} else {
-			deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
-			r.DeleteResource(deploy)
+			libertyApps = &appsv1.Deployment{ObjectMeta: defaultMeta}
 		}
+		r.DeleteResource(libertyApps)
 
 		// Clear all LTPA-related resources from a prior reconcile
 		r.DeleteResource(ltpaConfigMap)
 		r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
-		r.GetClient().Delete(context.TODO(), ltpaEncryptedPasswordJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 
-		// Create the Secret storing metadata about the LTPA token
-		password := utils.GenerateRandomString(15)
-		r.CreateOrUpdate(ltpaSecret, instance, func() error {
-			utils.CustomizeLTPASecret(ltpaSecret, instance, password)
+		ltpaServiceAccount := &corev1.ServiceAccount{}
+		ltpaServiceAccount.Name = instance.GetName() + "-ltpa"
+		ltpaServiceAccount.Namespace = instance.GetNamespace()
+
+		// Generate LTPA Role/RoleBinding and ServiceAccount
+		ltpaRole := &rbacv1.Role{}
+		ltpaRole.Name = instance.GetName() + "-ltpa-role"
+		ltpaRole.Namespace = instance.GetNamespace()
+		ltpaRole.Rules = []rbacv1.PolicyRule{
+			{
+				Verbs:         []string{"create", "get", "list", "watch"},
+				APIGroups:     []string{""},
+				Resources:     []string{"secrets"},
+				ResourceNames: []string{ltpaSecret.Name},
+			},
+		}
+		r.CreateOrUpdate(ltpaRole, instance, func() error {
+			return nil
+		})
+
+		ltpaRoleBinding := &rbacv1.RoleBinding{}
+		ltpaRoleBinding.Name = instance.GetName() + "-ltpa-rolebinding"
+		ltpaRoleBinding.Namespace = instance.GetNamespace()
+		ltpaRoleBinding.Subjects = []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      ltpaServiceAccount.Name,
+				Namespace: instance.GetNamespace(),
+			},
+		}
+		ltpaRoleBinding.RoleRef = rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     ltpaRole.Name,
+		}
+		r.CreateOrUpdate(ltpaRoleBinding, instance, func() error {
+			return nil
+		})
+		r.CreateOrUpdate(ltpaServiceAccount, instance, func() error {
 			return nil
 		})
 
 		// Generate an LTPA token in the shared volume
 		r.CreateOrUpdate(ltpaTokenJob, instance, func() error {
-			utils.CustomizeLTPAJob(ltpaTokenJob, instance, password)
-			return nil
-		})
-
-		// Determine the LTPA encrypted password to pass into server.xml
-		r.CreateOrUpdate(ltpaEncryptedPasswordJob, instance, func() error {
-			utils.CustomizeLTPAEncryptedPasswordJob(ltpaEncryptedPasswordJob, instance, password)
+			utils.CustomizeLTPAJob(ltpaTokenJob, instance, ltpaSecret.Name, ltpaServiceAccount.Name)
 			return nil
 		})
 	}
 
-	// Create the server.xml ConfigMap if it doesn't exist
-	err = r.GetClient().Get(context.TODO(), types.NamespacedName{}, ltpaConfigMap)
-	if err != nil && kerrors.IsNotFound(err) {
-		// Find the Pod created by the LTPA Encrypted Password Job
-		podList := &corev1.PodList{}
-		jobNameReq, _ := labels.NewRequirement("job-name", selection.Equals, []string{ltpaEncryptedPasswordJob.Name})
-		err = r.GetClient().List(context.TODO(), podList, &client.ListOptions{LabelSelector: labels.NewSelector().Add(*jobNameReq)})
-		if err == nil && len(podList.Items) > 0 {
-			var currentPod corev1.Pod
-			for _, pod := range podList.Items {
-				currentPod = pod
-			}
-			// Read the pod's logs for the encrypted password generated from the securityUtility encode command
-			podLogOptions := corev1.PodLogOptions{}
-			clientset, _ := kubernetes.NewForConfig(r.RestConfig)
-			req := clientset.CoreV1().Pods(instance.GetNamespace()).GetLogs(currentPod.Name, &podLogOptions)
-			stream, err := req.Stream(context.TODO())
-			if err == nil {
-				defer stream.Close()
-				encryptedPassword := ""
-				// Read the first line of the Pod's log
-				for {
-					buf := make([]byte, 64)
-					numBytes, err := stream.Read(buf)
-					if numBytes == 0 {
-						continue
-					} else {
-						// Use the newline character as the exit condition
-						if buf[numBytes-1] == '\n' {
-							encryptedPassword += string(buf[:numBytes-1])
-							break
-						} else {
-							encryptedPassword += string(buf[:numBytes])
-						}
-					}
-					if err == io.EOF {
-						break
-					}
-				}
-				// Generate ConfigMap for the server.xml
-				ltpaConfigMap := &corev1.ConfigMap{}
-				ltpaConfigMap.Name = instance.GetName() + "-ltpa-server-xml"
-				ltpaConfigMap.Namespace = instance.GetNamespace()
-				r.CreateOrUpdate(ltpaConfigMap, instance, func() error {
-					utils.CustomizeLTPAServerXML(ltpaConfigMap, instance, encryptedPassword)
-					return nil
-				})
-				// Cleanup the Jobs
-				r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
-				r.GetClient().Delete(context.TODO(), ltpaEncryptedPasswordJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
-			}
+	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
+	if err == nil {
+		// Create the server.xml ConfigMap if it doesn't exist
+		configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaConfigMap.Name, Namespace: ltpaConfigMap.Namespace}, ltpaConfigMap)
+		if configMapErr != nil && kerrors.IsNotFound(configMapErr) {
+			// Generate ConfigMap for the server.xml
+			ltpaConfigMap := &corev1.ConfigMap{}
+			ltpaConfigMap.Name = instance.GetName() + "-ltpa-server-xml"
+			ltpaConfigMap.Namespace = instance.GetNamespace()
+			r.CreateOrUpdate(ltpaConfigMap, instance, func() error {
+				utils.CustomizeLTPAServerXML(ltpaConfigMap, instance, string(ltpaSecret.Data["password"]))
+				return nil
+			})
+			// Cleanup the Job
+			r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 		}
 	}
 }

@@ -20,11 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
@@ -50,9 +48,8 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
-const ltpaTokenEmptyDirMountPath = "/config/resources/security"
 const ltpaTokenMountPath = "/config/ltpa"
-const ltpaServerXMLMountPath = "/config/configDropins/overrides/"
+const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
 
@@ -668,7 +665,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 	ltpaKeyInitContainer := corev1.Container{
 		Name:         "copy-ltpa-server-xml",
 		Image:        "registry.access.redhat.com/ubi9/ubi",
-		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
+		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLOverridesMountPath},
 		VolumeMounts: []corev1.VolumeMount{},
 	}
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
@@ -690,24 +687,12 @@ func CustomizeLTPAPersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, la *w
 	}
 }
 
-func GenerateRandomString(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	alphabetLength := len(alphabet)
-	buffer := make([]byte, length)
-	for i := range buffer {
-		buffer[i] = alphabet[rand.Intn(alphabetLength)]
-	}
-	return string(buffer)
-
-}
-
 func CustomizeLTPAServerXML(configMap *corev1.ConfigMap, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) {
 	configMap.Data = make(map[string]string)
 	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + ltpaTokenMountPath + "/keys/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
 }
 
-func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, password string) {
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string) {
 	keyDirectory := ltpaTokenMountPath + "/keys"
 	keyFile := keyDirectory + "/ltpa.keys"
 	job.Spec.Template.ObjectMeta.Name = "liberty"
@@ -716,36 +701,35 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, passwor
 			Name:    job.Spec.Template.ObjectMeta.Name,
 			Image:   la.GetApplicationImage(),
 			Command: []string{"/bin/bash", "-c"},
-			Args:    []string{"mkdir -p " + keyDirectory + " && rm -f " + keyFile + " && securityUtility createLTPAKeys --file=" + keyFile + " --password=" + password + " --passwordEncoding=aes"},
+			Args:    []string{"/liberty-scripts/create_ltpa_token.sh " + keyDirectory + " " + keyFile + " " + la.GetName() + " " + la.GetNamespace() + " " + ltpaSecretName},
 			VolumeMounts: []corev1.VolumeMount{
 				// Set the LTPA Job's volume mount as read/writeable
 				GetLTPAVolumeMount(la, "keys", false),
+				{
+					Name:      "ltpa-script",
+					MountPath: "/liberty-scripts",
+				},
 			},
 		},
 	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
+
+	job.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	job.Spec.Template.Spec.Volumes = GetLTPAVolume(la, "keys")
-}
-
-func CustomizeLTPAEncryptedPasswordJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, password string) {
-	job.Spec.Template.ObjectMeta.Name = "liberty"
-	job.Spec.Template.Spec.Containers = []corev1.Container{
-		{
-			Name:    job.Spec.Template.ObjectMeta.Name,
-			Image:   la.GetApplicationImage(),
-			Command: []string{"/bin/bash", "-c"},
-			Args:    []string{"securityUtility encode --encoding=aes " + password},
+	var number int32
+	number = 0777
+	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: "ltpa-script",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "ltpa-script",
+				},
+				DefaultMode: &number,
+			},
 		},
-	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
-}
-
-func CustomizeLTPASecret(secret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, password string) {
-	secret.Type = corev1.SecretTypeOpaque
-	secretStringData := make(map[string]string)
-	secretStringData["password"] = password
-	secretStringData["lastRotation"] = time.Now().UTC().String()
-	secret.StringData = secretStringData
+	})
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 }
 
 func GetLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, subFolder string, isReadOnly bool) corev1.VolumeMount {
@@ -759,7 +743,7 @@ func GetLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, subFolder string, 
 func GetEmptyDirLTPAServerXMLVolumeMount(la *wlv1.WebSphereLibertyApplication) corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      la.GetName() + "-shared-empty-dir-ltpa-server-xml-volume",
-		MountPath: ltpaServerXMLMountPath,
+		MountPath: ltpaServerXMLOverridesMountPath,
 	}
 }
 
