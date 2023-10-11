@@ -48,9 +48,8 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
-const ltpaTokenEmptyDirMountPath = "/config/resources/security"
 const ltpaTokenMountPath = "/config/ltpa"
-const ltpaServerXMLMountPath = "/config/configDropins/overrides/"
+const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.3.0"
 const ltpaKeysMountPath = "/config/managedLTPA"
@@ -682,7 +681,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 	ltpaKeyInitContainer := corev1.Container{
 		Name:         "copy-ltpa-server-xml",
 		Image:        "registry.access.redhat.com/ubi9/ubi",
-		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLMountPath},
+		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLOverridesMountPath},
 		VolumeMounts: []corev1.VolumeMount{},
 	}
 	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
