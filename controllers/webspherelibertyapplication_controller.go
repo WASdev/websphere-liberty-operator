@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -717,7 +718,8 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 	return false
 }
 
-func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) {
+// Generates the LTPA keys file and returns the name of the Secret storing its metadata
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) string {
 	// Create ReadWriteMany persistent volume to share amongst Liberty pods in a single WebSphereLibertyApplication
 	ltpaPVC := &corev1.PersistentVolumeClaim{}
 	ltpaPVC.Name = instance.GetName() + "-ltpa-token-pvc"
@@ -745,16 +747,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 	// If the LTPA Secret does not exist, generate a new LTPA token
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
-		// Delete existing Liberty apps because a new LTPA password needs to be loaded into the pod by initContainer
-		var libertyApps client.Object
-		if instance.Spec.StatefulSet != nil {
-			libertyApps = &appsv1.StatefulSet{ObjectMeta: defaultMeta}
-
-		} else {
-			libertyApps = &appsv1.Deployment{ObjectMeta: defaultMeta}
-		}
-		r.DeleteResource(libertyApps)
-
 		// Clear all LTPA-related resources from a prior reconcile
 		r.DeleteResource(ltpaConfigMap)
 		r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
@@ -801,11 +793,35 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 			return nil
 		})
 
-		// Generate an LTPA token in the shared volume
-		r.CreateOrUpdate(ltpaTokenJob, instance, func() error {
-			utils.CustomizeLTPAJob(ltpaTokenJob, instance, ltpaSecret.Name, ltpaServiceAccount.Name)
-			return nil
-		})
+		// Generate the LTPA script as a ConfigMap from source
+		ltpaScriptConfigMap := &corev1.ConfigMap{}
+		ltpaScriptConfigMap.Name = instance.GetName() + "-ltpa-script"
+		ltpaScriptConfigMap.Namespace = instance.GetNamespace()
+		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaScriptConfigMap.Name, Namespace: ltpaScriptConfigMap.Namespace}, ltpaScriptConfigMap)
+		if err == nil {
+			r.GetClient().Delete(context.TODO(), ltpaScriptConfigMap)
+		}
+		if err != nil && kerrors.IsNotFound(err) {
+			ltpaScriptConfigMap.Data = make(map[string]string)
+			script, err := ioutil.ReadFile("utils/create_ltpa_keys.sh")
+			if err != nil {
+				fmt.Printf("Failed to read create_ltpa_keys.sh")
+				return ""
+			}
+			ltpaScriptConfigMap.Data["create_ltpa_keys.sh"] = string(script)
+			r.CreateOrUpdate(ltpaScriptConfigMap, instance, func() error {
+				return nil
+			})
+		}
+		// Verify the LTPA script has been recreated before starting the LTPA Job
+		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaScriptConfigMap.Name, Namespace: ltpaScriptConfigMap.Namespace}, ltpaScriptConfigMap)
+		if err == nil {
+			// Generate an LTPA keys file in the shared volume
+			r.CreateOrUpdate(ltpaTokenJob, instance, func() error {
+				utils.CustomizeLTPAJob(ltpaTokenJob, instance, ltpaSecret.Name, ltpaServiceAccount.Name, ltpaScriptConfigMap.Name)
+				return nil
+			})
+		}
 	}
 
 	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
@@ -821,10 +837,12 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 				utils.CustomizeLTPAServerXML(ltpaConfigMap, instance, string(ltpaSecret.Data["password"]))
 				return nil
 			})
+
 			// Cleanup the Job
 			r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 		}
 	}
+	return ltpaSecret.Name
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
