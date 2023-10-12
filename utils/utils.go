@@ -692,7 +692,7 @@ func CustomizeLTPAServerXML(configMap *corev1.ConfigMap, la *wlv1.WebSphereLiber
 	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + ltpaTokenMountPath + "/keys/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
 }
 
-func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string) {
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
 	keyDirectory := ltpaTokenMountPath + "/keys"
 	keyFile := keyDirectory + "/ltpa.keys"
 	job.Spec.Template.ObjectMeta.Name = "liberty"
@@ -701,29 +701,32 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 			Name:    job.Spec.Template.ObjectMeta.Name,
 			Image:   la.GetApplicationImage(),
 			Command: []string{"/bin/bash", "-c"},
-			Args:    []string{"/liberty-scripts/create_ltpa_token.sh " + keyDirectory + " " + keyFile + " " + la.GetName() + " " + la.GetNamespace() + " " + ltpaSecretName},
+			Args:    []string{ltpaTokenMountPath + "/bin/create_ltpa_keys.sh " + keyDirectory + " " + keyFile + " " + la.GetName() + " " + la.GetNamespace() + " " + ltpaSecretName},
 			VolumeMounts: []corev1.VolumeMount{
 				// Set the LTPA Job's volume mount as read/writeable
 				GetLTPAVolumeMount(la, "keys", false),
 				{
-					Name:      "ltpa-script",
-					MountPath: "/liberty-scripts",
+					Name:      ltpaScriptName,
+					MountPath: ltpaTokenMountPath + "/bin",
 				},
 			},
 		},
 	}
 
+	maxPods := int32(1)
+	job.Spec.Completions = &maxPods
+	job.Spec.Parallelism = &maxPods
 	job.Spec.Template.Spec.ServiceAccountName = serviceAccountName
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	job.Spec.Template.Spec.Volumes = GetLTPAVolume(la, "keys")
 	var number int32
 	number = 0777
 	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: "ltpa-script",
+		Name: ltpaScriptName,
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "ltpa-script",
+					Name: ltpaScriptName,
 				},
 				DefaultMode: &number,
 			},
