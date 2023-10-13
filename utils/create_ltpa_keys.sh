@@ -1,26 +1,26 @@
 #!/bin/bash 
 
-keyDirectory=$1 
+KEY_DIRECTORY=$1 
 
-keyFile=$2 
+KEY_FILE=$2 
 
-NAME=$3
+NAMESPACE=$3 
 
-NAMESPACE=$4 
+LTPA_SECRET_NAME=$4
 
-LTPA_SECRET_NAME=$5
+ENCODING_TYPE=$5
 
-LAST_ROTATION=abc
+TIME_SINCE_EPOCH_SECONDS=$(date '+%s')
 
-PASSWORD=test
+PASSWORD=$(openssl rand -base64 15)
 
-mkdir -p ${keyDirectory}
+mkdir -p ${KEY_DIRECTORY}
 
-rm -f ${keyFile}
+rm -f ${KEY_FILE}
 
-securityUtility createLTPAKeys --file=${keyFile} --password=${PASSWORD} --passwordEncoding=aes
+securityUtility createLTPAKeys --file=${KEY_FILE} --password=${PASSWORD} --passwordEncoding=${ENCODING_TYPE}
 
-ENCODED_PASSWORD=$(securityUtility encode --encoding=aes ${PASSWORD})
+ENCODED_PASSWORD=$(securityUtility encode --encoding=${ENCODING_TYPE} ${PASSWORD})
 
 APISERVER=https://kubernetes.default.svc
 
@@ -33,7 +33,7 @@ CACERT=${SERVICEACCOUNT}/ca.crt
 SECRET_FILE=$(echo -e "{
     \"apiVersion\": \"v1\",
     \"stringData\": {
-    \"lastRotation\": \"$LAST_ROTATION\",
+    \"lastRotation\": \"$TIME_SINCE_EPOCH_SECONDS\",
     \"password\": \"$ENCODED_PASSWORD\"
     },
     \"kind\": \"Secret\",

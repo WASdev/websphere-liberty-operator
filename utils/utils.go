@@ -695,13 +695,14 @@ func CustomizeLTPAServerXML(configMap *corev1.ConfigMap, la *wlv1.WebSphereLiber
 func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
 	keyDirectory := ltpaTokenMountPath + "/keys"
 	keyFile := keyDirectory + "/ltpa.keys"
+	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
 	job.Spec.Template.Spec.Containers = []corev1.Container{
 		{
 			Name:    job.Spec.Template.ObjectMeta.Name,
 			Image:   la.GetApplicationImage(),
 			Command: []string{"/bin/bash", "-c"},
-			Args:    []string{ltpaTokenMountPath + "/bin/create_ltpa_keys.sh " + keyDirectory + " " + keyFile + " " + la.GetName() + " " + la.GetNamespace() + " " + ltpaSecretName},
+			Args:    []string{ltpaTokenMountPath + "/bin/create_ltpa_keys.sh " + keyDirectory + " " + keyFile + " " + la.GetNamespace() + " " + ltpaSecretName + " " + encodingType},
 			VolumeMounts: []corev1.VolumeMount{
 				// Set the LTPA Job's volume mount as read/writeable
 				GetLTPAVolumeMount(la, "keys", false),
