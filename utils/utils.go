@@ -715,12 +715,10 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 			},
 		},
 	}
-
-	maxPods := int32(1)
-	job.Spec.Completions = &maxPods
-	job.Spec.Parallelism = &maxPods
+	completionMode := v1.IndexedCompletion
+	job.Spec.CompletionMode = &completionMode
 	job.Spec.Template.Spec.ServiceAccountName = serviceAccountName
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
 	job.Spec.Template.Spec.Volumes = GetLTPAVolume(la, "keys")
 	var number int32
 	number = 0777
