@@ -799,7 +799,7 @@ func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *webspherel
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) (error, string) {
-	// Designated a ReadWriteMany persistent volume to store the ltpa.keys file
+	// Designate a ReadWriteMany persistent volume to store the ltpa.keys file
 	// that can be shared amongst Liberty pods in a single WebSphereLibertyApplication CR instance
 	ltpaKeysPVC := &corev1.PersistentVolumeClaim{}
 	ltpaKeysPVC.Name = instance.GetName() + lutils.LTPAKeysPVCSuffix
