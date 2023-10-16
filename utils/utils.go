@@ -735,7 +735,6 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 			},
 		},
 	})
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 }
 
 func GetLTPAVolumeMount(la *wlv1.WebSphereLibertyApplication, subFolder string, isReadOnly bool) corev1.VolumeMount {
