@@ -611,7 +611,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 
 // ConfigureLTPA setups the shared-storage for LTPA token generation
 func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
-	// Create emptyDir at /config/configDropins/overrides
+	// Create an emptyDir volume at /config/configDropins/overrides
 	emptyDirLtpaServerXMLVolumeMount := GetEmptyDirLTPAServerXMLVolumeMount(la)
 	if !isVolumeMountFound(pts, emptyDirLtpaServerXMLVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
@@ -626,7 +626,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Add LTPA key into the ltpa folder
+	// Mount a volume /config/ltpa/keys to store the ltpa.keys file
 	ltpaKeyVolumeMount := GetLTPAVolumeMount(la, "keys", false)
 	if !isVolumeMountFound(pts, ltpaKeyVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaKeyVolumeMount)
@@ -644,7 +644,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Add LTPA server.xml into the ltpa folder
+	// Mount a volume /config/ltpa/xml to store the Liberty Server XML (ltpa.xml)
 	ltpaXMLVolumeMount := GetLTPAVolumeMount(la, "xml", true)
 	if !isVolumeMountFound(pts, ltpaXMLVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaXMLVolumeMount)
@@ -663,7 +663,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Create an initContainer to copy the LTPA server.xml into the config overrides folder
+	// Create an initContainer to copy /config/ltpa/xml/ltpa.xml into the emptyDir volume at /config/configDropins/overrides
 	ltpaKeyInitContainer := corev1.Container{
 		Name:         "copy" + LTPAServerXMLSuffix,
 		Image:        "registry.access.redhat.com/ubi9/ubi",
