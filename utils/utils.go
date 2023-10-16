@@ -609,7 +609,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 	return false
 }
 
-// ConfigureLTPA setups the shared-storage for LTPA token generation
+// ConfigureLTPA setups the shared-storage for LTPA keys file generation
 func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
 	// Create an emptyDir volume at /config/configDropins/overrides
 	emptyDirLtpaServerXMLVolumeMount := GetEmptyDirLTPAServerXMLVolumeMount(la)
@@ -691,7 +691,7 @@ func CustomizeLTPAPersistentVolumeClaim(pvc *corev1.PersistentVolumeClaim, la *w
 
 func CustomizeLTPAServerXML(configMap *corev1.ConfigMap, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) {
 	configMap.Data = make(map[string]string)
-	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + ltpaTokenMountPath + "/keys/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
+	configMap.Data["ltpa.xml"] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"${server.config.dir}/ltpa/keys/ltpa.keys\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
 }
 
 func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {

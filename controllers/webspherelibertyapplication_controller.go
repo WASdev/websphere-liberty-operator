@@ -856,10 +856,20 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 		ltpaRoleBinding := &rbacv1.RoleBinding{}
 		ltpaRoleBinding.Name = instance.GetName() + "-ltpa-rolebinding"
 		ltpaRoleBinding.Namespace = instance.GetNamespace()
-		ltpaRoleBinding.Subjects = append(ltpaRoleBinding.Subjects, rbacv1.Subject{
-			Kind:      "ServiceAccount",
-			Name:      ltpaServiceAccount.Name,
-			Namespace: instance.GetNamespace(),
+		ltpaRoleBinding.Subjects = []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      ltpaServiceAccount.Name,
+				Namespace: instance.GetNamespace(),
+			},
+		}
+		ltpaRoleBinding.RoleRef = rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     ltpaRole.Name,
+		}
+		r.CreateOrUpdate(ltpaRoleBinding, instance, func() error {
+			return nil
 		})
 		// err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaRoleBinding.Name, Namespace: ltpaRoleBinding.Namespace}, ltpaRoleBinding)
 		// if err == nil {
@@ -892,9 +902,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 		// 		Name:     ltpaRole.Name,
 		// 	}
 		// }
-		r.CreateOrUpdate(ltpaRoleBinding, instance, func() error {
-			return nil
-		})
 
 		// Create a ConfigMap to store the utils/create_ltpa_keys.sh script
 		ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
