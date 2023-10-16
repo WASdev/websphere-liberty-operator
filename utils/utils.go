@@ -50,6 +50,8 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ltpaTokenMountPath = "/config/ltpa"
 const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
+const LTPAKeysPVCSuffix = "-ltpa-keys-pvc"
+const LTPAServerXMLSuffix = "-ltpa-server-xml"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
 
@@ -630,7 +632,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaKeyVolumeMount)
 	}
 	if !isVolumeFound(pts, ltpaKeyVolumeMount.Name) {
-		claimName := la.GetName() + "-ltpa-token-pvc"
+		claimName := la.GetName() + LTPAKeysPVCSuffix
 		vol := corev1.Volume{
 			Name: ltpaKeyVolumeMount.Name,
 			VolumeSource: corev1.VolumeSource{
@@ -653,7 +655,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: la.GetName() + "-ltpa-server-xml",
+						Name: la.GetName() + LTPAServerXMLSuffix,
 					},
 				},
 			},
@@ -663,7 +665,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 
 	// Create an initContainer to copy the LTPA server.xml into the config overrides folder
 	ltpaKeyInitContainer := corev1.Container{
-		Name:         "copy-ltpa-server-xml",
+		Name:         "copy" + LTPAServerXMLSuffix,
 		Image:        "registry.access.redhat.com/ubi9/ubi",
 		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLOverridesMountPath},
 		VolumeMounts: []corev1.VolumeMount{},
@@ -756,7 +758,7 @@ func GetLTPAVolume(la *wlv1.WebSphereLibertyApplication, subFolder string) []cor
 		Name: la.GetName() + "-shared-ltpa-volume-" + subFolder,
 		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: la.GetName() + "-ltpa-token-pvc",
+				ClaimName: la.GetName() + LTPAKeysPVCSuffix,
 			},
 		},
 	}}

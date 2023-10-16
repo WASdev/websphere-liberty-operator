@@ -432,7 +432,20 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Before the deployment/statefulset is initialized, generate a volume for the LTPA token to be shared amongst Liberty replicas
-	ltpaSecretName := r.generateLTPAKeys(instance, defaultMeta)
+	var ltpaSecretName string
+	if r.isLTPAKeySharingEnabled(instance) {
+		err, ltpaSecretName = r.generateLTPAKeys(instance, defaultMeta)
+		if err != nil {
+			reqLogger.Error(err, "Failed to generate the shared LTPA Keys file")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	} else {
+		err := r.deleteLTPAKeysResources(instance, defaultMeta)
+		if err != nil {
+			reqLogger.Error(err, "Failed to delete LTPA Keys Resource")
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+	}
 
 	if instance.Spec.StatefulSet != nil {
 		// Delete Deployment if exists
@@ -493,7 +506,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 			}
 
-			if len(ltpaSecretName) > 0 {
+			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
 				lutils.ConfigureLTPA(&statefulSet.Spec.Template, instance)
 				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(), ltpaSecretName, "LTPA")
 				if err != nil {
@@ -561,7 +574,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 			}
 
-			if len(ltpaSecretName) > 0 {
+			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
 				lutils.ConfigureLTPA(&deploy.Spec.Template, instance)
 				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(), ltpaSecretName, "LTPA")
 				if err != nil {
@@ -700,25 +713,104 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 	return false
 }
 
+func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *webspherelibertyv1.WebSphereLibertyApplication) bool {
+	if instance.GetManageLTPA() != nil && *instance.GetManageLTPA() {
+		return true
+	}
+	return false
+}
+
+// Deletes resources used to create the LTPA keys file
+func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) error {
+	generateLTPAKeysJob := &v1.Job{}
+	generateLTPAKeysJob.Name = instance.GetName() + "-generate-ltpa-keys-job"
+	generateLTPAKeysJob.Namespace = instance.GetNamespace()
+	deletePropagationBackground := metav1.DeletePropagationBackground
+	err := r.GetClient().Delete(context.TODO(), generateLTPAKeysJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
+	}
+
+	ltpaConfigMap := &corev1.ConfigMap{}
+	ltpaConfigMap.Name = instance.GetName() + lutils.LTPAServerXMLSuffix
+	ltpaConfigMap.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaConfigMap)
+	if err != nil {
+		return err
+	}
+
+	ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
+	ltpaKeysCreationScriptConfigMap.Name = instance.GetName() + "-ltpa-script"
+	ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaKeysCreationScriptConfigMap)
+	if err != nil {
+		return err
+	}
+
+	ltpaKeysPVC := &corev1.PersistentVolumeClaim{}
+	ltpaKeysPVC.Name = instance.GetName() + lutils.LTPAKeysPVCSuffix
+	ltpaKeysPVC.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaKeysPVC)
+	if err != nil {
+		return err
+	}
+
+	// This Secret must be deleted. Deletion causes the LTPA Secret resource version environment variable not to be added
+	// to the Liberty pod on the next reconcile, causing a Pod restart and allowing Liberty to revert to normal LTPA generation.
+	ltpaSecret := &corev1.Secret{}
+	ltpaSecret.Name = instance.GetName() + "-ltpa-secret"
+	ltpaSecret.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaSecret)
+	if err != nil {
+		return err
+	}
+
+	ltpaRoleBinding := &rbacv1.RoleBinding{}
+	ltpaRoleBinding.Name = instance.GetName() + "-ltpa-rolebinding"
+	ltpaRoleBinding.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaRoleBinding)
+	if err != nil {
+		return err
+	}
+
+	ltpaRole := &rbacv1.Role{}
+	ltpaRole.Name = instance.GetName() + "-ltpa-role"
+	ltpaRole.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaRole)
+	if err != nil {
+		return err
+	}
+
+	ltpaServiceAccount := &corev1.ServiceAccount{}
+	ltpaServiceAccount.Name = instance.GetName() + "-ltpa"
+	ltpaServiceAccount.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaServiceAccount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
-func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) string {
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) (error, string) {
 	// Create ReadWriteMany persistent volume to share amongst Liberty pods in a single WebSphereLibertyApplication
-	ltpaPVC := &corev1.PersistentVolumeClaim{}
-	ltpaPVC.Name = instance.GetName() + "-ltpa-token-pvc"
-	ltpaPVC.Namespace = instance.GetNamespace()
-	r.CreateOrUpdate(ltpaPVC, instance, func() error {
-		utils.CustomizeLTPAPersistentVolumeClaim(ltpaPVC, instance)
+	ltpaKeysPVC := &corev1.PersistentVolumeClaim{}
+	ltpaKeysPVC.Name = instance.GetName() + lutils.LTPAKeysPVCSuffix
+	ltpaKeysPVC.Namespace = instance.GetNamespace()
+	r.CreateOrUpdate(ltpaKeysPVC, instance, func() error {
+		utils.CustomizeLTPAPersistentVolumeClaim(ltpaKeysPVC, instance)
 		return nil
 	})
 
 	// Initialize LTPA resources
-	ltpaConfigMap := &corev1.ConfigMap{}
-	ltpaConfigMap.Name = instance.GetName() + "-ltpa-server-xml"
-	ltpaConfigMap.Namespace = instance.GetNamespace()
+	ltpaServerXMLConfigMap := &corev1.ConfigMap{}
+	ltpaServerXMLConfigMap.Name = instance.GetName() + lutils.LTPAServerXMLSuffix
+	ltpaServerXMLConfigMap.Namespace = instance.GetNamespace()
 
-	ltpaTokenJob := &v1.Job{}
-	ltpaTokenJob.Name = instance.GetName() + "-ltpa-token-job"
-	ltpaTokenJob.Namespace = instance.GetNamespace()
+	generateLTPAKeysJob := &v1.Job{}
+	generateLTPAKeysJob.Name = instance.GetName() + "-generate-ltpa-keys-job"
+	generateLTPAKeysJob.Namespace = instance.GetNamespace()
 
 	deletePropagationBackground := metav1.DeletePropagationBackground
 
@@ -730,23 +822,31 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
 		// Clear all LTPA-related resources from a prior reconcile
-		r.DeleteResource(ltpaConfigMap)
-		r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
+		err = r.DeleteResource(ltpaServerXMLConfigMap)
+		if err != nil {
+			return err, ""
+		}
+		err = r.GetClient().Delete(context.TODO(), generateLTPAKeysJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
+		if err != nil && !kerrors.IsNotFound(err) {
+			return err, ""
+		}
 
+		// Generate LTPA ServiceAccount and Role/RoleBinding
 		ltpaServiceAccount := &corev1.ServiceAccount{}
 		ltpaServiceAccount.Name = instance.GetName() + "-ltpa"
 		ltpaServiceAccount.Namespace = instance.GetNamespace()
+		r.CreateOrUpdate(ltpaServiceAccount, instance, func() error {
+			return nil
+		})
 
-		// Generate LTPA Role/RoleBinding and ServiceAccount
 		ltpaRole := &rbacv1.Role{}
 		ltpaRole.Name = instance.GetName() + "-ltpa-role"
 		ltpaRole.Namespace = instance.GetNamespace()
 		ltpaRole.Rules = []rbacv1.PolicyRule{
 			{
-				Verbs:         []string{"create", "get", "list", "watch"},
-				APIGroups:     []string{""},
-				Resources:     []string{"secrets"},
-				ResourceNames: []string{ltpaSecret.Name},
+				Verbs:     []string{"create"},
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
 			},
 		}
 		r.CreateOrUpdate(ltpaRole, instance, func() error {
@@ -756,51 +856,66 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 		ltpaRoleBinding := &rbacv1.RoleBinding{}
 		ltpaRoleBinding.Name = instance.GetName() + "-ltpa-rolebinding"
 		ltpaRoleBinding.Namespace = instance.GetNamespace()
-		ltpaRoleBinding.Subjects = []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      ltpaServiceAccount.Name,
-				Namespace: instance.GetNamespace(),
-			},
-		}
-		ltpaRoleBinding.RoleRef = rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     ltpaRole.Name,
+		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaRoleBinding.Name, Namespace: ltpaRoleBinding.Namespace}, ltpaRoleBinding)
+		if err == nil {
+			if len(ltpaRoleBinding.Subjects) > 0 {
+				ltpaRoleBinding.Subjects = append(ltpaRoleBinding.Subjects, rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      ltpaServiceAccount.Name,
+					Namespace: instance.GetNamespace(),
+				})
+			} else {
+				ltpaRoleBinding.Subjects = []rbacv1.Subject{
+					{
+						Kind:      "ServiceAccount",
+						Name:      ltpaServiceAccount.Name,
+						Namespace: instance.GetNamespace(),
+					},
+				}
+			}
+		} else {
+			ltpaRoleBinding.Subjects = []rbacv1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      ltpaServiceAccount.Name,
+					Namespace: instance.GetNamespace(),
+				},
+			}
+			ltpaRoleBinding.RoleRef = rbacv1.RoleRef{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Role",
+				Name:     ltpaRole.Name,
+			}
 		}
 		r.CreateOrUpdate(ltpaRoleBinding, instance, func() error {
 			return nil
 		})
-		r.CreateOrUpdate(ltpaServiceAccount, instance, func() error {
-			return nil
-		})
 
 		// Generate the LTPA script as a ConfigMap from source
-		ltpaScriptConfigMap := &corev1.ConfigMap{}
-		ltpaScriptConfigMap.Name = instance.GetName() + "-ltpa-script"
-		ltpaScriptConfigMap.Namespace = instance.GetNamespace()
-		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaScriptConfigMap.Name, Namespace: ltpaScriptConfigMap.Namespace}, ltpaScriptConfigMap)
+		ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
+		ltpaKeysCreationScriptConfigMap.Name = instance.GetName() + "-ltpa-script"
+		ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
+		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
 		if err == nil {
-			r.GetClient().Delete(context.TODO(), ltpaScriptConfigMap)
+			r.DeleteResource(ltpaKeysCreationScriptConfigMap)
 		}
 		if err != nil && kerrors.IsNotFound(err) {
-			ltpaScriptConfigMap.Data = make(map[string]string)
+			ltpaKeysCreationScriptConfigMap.Data = make(map[string]string)
 			script, err := ioutil.ReadFile("utils/create_ltpa_keys.sh")
 			if err != nil {
-				fmt.Printf("Failed to read create_ltpa_keys.sh")
-				return ""
+				return err, ""
 			}
-			ltpaScriptConfigMap.Data["create_ltpa_keys.sh"] = string(script)
-			r.CreateOrUpdate(ltpaScriptConfigMap, instance, func() error {
+			ltpaKeysCreationScriptConfigMap.Data["create_ltpa_keys.sh"] = string(script)
+			r.CreateOrUpdate(ltpaKeysCreationScriptConfigMap, instance, func() error {
 				return nil
 			})
 		}
-		// Verify the LTPA script has been recreated before starting the LTPA Job
-		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaScriptConfigMap.Name, Namespace: ltpaScriptConfigMap.Namespace}, ltpaScriptConfigMap)
+		// Verify the LTPA keys creation script has been loaded before starting the LTPA Job
+		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
 		if err == nil {
 			// Generate an LTPA keys file in the shared volume
-			r.CreateOrUpdate(ltpaTokenJob, instance, func() error {
-				utils.CustomizeLTPAJob(ltpaTokenJob, instance, ltpaSecret.Name, ltpaServiceAccount.Name, ltpaScriptConfigMap.Name)
+			r.CreateOrUpdate(generateLTPAKeysJob, instance, func() error {
+				utils.CustomizeLTPAJob(generateLTPAKeysJob, instance, ltpaSecret.Name, ltpaServiceAccount.Name, ltpaKeysCreationScriptConfigMap.Name)
 				return nil
 			})
 		}
@@ -809,22 +924,19 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *webspherelibertyv
 	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err == nil {
 		// Create the server.xml ConfigMap if it doesn't exist
-		configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaConfigMap.Name, Namespace: ltpaConfigMap.Namespace}, ltpaConfigMap)
+		configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaServerXMLConfigMap.Name, Namespace: ltpaServerXMLConfigMap.Namespace}, ltpaServerXMLConfigMap)
 		if configMapErr != nil && kerrors.IsNotFound(configMapErr) {
 			// Generate ConfigMap for the server.xml
-			ltpaConfigMap := &corev1.ConfigMap{}
-			ltpaConfigMap.Name = instance.GetName() + "-ltpa-server-xml"
-			ltpaConfigMap.Namespace = instance.GetNamespace()
-			r.CreateOrUpdate(ltpaConfigMap, instance, func() error {
-				utils.CustomizeLTPAServerXML(ltpaConfigMap, instance, string(ltpaSecret.Data["password"]))
+			r.CreateOrUpdate(ltpaServerXMLConfigMap, instance, func() error {
+				utils.CustomizeLTPAServerXML(ltpaServerXMLConfigMap, instance, string(ltpaSecret.Data["password"]))
 				return nil
 			})
 
 			// Cleanup the Job
-			r.GetClient().Delete(context.TODO(), ltpaTokenJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
+			r.GetClient().Delete(context.TODO(), generateLTPAKeysJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
 		}
 	}
-	return ltpaSecret.Name
+	return nil, ltpaSecret.Name
 }
 
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
