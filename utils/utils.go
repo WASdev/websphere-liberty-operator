@@ -48,10 +48,6 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
-const ltpaTokenMountPath = "/config/ltpa"
-const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
-const LTPAKeysPVCSuffix = "-ltpa-keys-pvc"
-const LTPAServerXMLSuffix = "-ltpa-server-xml"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.3.0"
 const ltpaKeysMountPath = "/config/managedLTPA"
@@ -661,7 +657,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 	}
 
 	// Mount a volume /config/ltpa/xml to store the Liberty Server XML (ltpa.xml)
-	ltpaXMLVolumeMount := GetLTPAVolumeMount(la, "xml", true)
+	ltpaXMLVolumeMount := GetLTPAVolumeMount(la, "xml")
 	if !isVolumeMountFound(pts, ltpaXMLVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaXMLVolumeMount)
 	}
@@ -671,7 +667,7 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: la.GetName() + LTPAServerXMLSuffix,
+						Name: operatorShortName + LTPAServerXMLSuffix,
 					},
 				},
 			},
