@@ -182,7 +182,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		return err, ""
 	} else {
 		if !isLTPAKeySharingLeader {
-			return nil, ""
+			return nil, ltpaSecret.Name
 		}
 	}
 
