@@ -36,7 +36,7 @@ BEFORE_LTPA_KEYS="{\"apiVersion\": \"v1\", \"stringData\": {\"lastRotation\": \"
 
 AFTER_LTPA_KEYS="\"},\"kind\": \"Secret\",\"metadata\": {\"name\": \"$LTPA_SECRET_NAME\",\"namespace\": \"$NAMESPACE\"},\"type\": \"Opaque\"}"
 
-echo $BEFORE_LTPA_KEYS |cat - ${ENCODED_KEY_FILE} > /tmp/out && mv /tmp/out ${ENCODED_KEY_FILE}
+echo $BEFORE_LTPA_KEYS | cat - ${ENCODED_KEY_FILE} > /tmp/tmp.keys && mv /tmp/tmp.keys ${ENCODED_KEY_FILE}
 
 echo $AFTER_LTPA_KEYS >> ${ENCODED_KEY_FILE}
 
