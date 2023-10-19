@@ -233,9 +233,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		return err, ltpaSecret.Name
 	}
 
-	// Create the Liberty Server XML ConfigMap if it doesn't exist
-	configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLSecret.Name, Namespace: ltpaXMLSecret.Namespace}, ltpaXMLSecret)
-	if configMapErr != nil && kerrors.IsNotFound(configMapErr) {
+	// Create the Liberty Server XML Secret if it doesn't exist
+	serverXMLSecretErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLSecret.Name, Namespace: ltpaXMLSecret.Namespace}, ltpaXMLSecret)
+	if serverXMLSecretErr != nil && kerrors.IsNotFound(serverXMLSecretErr) {
 		r.CreateOrUpdate(ltpaXMLSecret, instance, func() error {
 			lutils.CustomizeLTPAServerXML(ltpaXMLSecret, instance, string(ltpaSecret.Data["password"]))
 			return nil
