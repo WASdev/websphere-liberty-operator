@@ -4,11 +4,13 @@ NAMESPACE=$1
 
 LTPA_SECRET_NAME=$2
 
-ENCODING_TYPE=$3
+LTPA_FILE_NAME=$3
 
-KEY_FILE="/tmp/ltpa.keys" 
+ENCODING_TYPE=$4
 
-ENCODED_KEY_FILE="/tmp/ltpa.keys-encoded"
+KEY_FILE="/tmp/${LTPA_FILE_NAME}" 
+
+ENCODED_KEY_FILE="/tmp/${LTPA_FILE_NAME}-encoded"
 
 APISERVER=https://kubernetes.default.svc
 
@@ -32,7 +34,7 @@ cat ${KEY_FILE} | base64 > ${ENCODED_KEY_FILE}
 
 ENCODED_PASSWORD=$(securityUtility encode --encoding=${ENCODING_TYPE} ${PASSWORD})
 
-BEFORE_LTPA_KEYS="{\"apiVersion\": \"v1\", \"stringData\": {\"lastRotation\": \"$TIME_SINCE_EPOCH_SECONDS\", \"password\": \"$ENCODED_PASSWORD\"}, \"data\": {\"ltpa.keys\": \""
+BEFORE_LTPA_KEYS="{\"apiVersion\": \"v1\", \"stringData\": {\"lastRotation\": \"$TIME_SINCE_EPOCH_SECONDS\", \"password\": \"$ENCODED_PASSWORD\"}, \"data\": {\"${LTPA_FILE_NAME}\": \""
 
 AFTER_LTPA_KEYS="\"},\"kind\": \"Secret\",\"metadata\": {\"name\": \"$LTPA_SECRET_NAME\",\"namespace\": \"$NAMESPACE\"},\"type\": \"Opaque\"}"
 

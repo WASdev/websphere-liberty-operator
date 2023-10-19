@@ -87,9 +87,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	}
 
 	// Initialize LTPA resources
-	ltpaServerXMLConfigMap := &corev1.ConfigMap{}
-	ltpaServerXMLConfigMap.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
-	ltpaServerXMLConfigMap.Namespace = instance.GetNamespace()
+	ltpaXMLSecret := &corev1.Secret{}
+	ltpaXMLSecret.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
+	ltpaXMLSecret.Namespace = instance.GetNamespace()
 
 	generateLTPAKeysJob := &v1.Job{}
 	generateLTPAKeysJob.Name = OperatorShortName + "-managed-ltpa-keys-generation"
@@ -117,7 +117,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			// Create the Job Request if it doesn't exist
 			if kerrors.IsNotFound(err) {
 				// Clear all LTPA-related resources from a prior reconcile
-				err = r.DeleteResource(ltpaServerXMLConfigMap)
+				err = r.DeleteResource(ltpaXMLSecret)
 				if err != nil {
 					return err, ""
 				}
@@ -234,10 +234,10 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	}
 
 	// Create the Liberty Server XML ConfigMap if it doesn't exist
-	configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaServerXMLConfigMap.Name, Namespace: ltpaServerXMLConfigMap.Namespace}, ltpaServerXMLConfigMap)
+	configMapErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLSecret.Name, Namespace: ltpaXMLSecret.Namespace}, ltpaXMLSecret)
 	if configMapErr != nil && kerrors.IsNotFound(configMapErr) {
-		r.CreateOrUpdate(ltpaServerXMLConfigMap, instance, func() error {
-			lutils.CustomizeLTPAServerXML(ltpaServerXMLConfigMap, instance, string(ltpaSecret.Data["password"]))
+		r.CreateOrUpdate(ltpaXMLSecret, instance, func() error {
+			lutils.CustomizeLTPAServerXML(ltpaXMLSecret, instance, string(ltpaSecret.Data["password"]))
 			return nil
 		})
 	}
@@ -271,10 +271,10 @@ func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *wlv1.WebSp
 		return err
 	}
 
-	ltpaConfigMap := &corev1.ConfigMap{}
-	ltpaConfigMap.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
-	ltpaConfigMap.Namespace = instance.GetNamespace()
-	err = r.DeleteResource(ltpaConfigMap)
+	ltpaXMLSecret := &corev1.Secret{}
+	ltpaXMLSecret.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
+	ltpaXMLSecret.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaXMLSecret)
 	if err != nil {
 		return err
 	}
