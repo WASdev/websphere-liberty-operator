@@ -656,8 +656,8 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 
-	// Mount a volume /config/ltpa/xml to store the Liberty Server XML (ltpa.xml)
-	ltpaXMLVolumeMount := GetLTPAVolumeMount(la, "xml")
+	// Mount a volume /config/configDropins/overrides/ltpa.xml to store the Liberty Server XML
+	ltpaXMLVolumeMount := GetLTPAXMLVolumeMount(la, ltpaXMLFileName)
 	if !isVolumeMountFound(pts, ltpaXMLVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaXMLVolumeMount)
 	}
@@ -665,27 +665,17 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 		vol := corev1.Volume{
 			Name: ltpaXMLVolumeMount.Name,
 			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: operatorShortName + LTPAServerXMLSuffix,
-					},
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: operatorShortName + LTPAServerXMLSuffix,
+					Items: []corev1.KeyToPath{{
+						Key:  ltpaXMLFileName,
+						Path: ltpaXMLFileName,
+					}},
 				},
 			},
 		}
 		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
-
-	// Create an initContainer to copy /config/ltpa/xml/ltpa.xml into the emptyDir volume at /config/configDropins/overrides
-	ltpaKeyInitContainer := corev1.Container{
-		Name:         "copy" + LTPAServerXMLSuffix,
-		Image:        "registry.access.redhat.com/ubi9/ubi",
-		Command:      []string{"sh", "-c", "cp -f " + ltpaTokenMountPath + "/xml/ltpa.xml " + ltpaServerXMLOverridesMountPath},
-		VolumeMounts: []corev1.VolumeMount{},
-	}
-	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, emptyDirLtpaServerXMLVolumeMount)
-	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaKeyVolumeMount)
-	ltpaKeyInitContainer.VolumeMounts = append(ltpaKeyInitContainer.VolumeMounts, ltpaXMLVolumeMount)
-	pts.Spec.InitContainers = append(pts.Spec.InitContainers, ltpaKeyInitContainer)
 }
 
 func CustomizeLTPAServerXML(xmlSecret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) {
