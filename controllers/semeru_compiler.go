@@ -303,25 +303,10 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		},
 		Spec: corev1.PodSpec{
 			Affinity: &corev1.Affinity{
-				PodAffinity: &corev1.PodAffinity{
-					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
-						{
-							Weight: 1,
-							PodAffinityTerm: corev1.PodAffinityTerm{
-								TopologyKey: "topology.kubernetes.io/zone",
-								LabelSelector: &metav1.LabelSelector{
-									MatchLabels: map[string]string{
-										"app.kubernetes.io/instance": wlva.GetName(),
-									},
-								},
-							},
-						},
-					},
-				},
 				PodAntiAffinity: &corev1.PodAntiAffinity{
 					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 						{
-							Weight: 100,
+							Weight: 50,
 							PodAffinityTerm: corev1.PodAffinityTerm{
 								TopologyKey: "topology.kubernetes.io/zone",
 								LabelSelector: &metav1.LabelSelector{
