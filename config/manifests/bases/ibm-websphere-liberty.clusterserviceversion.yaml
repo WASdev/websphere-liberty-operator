@@ -439,8 +439,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Number of desired pods for the Semeru Cloud Compiler. Defaults
-          to 1. For multi-zone clusters, this value should be set to at least the
-          number of available zones.
+          to 1.
         displayName: Replicas
         path: semeruCloudCompiler.replicas
         x-descriptors:

@@ -59,7 +59,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-08-16T12:55:57Z"
+    createdAt: "2023-10-23T14:32:13Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.2.2'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -495,8 +495,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Number of desired pods for the Semeru Cloud Compiler. Defaults
-          to 1. For multi-zone clusters, this value should be set to at least the
-          number of available zones.
+          to 1.
         displayName: Replicas
         path: semeruCloudCompiler.replicas
         x-descriptors:

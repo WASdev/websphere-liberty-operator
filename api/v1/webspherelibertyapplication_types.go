@@ -448,7 +448,7 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Enable the Semeru Cloud Compiler. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=52,type=spec,displayName="Enable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	Enable bool `json:"enable,omitempty"`
-	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1. For multi-zone clusters, this value should be set to at least the number of available zones.
+	// Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.
 	// +operator-sdk:csv:customresourcedefinitions:order=53,type=spec,displayName="Replicas",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.

@@ -3702,8 +3702,7 @@ spec:
                     type: boolean
                   replicas:
                     description: Number of desired pods for the Semeru Cloud Compiler.
-                      Defaults to 1. For multi-zone clusters, this value should be
-                      set to at least the number of available zones.
+                      Defaults to 1.
                     format: int32
                     type: integer
                   resources:
