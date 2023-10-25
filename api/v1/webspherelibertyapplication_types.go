@@ -155,6 +155,10 @@ type WebSphereLibertyApplicationSpec struct {
 	// Security context for the application container.
 	// +operator-sdk:csv:customresourcedefinitions:order=29,type=spec,displayName="Security Context"
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+
+	// Security context for the application pod.
+	// +operator-sdk:csv:customresourcedefinitions:order=30,type=spec,displayName="Pod Security Context"
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 }
 
 // License information is required.
@@ -1155,6 +1159,11 @@ func (a *WebSphereLibertyApplicationAffinity) GetNodeAffinityLabels() map[string
 // GetSecurityContext returns container security context
 func (cr *WebSphereLibertyApplication) GetSecurityContext() *corev1.SecurityContext {
 	return cr.Spec.SecurityContext
+}
+
+// GetPodSecurityContext returns pod security context
+func (cr *WebSphereLibertyApplication) GetPodSecurityContext() *corev1.PodSecurityContext {
+	return cr.Spec.PodSecurityContext
 }
 
 // GetSemeruCloudCompiler returns the Semeru Cloud Compiler configuration
