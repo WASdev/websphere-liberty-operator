@@ -57,9 +57,13 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=5,type=spec,displayName="Pull Secret",xDescriptors="urn:alm:descriptor:io.kubernetes:Secret"
 	PullSecret *string `json:"pullSecret,omitempty"`
 
-	// Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.
-	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// Deprecated. .spec.serviceAccount.name should be used instead. If both are specified, .spec.serviceAccount.name will override this.
+	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
 	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
+
+	// The service account to use for deploying the application. A service account is automatically created if this is not specifed.
+	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account"
+	ServiceAccount *WebSphereLibertyApplicationServiceAccount `json:"serviceAccount,omitempty"`
 
 	// Create Knative resources and use Knative serving.
 	// +operator-sdk:csv:customresourcedefinitions:order=7,type=spec,displayName="Create Knative Service",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
@@ -220,6 +224,17 @@ const (
 	// Entitlement source IBM WebSphere Hybrid Edition
 	LicenseEntitlementWSHE LicenseEntitlement = "IBM WebSphere Hybrid Edition"
 )
+
+// Defines the service account
+type WebSphereLibertyApplicationServiceAccount struct {
+	// Whether the Service Account token should be mounted into the application pods. Defaults to true.
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="Mount Service Account Token",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	MountToken *bool `json:"mountToken,omitempty"`
+
+	// Name of the service account to use for deploying the application. A service account is automatically created if this is not specified.
+	// +operator-sdk:csv:customresourcedefinitions:order=2,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	Name *string `json:"name,omitempty"`
+}
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
 type WebSphereLibertyApplicationProbes struct {
@@ -707,6 +722,24 @@ func (cr *WebSphereLibertyApplication) GetPullSecret() *string {
 // GetServiceAccountName returns service account name
 func (cr *WebSphereLibertyApplication) GetServiceAccountName() *string {
 	return cr.Spec.ServiceAccountName
+}
+
+// GetServiceAccount returns the service account
+func (cr *WebSphereLibertyApplication) GetServiceAccount() common.BaseComponentServiceAccount {
+	if cr.Spec.ServiceAccount == nil {
+		return nil
+	}
+	return cr.Spec.ServiceAccount
+}
+
+// GetMountToken returns whether the service account token should be mounted
+func (sa *WebSphereLibertyApplicationServiceAccount) GetMountToken() *bool {
+	return sa.MountToken
+}
+
+// GetName returns the service account name
+func (sa *WebSphereLibertyApplicationServiceAccount) GetName() *string {
+	return sa.Name
 }
 
 // GetReplicas returns number of replicas
