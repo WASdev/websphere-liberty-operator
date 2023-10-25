@@ -57,13 +57,9 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=5,type=spec,displayName="Pull Secret",xDescriptors="urn:alm:descriptor:io.kubernetes:Secret"
 	PullSecret *string `json:"pullSecret,omitempty"`
 
-	// Deprecated. .spec.serviceAccount.name should be used instead. If both are specified, .spec.serviceAccount.name will override this.
-	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:hidden"
+	// Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.
+	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
-
-	// The service account to use for deploying the application. A service account is automatically created if this is not specifed.
-	// +operator-sdk:csv:customresourcedefinitions:order=6,type=spec,displayName="Service Account"
-	ServiceAccount *WebSphereLibertyApplicationServiceAccount `json:"serviceAccount,omitempty"`
 
 	// Create Knative resources and use Knative serving.
 	// +operator-sdk:csv:customresourcedefinitions:order=7,type=spec,displayName="Create Knative Service",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
