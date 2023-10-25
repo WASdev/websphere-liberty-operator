@@ -370,6 +370,12 @@ test-pipeline-e2e:
 					 --install-mode "${INSTALL_MODE}" --architecture "${ARCHITECTURE}" \
 					 --digest "${DIGEST}" --version "${VERSION}"
 
+test-artifacts-e2e:
+	./scripts/pipeline/artifacts-e2e.sh --cluster-url "${CLUSTER_URL}" --cluster-token "${CLUSTER_TOKEN}" \
+					 --registry-name "${PIPELINE_REGISTRY}" --registry-user "${PIPELINE_USERNAME}" \
+					 --registry-password "${PIPELINE_PASSWORD}" --operator-image "${OPERATOR_IMAGE}" \
+					 --version "${VERSION}"
+
 bundle-build-podman:
 	podman build -f bundle.Dockerfile -t "${BUNDLE_IMG}"
 

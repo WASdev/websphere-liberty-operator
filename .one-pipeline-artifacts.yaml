@@ -1,0 +1,110 @@
+version: "1"
+
+setup:
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo $STAGE
+
+    git clone --single-branch --branch $(get_env common-operators-branch) https://$(get_env git-token)@github.ibm.com/websphere/operators.git
+    
+    cp operators/scripts/pipeline/* ./scripts/pipeline/
+    cp -rf operators/scripts/build ./scripts/
+    cp -rf operators/scripts/configure-cluster ./scripts
+    cp -rf operators/scripts/test ./scripts/
+
+    ./scripts/pipeline/code-setup-stage.sh
+
+detect-secrets:
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  abort_on_failure: false
+  image_pull_policy: IfNotPresent
+  skip: true
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping detect-secrets as it's already run as part of code-compliance-checks"
+    exit 0
+
+test:
+  dind: true
+  abort_on_failure: true
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+peer-review:
+  dind: true
+  abort_on_failure: true
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+static-scan:
+  dind: true
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+compliance-checks:
+  dind: true
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+containerize:
+  dind: true
+  abort_on_failure: true
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+sign-artifact:
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/image-signing:1.0.0@sha256:e9d8e354668ba3d40be2aaee08298d2aa7f0e1c8a1829cca4094ec93830e3e6a
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+deploy:
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+dynamic-scan:
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+acceptance-test:
+  dind: true
+  abort_on_failure: true
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo $STAGE
+
+    ./scripts/pipeline/acceptance-test-stage.sh
+
+scan-artifact:
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
+
+release:
+  abort_on_failure: false
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo "Skipping $STAGE"
