@@ -11,3 +11,6 @@ spec:
   expose: true
   manageTLS: true
   replicas: 1
+  serviceAccount:
+    mountToken: true
+
