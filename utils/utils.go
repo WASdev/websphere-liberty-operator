@@ -50,11 +50,11 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
-const ltpaKeysMountPath = "/config/ltpa"
+const ltpaKeysMountPath = "/config/managedLTPA"
 const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
-const LTPAServerXMLSuffix = "-ltpa-server-xml"
+const LTPAServerXMLSuffix = "-managed-ltpa-server-xml"
 const ltpaKeysFileName = "ltpa.keys"
-const ltpaXMLFileName = "ltpa.xml"
+const ltpaXMLFileName = "managedLTPA.xml"
 
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
