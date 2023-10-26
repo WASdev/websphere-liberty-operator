@@ -169,7 +169,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 				return nil
 			})
 
-			// Create a ConfigMap to store the utils/create_ltpa_keys.sh script
+			// Create a ConfigMap to store the controllers/assets/create_ltpa_keys.sh script
 			ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
 			ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
 			ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
@@ -179,7 +179,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			}
 			if err != nil && kerrors.IsNotFound(err) {
 				ltpaKeysCreationScriptConfigMap.Data = make(map[string]string)
-				script, err := ioutil.ReadFile("utils/create_ltpa_keys.sh")
+				script, err := ioutil.ReadFile("controllers/assets/create_ltpa_keys.sh")
 				if err != nil {
 					return err, ""
 				}
@@ -189,7 +189,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 				})
 			}
 
-			// Verify the utils/create_ltpa_keys.sh script has been loaded before starting the LTPA Job
+			// Verify the controllers/assets/create_ltpa_keys.sh script has been loaded before starting the LTPA Job
 			err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
 			if err == nil {
 				// Run the Kubernetes Job to generate the shared ltpa.keys file and LTPA Secret
