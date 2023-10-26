@@ -247,7 +247,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	if instance.Spec.ServiceAccountName == nil || *instance.Spec.ServiceAccountName == "" {
+	if oputils.GetServiceAccountName(instance) == "" {
 		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(serviceAccount, instance, func() error {
 			return oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
