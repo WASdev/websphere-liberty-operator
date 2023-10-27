@@ -764,6 +764,11 @@ func (in *WebSphereLibertyApplicationSpec) DeepCopyInto(out *WebSphereLibertyApp
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ManageLTPA != nil {
+		in, out := &in.ManageLTPA, &out.ManageLTPA
+		*out = new(bool)
+		**out = **in
+	}
 	if in.ManageTLS != nil {
 		in, out := &in.ManageTLS, &out.ManageTLS
 		*out = new(bool)

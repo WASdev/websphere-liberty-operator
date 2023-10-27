@@ -28,6 +28,7 @@ import (
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,6 +50,11 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.2.2"
+const ltpaKeysMountPath = "/config/managedLTPA"
+const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
+const LTPAServerXMLSuffix = "-managed-ltpa-server-xml"
+const ltpaKeysFileName = "ltpa.keys"
+const ltpaXMLFileName = "managedLTPA.xml"
 
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
@@ -584,4 +590,124 @@ func GetWLOLicenseAnnotations() map[string]string {
 	annotations["productMetric"] = "FREE"
 	annotations["productChargedContainers"] = "ALL"
 	return annotations
+}
+
+func isVolumeMountFound(pts *corev1.PodTemplateSpec, name string) bool {
+	for _, v := range pts.Spec.Containers[0].VolumeMounts {
+		if v.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
+	for _, v := range pts.Spec.Volumes {
+		if v.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// ConfigureLTPA setups the shared-storage for LTPA keys file generation
+func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string) {
+	// Mount a volume /config/ltpa to store the ltpa.keys file
+	ltpaKeyVolumeMount := GetLTPAKeysVolumeMount(la, ltpaKeysFileName)
+	if !isVolumeMountFound(pts, ltpaKeyVolumeMount.Name) {
+		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaKeyVolumeMount)
+	}
+	if !isVolumeFound(pts, ltpaKeyVolumeMount.Name) {
+		vol := corev1.Volume{
+			Name: ltpaKeyVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: operatorShortName + "-managed-ltpa",
+					Items: []corev1.KeyToPath{{
+						Key:  ltpaKeysFileName,
+						Path: ltpaKeysFileName,
+					}},
+				},
+			},
+		}
+		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
+	}
+
+	// Mount a volume /config/configDropins/overrides/ltpa.xml to store the Liberty Server XML
+	ltpaXMLVolumeMount := GetLTPAXMLVolumeMount(la, ltpaXMLFileName)
+	if !isVolumeMountFound(pts, ltpaXMLVolumeMount.Name) {
+		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaXMLVolumeMount)
+	}
+	if !isVolumeFound(pts, ltpaXMLVolumeMount.Name) {
+		vol := corev1.Volume{
+			Name: ltpaXMLVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: operatorShortName + LTPAServerXMLSuffix,
+					Items: []corev1.KeyToPath{{
+						Key:  ltpaXMLFileName,
+						Path: ltpaXMLFileName,
+					}},
+				},
+			},
+		}
+		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
+	}
+}
+
+func CustomizeLTPAServerXML(xmlSecret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) {
+	xmlSecret.StringData = make(map[string]string)
+	keysFileName := strings.Replace(ltpaKeysMountPath, "/config", "${server.config.dir}", 1)
+	xmlSecret.StringData[ltpaXMLFileName] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<server>\n    <ltpa keysFileName=\"" + keysFileName + "/" + ltpaKeysFileName + "\" keysPassword=\"" + encryptedPassword + "\" />\n</server>"
+}
+
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
+	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
+	job.Spec.Template.ObjectMeta.Name = "liberty"
+	job.Spec.Template.Spec.Containers = []corev1.Container{
+		{
+			Name:    job.Spec.Template.ObjectMeta.Name,
+			Image:   la.GetApplicationImage(),
+			Command: []string{"/bin/bash", "-c"},
+			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
+			Args: []string{ltpaKeysMountPath + "/bin/create_ltpa_keys.sh " + la.GetNamespace() + " " + ltpaSecretName + " " + ltpaKeysFileName + " " + encodingType},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      ltpaScriptName,
+					MountPath: ltpaKeysMountPath + "/bin",
+				},
+			},
+		},
+	}
+	job.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
+	var number int32
+	number = 0777
+	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: ltpaScriptName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: ltpaScriptName,
+				},
+				DefaultMode: &number,
+			},
+		},
+	})
+}
+
+func GetLTPAKeysVolumeMount(la *wlv1.WebSphereLibertyApplication, fileName string) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      "ltpa-keys",
+		MountPath: ltpaKeysMountPath + "/" + fileName,
+		SubPath:   fileName,
+	}
+}
+
+func GetLTPAXMLVolumeMount(la *wlv1.WebSphereLibertyApplication, fileName string) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      "ltpa-xml",
+		MountPath: ltpaServerXMLOverridesMountPath + fileName,
+		SubPath:   fileName,
+	}
 }

@@ -54,7 +54,8 @@ import (
 )
 
 const (
-	OperatorName = "websphere-liberty-operator"
+	OperatorName      = "websphere-liberty-operator"
+	OperatorShortName = "wlo"
 )
 
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
@@ -73,6 +74,8 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses;networkpolicies,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
@@ -239,6 +242,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		// Trigger a new Semeru Cloud Compiler generation
 		createNewSemeruGeneration(instance)
 
+		// If the shared LTPA keys was not generated from the last application image, restart the key generation process
+		if r.isLTPAKeySharingEnabled(instance) {
+			if err := r.restartLTPAKeysGeneration(instance); err != nil {
+				reqLogger.Error(err, "Error restarting the LTPA keys generation process")
+				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			}
+		}
+
 		reqLogger.Info("Updating status.imageReference", "status.imageReference", instance.Status.ImageReference)
 		err = r.UpdateStatus(instance)
 		if err != nil {
@@ -349,7 +360,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	useCertmanager, err := r.GenerateSvcCertSecret(ba, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
+	useCertmanager, err := r.GenerateSvcCertSecret(ba, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile CertManager Certificate")
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
@@ -427,6 +438,12 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
+	err, message, ltpaSecretName := r.reconcileLTPAKeysSharing(instance, defaultMeta)
+	if err != nil {
+		reqLogger.Error(err, message)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
 	if instance.Spec.StatefulSet != nil {
 		// Delete Deployment if exists
 		deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
@@ -481,6 +498,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
 				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(),
 					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
+
+			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
+				lutils.ConfigureLTPA(&statefulSet.Spec.Template, instance, OperatorShortName)
+				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(), ltpaSecretName, "LTPA")
 				if err != nil {
 					return err
 				}
@@ -541,6 +566,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
 				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
 					semeruTLSSecretName, "SEMERU_TLS")
+				if err != nil {
+					return err
+				}
+			}
+
+			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
+				lutils.ConfigureLTPA(&deploy.Spec.Template, instance, OperatorShortName)
+				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(), ltpaSecretName, "LTPA")
 				if err != nil {
 					return err
 				}
