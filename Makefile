@@ -3,15 +3,15 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 1.2.2
-OPERATOR_SDK_RELEASE_VERSION ?= v1.24.0
+VERSION ?= 1.3.0
+OPERATOR_SDK_RELEASE_VERSION ?= v1.27.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
 # - use the CHANNELS as arg of the bundle target (e.g make bundle CHANNELS=preview,fast,stable)
 # - use environment variables to overwrite this value (e.g export CHANNELS="preview,fast,stable")
-CHANNELS ?= v1.2
+CHANNELS ?= v1.3
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
@@ -21,7 +21,7 @@ endif
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
 # - use the DEFAULT_CHANNEL as arg of the bundle target (e.g make bundle DEFAULT_CHANNEL=stable)
 # - use environment variables to overwrite this value (e.g export DEFAULT_CHANNEL="stable")
-DEFAULT_CHANNEL ?= v1.2
+DEFAULT_CHANNEL ?= v1.3
 ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
@@ -141,21 +141,31 @@ LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-# find or download controller-gen
-# download controller-gen if necessary
-.PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
-
+## Tool Binaries
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+ENVTEST ?= $(LOCALBIN)/setup-envtest
+
+## Tool Versions
 KUSTOMIZE_VERSION ?= 4.5.5
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/kustomize/v${KUSTOMIZE_VERSION}/hack/install_kustomize.sh"
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	test -s $(LOCALBIN)/kustomize || curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s $(KUSTOMIZE_VERSION) $(LOCALBIN)
+
+CONTROLLER_TOOLS_VERSION ?= 0.10.0
+.PHONY: controller-gen
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v$(CONTROLLER_TOOLS_VERSION)
+
+# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
+ENVTEST_K8S_VERSION = 1.25
+.PHONY: envtest
+envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+$(ENVTEST): $(LOCALBIN)
+	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: setup
 setup: ## Ensure Operator SDK is installed.
@@ -226,12 +236,9 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 .PHONY: test
-test: manifests generate fmt vet ## Run tests.
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
+test: manifests generate fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"  go test ./... -coverprofile cover.out
 
 .PHONY: unit-test
 unit-test: ## Run unit tests
@@ -276,7 +283,7 @@ docker-login:
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	$(CONTAINER_COMMAND) build -t ${IMG} .
+	ARCH=$(shell go env GOARCH) && $(CONTAINER_COMMAND) build -t ${IMG} . --build-arg GO_PLATFORM=$${ARCH}
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -339,7 +346,7 @@ build-manifest: setup-manifest
 	./scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-operator-pipeline:
-	./scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
+	./scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}"
 
 build-manifest-pipeline:
 	./scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"

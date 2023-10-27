@@ -88,7 +88,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 
 		//create certmanager issuer and certificate if necessary
 		if cmPresent {
-			err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
+			err = r.GenerateCMIssuer(wlva.Namespace, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 			if err != nil {
 				return err, "Failed to reconcile Certificate Issuer", false
 			}
@@ -355,8 +355,8 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	}
 
 	// Copy the service account from the WebSphereLibertyApplcation CR
-	if wlva.GetServiceAccountName() != nil && *wlva.GetServiceAccountName() != "" {
-		deploy.Spec.Template.Spec.ServiceAccountName = *wlva.GetServiceAccountName()
+	if saName := utils.GetServiceAccountName(wlva); saName != "" {
+		deploy.Spec.Template.Spec.ServiceAccountName = saName
 	} else {
 		deploy.Spec.Template.Spec.ServiceAccountName = wlva.GetName()
 	}
@@ -552,8 +552,8 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 		args := []string{
 			"/bin/bash",
 			"-c",
-			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " +
-				jitSeverOptions +
+			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " + jitSeverOptions +
+				"\" && export OPENJ9_RESTORE_JAVA_OPTIONS=\"$OPENJ9_RESTORE_JAVA_OPTIONS " + jitSeverOptions +
 				"\" && server run",
 		}
 		return args
