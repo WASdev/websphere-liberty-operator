@@ -88,7 +88,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 
 		//create certmanager issuer and certificate if necessary
 		if !r.IsOpenShift() || cmPresent {
-			err = r.GenerateCMIssuer(wlva.Namespace, "wlo", "WebSphere Liberty Operator", "websphere-liberty-operator")
+			err = r.GenerateCMIssuer(wlva.Namespace, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 			if err != nil {
 				return err, "Failed to reconcile Certificate Issuer", false
 			}
