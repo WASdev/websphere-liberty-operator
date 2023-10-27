@@ -550,8 +550,8 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 		args := []string{
 			"/bin/bash",
 			"-c",
-			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " +
-				jitSeverOptions +
+			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " + jitSeverOptions +
+				"\" && export OPENJ9_RESTORE_JAVA_OPTIONS=\"$OPENJ9_RESTORE_JAVA_OPTIONS " + jitSeverOptions +
 				"\" && server run",
 		}
 		return args
