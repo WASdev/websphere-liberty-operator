@@ -48,7 +48,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.2.2"
+const OperandVersion = "1.3.0"
 
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
