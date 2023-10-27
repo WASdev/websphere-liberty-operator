@@ -79,6 +79,39 @@ func (r *ReconcileWebSphereLiberty) getOrSetLTPAKeysSharingLeader(instance *wlv1
 	return nil, ltpaKeySharingLeaderName, false, ltpaServiceAccount.Name
 }
 
+// Restarts the LTPA keys generation process if the LTPA Secret has not been generated yet and this application instance is the leader
+func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.WebSphereLibertyApplication) error {
+	err, _, isLTPAKeySharingLeader, _ := r.getOrSetLTPAKeysSharingLeader(instance)
+	if err != nil {
+		return err
+	}
+	if isLTPAKeySharingLeader {
+		ltpaSecret := &corev1.Secret{}
+		ltpaSecret.Name = OperatorShortName + "-managed-ltpa"
+		ltpaSecret.Namespace = instance.GetNamespace()
+		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
+		if err != nil && kerrors.IsNotFound(err) {
+			generateLTPAKeysJob := &v1.Job{}
+			generateLTPAKeysJob.Name = OperatorShortName + "-managed-ltpa-keys-generation"
+			generateLTPAKeysJob.Namespace = instance.GetNamespace()
+			deletePropagationBackground := metav1.DeletePropagationBackground
+			err = r.GetClient().Delete(context.TODO(), generateLTPAKeysJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
+			if err != nil && !kerrors.IsNotFound(err) {
+				return err
+			}
+
+			ltpaJobRequest := &corev1.ConfigMap{}
+			ltpaJobRequest.Name = OperatorShortName + "-managed-ltpa-job-request"
+			ltpaJobRequest.Namespace = instance.GetNamespace()
+			err = r.DeleteResource(ltpaJobRequest)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) (error, string) {
 	// Don't generate LTPA keys if this instance is not the leader
@@ -101,7 +134,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	deletePropagationBackground := metav1.DeletePropagationBackground
 
 	ltpaJobRequest := &corev1.ConfigMap{}
-	ltpaJobRequest.Name = OperatorShortName + "-ltpa-job-request"
+	ltpaJobRequest.Name = OperatorShortName + "-managed-ltpa-job-request"
 	ltpaJobRequest.Namespace = instance.GetNamespace()
 	ltpaJobRequest.Labels = instance.GetLabels()
 
