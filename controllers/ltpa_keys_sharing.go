@@ -100,7 +100,6 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 				return err
 			}
 		}
-		ltpaKeySharingLeaderName = ownerReference.Name
 	}
 	return nil
 }

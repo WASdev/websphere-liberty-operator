@@ -597,7 +597,6 @@ func isVolumeMountFound(pts *corev1.PodTemplateSpec, name string) bool {
 		if v.Name == name {
 			return true
 		}
-		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 	return false
 }
@@ -607,7 +606,6 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 		if v.Name == name {
 			return true
 		}
-		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 	}
 	return false
 }
@@ -628,27 +626,6 @@ func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplica
 					Items: []corev1.KeyToPath{{
 						Key:  ltpaKeysFileName,
 						Path: ltpaKeysFileName,
-					}},
-				},
-			},
-		}
-		pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
-	}
-
-	// Mount a volume /config/configDropins/overrides/ltpa.xml to store the Liberty Server XML
-	ltpaXMLVolumeMount := GetLTPAXMLVolumeMount(la, ltpaXMLFileName)
-	if !isVolumeMountFound(pts, ltpaXMLVolumeMount.Name) {
-		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaXMLVolumeMount)
-	}
-	if !isVolumeFound(pts, ltpaXMLVolumeMount.Name) {
-		vol := corev1.Volume{
-			Name: ltpaXMLVolumeMount.Name,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: operatorShortName + LTPAServerXMLSuffix,
-					Items: []corev1.KeyToPath{{
-						Key:  ltpaXMLFileName,
-						Path: ltpaXMLFileName,
 					}},
 				},
 			},
