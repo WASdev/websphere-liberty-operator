@@ -91,15 +91,7 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 		ltpaSecret.Namespace = instance.GetNamespace()
 		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 		if err != nil && kerrors.IsNotFound(err) {
-			generateLTPAKeysJob := &v1.Job{}
-			generateLTPAKeysJob.Name = OperatorShortName + "-managed-ltpa-keys-generation"
-			generateLTPAKeysJob.Namespace = instance.GetNamespace()
-			deletePropagationBackground := metav1.DeletePropagationBackground
-			err = r.GetClient().Delete(context.TODO(), generateLTPAKeysJob, &client.DeleteOptions{PropagationPolicy: &deletePropagationBackground})
-			if err != nil && !kerrors.IsNotFound(err) {
-				return err
-			}
-
+			// Deleting the job request removes existing LTPA resourxes and restarts the LTPA generation process
 			ltpaJobRequest := &corev1.ConfigMap{}
 			ltpaJobRequest.Name = OperatorShortName + "-managed-ltpa-job-request"
 			ltpaJobRequest.Namespace = instance.GetNamespace()
@@ -138,6 +130,11 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	ltpaJobRequest.Namespace = instance.GetNamespace()
 	ltpaJobRequest.Labels = instance.GetLabels()
 
+	ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
+	ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
+	ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
+	ltpaKeysCreationScriptConfigMap.Labels = instance.GetLabels()
+
 	ltpaSecret := &corev1.Secret{}
 	ltpaSecret.Name = OperatorShortName + "-managed-ltpa"
 	ltpaSecret.Namespace = instance.GetNamespace()
@@ -156,6 +153,10 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			if kerrors.IsNotFound(err) {
 				// Clear all LTPA-related resources from a prior reconcile
 				err = r.DeleteResource(ltpaXMLSecret)
+				if err != nil {
+					return err, ""
+				}
+				err = r.DeleteResource(ltpaKeysCreationScriptConfigMap)
 				if err != nil {
 					return err, ""
 				}
@@ -215,9 +216,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
 			ltpaKeysCreationScriptConfigMap.Labels = instance.GetLabels()
 			err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
-			if err == nil {
-				r.DeleteResource(ltpaKeysCreationScriptConfigMap)
-			}
 			if err != nil && kerrors.IsNotFound(err) {
 				ltpaKeysCreationScriptConfigMap.Data = make(map[string]string)
 				script, err := ioutil.ReadFile("controllers/assets/create_ltpa_keys.sh")
