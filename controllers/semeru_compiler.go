@@ -406,7 +406,7 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 	var timeout int32 = 86400
 	svc.Labels = getLabels(wlva)
 	svc.Spec.Selector = getSelectors(wlva)
-	wlutils.CustomizeServiceAnnotations(svc)
+	utils.CustomizeServiceAnnotations(svc)
 	if len(svc.Spec.Ports) == 0 {
 		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
 	}
