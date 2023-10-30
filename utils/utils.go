@@ -666,9 +666,11 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 	job.Spec.Template.ObjectMeta.Name = "liberty"
 	job.Spec.Template.Spec.Containers = []corev1.Container{
 		{
-			Name:    job.Spec.Template.ObjectMeta.Name,
-			Image:   la.GetApplicationImage(),
-			Command: []string{"/bin/bash", "-c"},
+			Name:            job.Spec.Template.ObjectMeta.Name,
+			Image:           la.GetApplicationImage(),
+			ImagePullPolicy: *la.GetPullPolicy(),
+			SecurityContext: rcoutils.GetSecurityContext(la),
+			Command:         []string{"/bin/bash", "-c"},
 			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
 			Args: []string{ltpaKeysMountPath + "/bin/create_ltpa_keys.sh " + la.GetNamespace() + " " + ltpaSecretName + " " + ltpaKeysFileName + " " + encodingType},
 			VolumeMounts: []corev1.VolumeMount{
@@ -678,6 +680,11 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 				},
 			},
 		},
+	}
+	if la.GetPullSecret() != nil && *la.GetPullSecret() != "" {
+		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
+			Name: *la.GetPullSecret(),
+		})
 	}
 	job.Spec.Template.Spec.ServiceAccountName = serviceAccountName
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
