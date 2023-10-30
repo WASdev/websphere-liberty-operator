@@ -313,7 +313,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 								TopologyKey: "topology.kubernetes.io/zone",
 								LabelSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{
-										"app.kubernetes.io/name": getSemeruCompilerName(wlva),
+										"app.kubernetes.io/name": getSemeruCompilerNameWithGeneration(wlva),
 									},
 								},
 							},
@@ -324,7 +324,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 								TopologyKey: "kubernetes.io/hostname",
 								LabelSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{
-										"app.kubernetes.io/instance": getSemeruCompilerName(wlva),
+										"app.kubernetes.io/instance": getSemeruCompilerNameWithGeneration(wlva),
 									},
 								},
 							},
