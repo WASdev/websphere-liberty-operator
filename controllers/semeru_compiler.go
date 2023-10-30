@@ -318,6 +318,17 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 								},
 							},
 						},
+						{
+							Weight: 50,
+							PodAffinityTerm: corev1.PodAffinityTerm{
+								TopologyKey: "kubernetes.io/hostname",
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{
+										"app.kubernetes.io/instance": getSemeruCompilerName(wlva),
+									},
+								},
+							},
+						},
 					},
 				},
 			},
