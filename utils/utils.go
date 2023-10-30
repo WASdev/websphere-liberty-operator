@@ -565,6 +565,14 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 	return nil
 }
 
+// Adds Service annotations to enable zone aware routing
+func CustomizeServiceAnnotations(svc *corev1.Service) {
+	serviceAnnotations := make(map[string]string)
+	serviceAnnotations["service.kubernetes.io/topology-aware-hints"] = "Auto" // Topology Aware Hints (< k8s version 1.27)
+	serviceAnnotations["service.kubernetes.io/topology-mode"] = "Auto"        // Topology Aware Routing (>= k8s version 1.27)
+	svc.Annotations = rcoutils.MergeMaps(svc.Annotations, serviceAnnotations)
+}
+
 func Contains(list []string, s string) bool {
 	for _, v := range list {
 		if v == s {
