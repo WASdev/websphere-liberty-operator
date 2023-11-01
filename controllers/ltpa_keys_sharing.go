@@ -211,10 +211,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			})
 
 			// Create a ConfigMap to store the controllers/assets/create_ltpa_keys.sh script
-			ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
-			ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
-			ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
-			ltpaKeysCreationScriptConfigMap.Labels = lutils.GetRequiredLabels(ltpaKeysCreationScriptConfigMap.Name, "")
 			err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
 			if err != nil && kerrors.IsNotFound(err) {
 				ltpaKeysCreationScriptConfigMap.Data = make(map[string]string)
