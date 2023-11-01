@@ -58,7 +58,7 @@ func (r *ReconcileWebSphereLiberty) getOrSetLTPAKeysSharingLeader(instance *wlv1
 	ltpaServiceAccount := &corev1.ServiceAccount{}
 	ltpaServiceAccount.Name = OperatorShortName + "-ltpa"
 	ltpaServiceAccount.Namespace = instance.GetNamespace()
-	ltpaServiceAccount.Labels = instance.GetLabels()
+	ltpaServiceAccount.Labels = lutils.GetRequiredLabels(ltpaServiceAccount.Name, "")
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaServiceAccount.Name, Namespace: ltpaServiceAccount.Namespace}, ltpaServiceAccount)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
@@ -116,29 +116,29 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	ltpaXMLSecret := &corev1.Secret{}
 	ltpaXMLSecret.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
 	ltpaXMLSecret.Namespace = instance.GetNamespace()
-	ltpaXMLSecret.Labels = instance.GetLabels()
+	ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecret.Name, "")
 
 	generateLTPAKeysJob := &v1.Job{}
 	generateLTPAKeysJob.Name = OperatorShortName + "-managed-ltpa-keys-generation"
 	generateLTPAKeysJob.Namespace = instance.GetNamespace()
-	generateLTPAKeysJob.Labels = instance.GetLabels()
+	generateLTPAKeysJob.Labels = lutils.GetRequiredLabels(generateLTPAKeysJob.Name, "")
 
 	deletePropagationBackground := metav1.DeletePropagationBackground
 
 	ltpaJobRequest := &corev1.ConfigMap{}
 	ltpaJobRequest.Name = OperatorShortName + "-managed-ltpa-job-request"
 	ltpaJobRequest.Namespace = instance.GetNamespace()
-	ltpaJobRequest.Labels = instance.GetLabels()
+	ltpaJobRequest.Labels = lutils.GetRequiredLabels(ltpaJobRequest.Name, "")
 
 	ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
 	ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
 	ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
-	ltpaKeysCreationScriptConfigMap.Labels = instance.GetLabels()
+	ltpaKeysCreationScriptConfigMap.Labels = lutils.GetRequiredLabels(ltpaKeysCreationScriptConfigMap.Name, "")
 
 	ltpaSecret := &corev1.Secret{}
 	ltpaSecret.Name = OperatorShortName + "-managed-ltpa"
 	ltpaSecret.Namespace = instance.GetNamespace()
-	ltpaSecret.Labels = instance.GetLabels()
+	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecret.Name, "")
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
 	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
@@ -185,7 +185,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 					Resources: []string{"secrets"},
 				},
 			}
-			ltpaRole.Labels = instance.GetLabels()
+			ltpaRole.Labels = lutils.GetRequiredLabels(ltpaRole.Name, "")
 			r.CreateOrUpdate(ltpaRole, instance, func() error {
 				return nil
 			})
@@ -205,7 +205,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 				Kind:     "Role",
 				Name:     ltpaRole.Name,
 			}
-			ltpaRoleBinding.Labels = instance.GetLabels()
+			ltpaRoleBinding.Labels = lutils.GetRequiredLabels(ltpaRoleBinding.Name, "")
 			r.CreateOrUpdate(ltpaRoleBinding, instance, func() error {
 				return nil
 			})
@@ -214,7 +214,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			ltpaKeysCreationScriptConfigMap := &corev1.ConfigMap{}
 			ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
 			ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
-			ltpaKeysCreationScriptConfigMap.Labels = instance.GetLabels()
+			ltpaKeysCreationScriptConfigMap.Labels = lutils.GetRequiredLabels(ltpaKeysCreationScriptConfigMap.Name, "")
 			err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaKeysCreationScriptConfigMap.Name, Namespace: ltpaKeysCreationScriptConfigMap.Namespace}, ltpaKeysCreationScriptConfigMap)
 			if err != nil && kerrors.IsNotFound(err) {
 				ltpaKeysCreationScriptConfigMap.Data = make(map[string]string)
