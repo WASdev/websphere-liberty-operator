@@ -36,16 +36,16 @@ import (
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
-func (r *ReconcileWebSphereLiberty) reconcileLTPAKeysSharing(instance *wlv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) (error, string, string) {
+func (r *ReconcileWebSphereLiberty) reconcileLTPAKeysSharing(instance *wlv1.WebSphereLibertyApplication) (error, string, string) {
 	var ltpaSecretName string
 	var err error
 	if r.isLTPAKeySharingEnabled(instance) {
-		err, ltpaSecretName = r.generateLTPAKeys(instance, defaultMeta)
+		err, ltpaSecretName = r.generateLTPAKeys(instance)
 		if err != nil {
 			return err, "Failed to generate the shared LTPA Keys file", ltpaSecretName
 		}
 	} else {
-		err := r.deleteLTPAKeysResources(instance, defaultMeta)
+		err := r.deleteLTPAKeysResources(instance)
 		if err != nil {
 			return err, "Failed to delete LTPA Keys Resource", ltpaSecretName
 		}
@@ -105,7 +105,7 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 }
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
-func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) (error, string) {
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication) (error, string) {
 	// Don't generate LTPA keys if this instance is not the leader
 	err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getOrSetLTPAKeysSharingLeader(instance)
 	if err != nil {
@@ -291,7 +291,7 @@ func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *wlv1.WebSp
 }
 
 // Deletes resources used to create the LTPA keys file
-func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *wlv1.WebSphereLibertyApplication, defaultMeta metav1.ObjectMeta) error {
+func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *wlv1.WebSphereLibertyApplication) error {
 	// Don't delete LTPA keys resources if this instance is not the leader
 	err, _, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getOrSetLTPAKeysSharingLeader(instance)
 	if err != nil {
