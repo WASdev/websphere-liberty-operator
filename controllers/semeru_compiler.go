@@ -381,7 +381,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 		},
 	}
 
-	// Configure TopologySpreadConstraints from the WebSphereLibertyApplicationSemeruCloudCompiler CR
+	// Configure TopologySpreadConstraints from the WebSphereLibertyApplication CR
 	deploy.Spec.Template.Spec.TopologySpreadConstraints = make([]corev1.TopologySpreadConstraint, 0)
 	topologySpreadConstraintsConfig := wlva.GetTopologySpreadConstraints()
 	if topologySpreadConstraintsConfig == nil || topologySpreadConstraintsConfig.GetDisableOperatorDefaults() == nil || !*topologySpreadConstraintsConfig.GetDisableOperatorDefaults() {
