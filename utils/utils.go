@@ -718,3 +718,15 @@ func GetLTPAXMLVolumeMount(la *wlv1.WebSphereLibertyApplication, fileName string
 		SubPath:   fileName,
 	}
 }
+
+func GetRequiredLabels(name string, instance string) map[string]string {
+	requiredLabels := make(map[string]string)
+	requiredLabels["app.kubernetes.io/name"] = name
+	if instance != "" {
+		requiredLabels["app.kubernetes.io/instance"] = instance
+	} else {
+		requiredLabels["app.kubernetes.io/instance"] = name
+	}
+	requiredLabels["app.kubernetes.io/managed-by"] = "websphere-liberty-operator"
+	return requiredLabels
+}
