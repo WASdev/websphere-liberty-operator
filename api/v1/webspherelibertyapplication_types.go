@@ -230,7 +230,7 @@ const (
 
 // Defines the topology spread constraints
 type WebSphereLibertyApplicationTopologySpreadConstraints struct {
-	// The list of TopologySpreadConstraints for the application pod.
+	// The list of TopologySpreadConstraints for the application instance and if applicable, the Semeru Cloud Compiler instance.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="Constraints"
 	Constraints *[]corev1.TopologySpreadConstraint `json:"constraints,omitempty"`
 
@@ -487,9 +487,6 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
 	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Topology Spread Constraints"
-	TopologySpreadConstraints *WebSphereLibertyApplicationTopologySpreadConstraints `json:"topologySpreadConstraints,omitempty"`
 }
 
 // Defines SemeruCompiler status

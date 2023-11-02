@@ -383,13 +383,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	// Configure TopologySpreadConstraints from the WebSphereLibertyApplicationSemeruCloudCompiler CR
 	deploy.Spec.Template.Spec.TopologySpreadConstraints = make([]corev1.TopologySpreadConstraint, 0)
-	semeruTopologySpreadConstraintsConfig := semeruCloudCompiler.TopologySpreadConstraints
-	if semeruTopologySpreadConstraintsConfig == nil || semeruTopologySpreadConstraintsConfig.GetDisableOperatorDefaults() == nil || !*semeruTopologySpreadConstraintsConfig.GetDisableOperatorDefaults() {
+	topologySpreadConstraintsConfig := wlva.GetTopologySpreadConstraints()
+	if topologySpreadConstraintsConfig == nil || topologySpreadConstraintsConfig.GetDisableOperatorDefaults() == nil || !*topologySpreadConstraintsConfig.GetDisableOperatorDefaults() {
 		utils.CustomizeTopologySpreadConstraints(&deploy.Spec.Template, semeruPodMatchLabels)
 	}
-	if semeruTopologySpreadConstraintsConfig != nil && semeruTopologySpreadConstraintsConfig.GetConstraints() != nil {
+	if topologySpreadConstraintsConfig != nil && topologySpreadConstraintsConfig.GetConstraints() != nil {
 		deploy.Spec.Template.Spec.TopologySpreadConstraints = utils.MergeTopologySpreadConstraints(deploy.Spec.Template.Spec.TopologySpreadConstraints,
-			*semeruTopologySpreadConstraintsConfig.GetConstraints())
+			*topologySpreadConstraintsConfig.GetConstraints())
 	}
 
 	// Copy the service account from the WebSphereLibertyApplcation CR

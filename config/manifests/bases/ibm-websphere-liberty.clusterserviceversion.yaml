@@ -70,15 +70,6 @@ spec:
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The list of TopologySpreadConstraints for the application pod.
-        displayName: Constraints
-        path: semeruCloudCompiler.topologySpreadConstraints.constraints
-      - description: Whether the operator should disable its default set of TopologySpreadConstraints.
-          Defaults to false.
-        displayName: Disable Operator Defaults
-        path: semeruCloudCompiler.topologySpreadConstraints.disableOperatorDefaults
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Whether the Service Account token should be mounted into the
           application pods. Defaults to true.
         displayName: Mount Service Account Token
@@ -90,7 +81,8 @@ spec:
       - description: The unique ID for the provider. Default value is oidc.
         displayName: ID
         path: sso.oidc[0].id
-      - description: The list of TopologySpreadConstraints for the application pod.
+      - description: The list of TopologySpreadConstraints for the application instance
+          and if applicable, the Semeru Cloud Compiler instance.
         displayName: Constraints
         path: topologySpreadConstraints.constraints
       - description: Whether the operator should disable its default set of TopologySpreadConstraints.
@@ -499,8 +491,6 @@ spec:
         path: semeruCloudCompiler.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
-      - displayName: Topology Spread Constraints
-        path: semeruCloudCompiler.topologySpreadConstraints
       - description: 'Product edition. Defaults to IBM WebSphere Application Server.
           Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere
           Application Server Network Deployment'
