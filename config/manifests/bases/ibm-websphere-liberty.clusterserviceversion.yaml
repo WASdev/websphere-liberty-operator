@@ -81,6 +81,16 @@ spec:
       - description: The unique ID for the provider. Default value is oidc.
         displayName: ID
         path: sso.oidc[0].id
+      - description: The list of TopologySpreadConstraints for the application instance
+          and if applicable, the Semeru Cloud Compiler instance.
+        displayName: Constraints
+        path: topologySpreadConstraints.constraints
+      - description: Whether the operator should disable its default set of TopologySpreadConstraints.
+          Defaults to false.
+        displayName: Disable Operator Defaults
+        path: topologySpreadConstraints.disableOperatorDefaults
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Name of the application. Defaults to the name of this custom
           resource.
         displayName: Application Name
@@ -320,6 +330,8 @@ spec:
         path: statefulSet.storage.className
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Topology Spread Constraints
+        path: topologySpreadConstraints
       - description: Represents a volume with data that is accessible to the application
           container.
         displayName: Volumes
