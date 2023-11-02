@@ -615,7 +615,7 @@ func (r *ReconcileWebSphereLiberty) areSemeruCompilerResourcesReady(wlva *wlv1.W
 }
 
 func (r *ReconcileWebSphereLiberty) isSemeruEnabled(wlva *wlv1.WebSphereLibertyApplication) bool {
-	if wlva.GetSemeruCloudCompiler() != nil && wlva.GetSemeruCloudCompiler().Enable == true {
+	if wlva.GetSemeruCloudCompiler() != nil && wlva.GetSemeruCloudCompiler().Enable {
 		return true
 	} else {
 		return false

@@ -438,7 +438,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
-	err, message, ltpaSecretName := r.reconcileLTPAKeysSharing(instance, defaultMeta)
+	err, message, ltpaSecretName := r.reconcileLTPAKeysSharing(instance)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
