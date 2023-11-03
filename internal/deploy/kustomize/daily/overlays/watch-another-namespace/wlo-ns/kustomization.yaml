@@ -7,5 +7,8 @@ resources:
 - ../../../base
 patches:
 - path: wlo-deployment.yaml
-- path: wlo-roles.yaml
+- path: roles-patch1.yaml
+- path: roles-patch2.yaml
+- path: roles-patch3.yaml
+- path: roles-patch4.yaml
 - path: wlo-sa.yaml

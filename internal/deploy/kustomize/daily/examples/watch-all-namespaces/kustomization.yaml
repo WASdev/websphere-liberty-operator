@@ -7,4 +7,5 @@ namespace: wlo-ns
 resources:
 - ../../overlays/watch-all-namespaces
 patches:
-- path: wlo-ns.yaml
+- path: binding-patch2.yaml
+- path: binding-patch1.yaml

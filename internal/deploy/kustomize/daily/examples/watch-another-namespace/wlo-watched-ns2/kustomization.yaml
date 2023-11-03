@@ -6,4 +6,7 @@ namespace: wlo-watched-ns2
 resources:
 - ../../../overlays/watch-another-namespace/wlo-watched-ns
 patches:
-- path: watched-roles.yaml
+- path: role-patch1.yaml
+- path: role-patch2.yaml
+- path: role-patch3.yaml
+- path: role-patch4.yaml

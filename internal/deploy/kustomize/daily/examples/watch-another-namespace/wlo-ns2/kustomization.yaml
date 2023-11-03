@@ -7,5 +7,8 @@ resources:
 - ../../../overlays/watch-another-namespace/wlo-ns
 patches:
 - path: wlo-deployment.yaml
-- path: wlo-roles.yaml
+- path: role-patch1.yaml
+- path: role-patch2.yaml
+- path: role-patch3.yaml
+- path: role-patch4.yaml
 - path: wlo-sa.yaml
