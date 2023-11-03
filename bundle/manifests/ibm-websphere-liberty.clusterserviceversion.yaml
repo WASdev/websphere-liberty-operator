@@ -62,7 +62,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2023-11-02T15:05:35Z"
+    createdAt: "2023-11-03T15:56:28Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -659,11 +659,11 @@ spec:
         path: probes.liveness.successThreshold
       - displayName: Termination Grace Period Seconds
         path: probes.liveness.terminationGracePeriodSeconds
-      - displayName: Http Get
+      - displayName: HTTP Get
         path: probes.liveness.httpGet
       - displayName: Host
         path: probes.liveness.httpGet.host
-      - displayName: Http Headers
+      - displayName: HTTP Headers
         path: probes.liveness.httpGet.httpHeaders
       - displayName: Path
         path: probes.liveness.httpGet.path
@@ -687,11 +687,11 @@ spec:
         path: probes.readiness.successThreshold
       - displayName: Termination Grace Period Seconds
         path: probes.readiness.terminationGracePeriodSeconds
-      - displayName: Http Get
+      - displayName: HTTP Get
         path: probes.readiness.httpGet
       - displayName: Host
         path: probes.readiness.httpGet.host
-      - displayName: Http Headers
+      - displayName: HTTP Headers
         path: probes.readiness.httpGet.httpHeaders
       - displayName: Path
         path: probes.readiness.httpGet.path
@@ -715,11 +715,11 @@ spec:
         path: probes.startup.successThreshold
       - displayName: Termination Grace Period Seconds
         path: probes.startup.terminationGracePeriodSeconds
-      - displayName: Http Get
+      - displayName: HTTP Get
         path: probes.startup.httpGet
       - displayName: Host
         path: probes.startup.httpGet.host
-      - displayName: Http Headers
+      - displayName: HTTP Headers
         path: probes.startup.httpGet.httpHeaders
       - displayName: Path
         path: probes.startup.httpGet.path
