@@ -3,8 +3,8 @@ kind: Kustomization
 
 namespace: wlo-ns
 
-bases:
-- ../../overlays/watch-all-namespaces
 
-patchesStrategicMerge:
-- wlo-ns.yaml
+resources:
+- ../../overlays/watch-all-namespaces
+patches:
+- path: wlo-ns.yaml
