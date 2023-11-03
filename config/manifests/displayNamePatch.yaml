@@ -226,7 +226,7 @@
   path: /spec/customresourcedefinitions/owned/0/specDescriptors/-
   value:
     displayName: Type
-    path: statefulSet.updateStrategy.typekube
+    path: statefulSet.updateStrategy.type
 - op: add
   path: /spec/customresourcedefinitions/owned/0/specDescriptors/-
   value:
@@ -240,7 +240,7 @@
 - op: add
   path: /spec/customresourcedefinitions/owned/0/specDescriptors/-
   value:
-    displayName: Metadate
+    displayName: Metadata
     path: statefulSet.storage.volumeClaimTemplate.metadata
 - op: add
   path: /spec/customresourcedefinitions/owned/0/specDescriptors/-
