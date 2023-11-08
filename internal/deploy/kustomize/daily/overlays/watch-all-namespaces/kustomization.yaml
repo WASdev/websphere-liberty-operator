@@ -3,11 +3,10 @@ kind: Kustomization
 
 namespace: websphere-liberty
 
-bases:
-- ../../base
 
 resources:
 - cluster-roles.yaml
+- ../../base
 
-patchesStrategicMerge:
-- wlo-all-namespaces.yaml
+patches:
+- path: wlo-all-namespaces.yaml

@@ -2,10 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: wlo-ns2
 
-bases:
-- ../../../overlays/watch-another-namespace/wlo-ns
 
-patchesStrategicMerge:
-- wlo-deployment.yaml
-- wlo-roles.yaml
-- wlo-sa.yaml
+resources:
+- ../../../overlays/watch-another-namespace/wlo-ns
+patches:
+- path: wlo-deployment.yaml
+- path: role-patch1.yaml
+- path: role-patch2.yaml
+- path: role-patch3.yaml
+- path: role-patch4.yaml
+- path: wlo-sa.yaml
