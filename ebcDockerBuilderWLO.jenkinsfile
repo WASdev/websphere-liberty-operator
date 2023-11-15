@@ -92,7 +92,6 @@ def gitCloneAndStash() {
       git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
       sh "git checkout ${COMMON_OPERATORS_BRANCH}"
   }
-  sh "cp -rf operators/scripts/build websphere-liberty-operator/scripts/"
   dir('websphere-liberty-operator') {
       stash(name: 'websphere-liberty-operator')
    }
@@ -105,7 +104,7 @@ def void doWork(){
    
    // Unstash the git repo
    unstash(name: 'websphere-liberty-operator')
-   sh "./scripts/build/build-initialize.sh"
+   sh "./operators/scripts/build/build-initialize.sh"
    sh "${command}"
 }
 
