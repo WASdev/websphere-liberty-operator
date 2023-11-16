@@ -139,4 +139,5 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - delete
