@@ -30,9 +30,11 @@ type WebSphereLibertyDumpSpec struct {
 	License LicenseSimple `json:"license"`
 
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyDump CR.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	PodName string `json:"podName"`
 	// Optional. List of memory dump types to request: thread, heap, system.
 	// +listType=set
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Include []WebSphereLibertyDumpInclude `json:"include,omitempty"`
 }
 
