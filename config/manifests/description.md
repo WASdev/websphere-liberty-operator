@@ -18,6 +18,9 @@ Specify the edition and the product entitlement source for your applications and
 ### Integration with Certificate Managers
 The [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates for the application. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods and they are automatically refreshed when the certificates are updated. Optionally, you can bring your own (BYO) certificate authority (CA) or Issuer to generate certificates to secure your applications.
 
+### Management of Lightweight Third-Party Authentication (LTPA)
+LTPA provides a method of SSO configuration to authenticate users to access applications. The Liberty operator can generate and manage the LTPA key for applications. A single LTPA key can be used per each namespace and shared with participating microservices and applications to allow users to authenticate only once.
+
 ### Automatically restrict network communication
 Network policies are created for each application by default to limit incoming traffic to pods in the same namespace that are part of the same application. Only the ports configured by the service are allowed. The network policy can be configured to allow either namespaces and/or pods with certain labels. On OpenShift, the operator automatically configures network policy to allow traffic from ingress, when the application is exposed, and from the monitoring stack.
 
