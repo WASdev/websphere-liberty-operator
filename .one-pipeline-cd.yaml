@@ -23,7 +23,7 @@ setup:
       echo "${DIGEST}"
       echo "${APP}" | jq '.'
 
-      if [[ ${ARTIFACT} == *"icr.io/appcafe/open-liberty/samples/"* ]];then
+      if [[ "${ARTIFACT}" == *"icr.io/appcafe/open-liberty/samples/"* ]];then
         echo "Exclude samples from digest validation: ${ARTIFACT}"
         continue
       fi
@@ -71,7 +71,7 @@ deploy:
       ARTIFACT=$(echo "${APP}" | jq -r '.artifact')
       echo "${ARTIFACT}"
 
-      if [[ ${ARTIFACT} == *"icr.io/appcafe/open-liberty/samples/"* ]];then
+      if [[ "${ARTIFACT}" == *"icr.io/appcafe/open-liberty/samples/"* ]];then
         echo "Exclude samples from publishing: ${ARTIFACT}"
         continue
       fi
