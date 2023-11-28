@@ -19,7 +19,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"golang.org/x/sys/unix"
+	"log"
 	"os"
+	"os/signal"
+	"runtime/debug"
+	"runtime/pprof"
 	"time"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
@@ -67,6 +72,50 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+
+	userInt1 := make(chan os.Signal, 1)
+	signal.Notify(userInt1, unix.SIGUSR1)
+
+	userInt2 := make(chan os.Signal, 1)
+	signal.Notify(userInt2, unix.SIGUSR2)
+
+	exitSig := make(chan os.Signal, 1)
+	signal.Notify(exitSig, unix.SIGINT, unix.SIGTERM)
+
+	go func() {
+		for {
+			setupLog.Info("Waiting for debug signals")
+			select {
+			case <-userInt1:
+				setupLog.Info("Received USR1 signal, taking heap dump")
+				fileName := "heapdump-" + time.Now().Format(time.RFC3339)
+				f, err := os.Create(fileName)
+				if err != nil {
+					setupLog.Error(err, "error taking heap dump")
+					continue
+				}
+				debug.WriteHeapDump(f.Fd())
+				setupLog.Info(fileName + " is ready")
+				//
+			case <-userInt2:
+				setupLog.Info("Received USR2 signal, writing goroutines file")
+				fileName := "goroutine-" + time.Now().Format(time.RFC3339)
+				f, err := os.Create(fileName)
+				if err != nil {
+					log.Println("error creating goroutine profile:", err)
+					continue
+				}
+				err = pprof.Lookup("goroutine").WriteTo(f, 2)
+				if err != nil {
+					setupLog.Error(err, "error writing goroutine profile")
+				}
+				setupLog.Info(fileName + " is ready")
+
+			case <-exitSig:
+				return
+			}
+		}
+	}()
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
