@@ -7,5 +7,5 @@ namespace: wlo-ns
 resources:
 - ../../overlays/watch-all-namespaces
 patches:
-- path: binding-patch2.yaml
-- path: binding-patch1.yaml
+- path: wlo-leader-election-cluster-rolebinding.yaml
+- path: wlo-manager-cluster-rolebinding.yaml

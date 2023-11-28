@@ -7,8 +7,8 @@ resources:
 - ../../../overlays/watch-another-namespace/wlo-ns
 patches:
 - path: wlo-deployment.yaml
-- path: role-patch1.yaml
-- path: role-patch2.yaml
-- path: role-patch3.yaml
-- path: role-patch4.yaml
+- path: websphere-liberty-leader-election-role.yaml
+- path: websphere-liberty-manager-role.yaml
+- path: websphere-liberty-leader-election-rolebinding.yaml
+- path: websphere-liberty-manager-rolebinding.yaml
 - path: wlo-sa.yaml

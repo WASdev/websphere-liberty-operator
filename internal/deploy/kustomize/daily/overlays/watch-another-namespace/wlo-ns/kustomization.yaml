@@ -7,8 +7,8 @@ resources:
 - ../../../base
 patches:
 - path: wlo-deployment.yaml
-- path: roles-patch1.yaml
-- path: roles-patch2.yaml
-- path: roles-patch3.yaml
-- path: roles-patch4.yaml
+- path: websphere-liberty-leader-election-role.yaml
+- path: websphere-liberty-manager-role.yaml
+- path: websphere-liberty-leader-election-rolebinding.yaml
+- path: websphere-liberty-manager-rolebinding.yaml
 - path: wlo-sa.yaml
