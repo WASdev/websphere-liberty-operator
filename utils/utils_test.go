@@ -366,6 +366,31 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 
 	}
 
+	// Test where annotations should be skipped
+	s := licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementWSHE}
+	t.Logf("Testing %#v\n", s)
+	spec := webspherelibertyv1.WebSphereLibertyApplicationSpec{}
+	spec.License.Metric = s.metric
+	spec.License.ProductEntitlementSource = s.pes
+	spec.License.Edition = s.edition
+	app := createWebSphereLibertyApp("myapp", "myns", spec)
+	app.ObjectMeta.Annotations = map[string]string{excludeLicenseAnnotationsKey: "true"}
+	pts := &corev1.PodTemplateSpec{}
+	pts.Annotations = make(map[string]string)
+	CustomizeLicenseAnnotations(pts, app)
+	if (pts.Annotations[productIDKey] != "") || (pts.Annotations[productChargedContainersKey] != "") || (pts.Annotations[productMetricKey] != "") || (pts.Annotations[productNameKey] != "") {
+		t.Errorf("License annotations should not be set when %s is set: '%s', '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
+			pts.Annotations[productIDKey], pts.Annotations[productChargedContainersKey], pts.Annotations[productMetricKey], pts.Annotations[productNameKey])
+	}
+
+	// Test that annotations are skipped, even where they where previously set
+	pts.Annotations[productIDKey] = editionProductID[webspherelibertyv1.LicenseEditionBase]
+	CustomizeLicenseAnnotations(pts, app)
+	if (pts.Annotations[productIDKey] != "") || (pts.Annotations[productChargedContainersKey] != "") || (pts.Annotations[productMetricKey] != "") || (pts.Annotations[productNameKey] != "") {
+		t.Errorf("License annotations should not be set when %s is set: '%s', '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
+			pts.Annotations[productIDKey], pts.Annotations[productChargedContainersKey], pts.Annotations[productMetricKey], pts.Annotations[productNameKey])
+	}
+
 }
 
 func checkRatio(ratio string, edition webspherelibertyv1.LicenseEdition) bool {
