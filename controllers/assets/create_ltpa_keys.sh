@@ -8,8 +8,6 @@ LTPA_FILE_NAME=$3
 
 ENCODING_TYPE=$4
 
-exit 1
-
 KEY_FILE="/tmp/${LTPA_FILE_NAME}" 
 
 ENCODED_KEY_FILE="/tmp/${LTPA_FILE_NAME}-encoded"
