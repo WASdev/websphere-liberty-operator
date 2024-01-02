@@ -54,7 +54,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAKeysSharing(instance *wlv1.WebS
 }
 
 // Returns true if the WebsphereLibertyApplication instance initiated the LTPA keys sharing process or sets the instance as the leader if the LTPA keys are not yet shared
-func (r *ReconcileWebSphereLiberty) getOrSetLTPAKeysSharingLeader(instance *wlv1.WebSphereLibertyApplication) (error, string, bool, string) {
+func (r *ReconcileWebSphereLiberty) getLTPAKeysSharingLeader(instance *wlv1.WebSphereLibertyApplication, createServiceAccount bool) (error, string, bool, string) {
 	ltpaServiceAccount := &corev1.ServiceAccount{}
 	ltpaServiceAccount.Name = OperatorShortName + "-ltpa"
 	ltpaServiceAccount.Namespace = instance.GetNamespace()
@@ -62,10 +62,13 @@ func (r *ReconcileWebSphereLiberty) getOrSetLTPAKeysSharingLeader(instance *wlv1
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaServiceAccount.Name, Namespace: ltpaServiceAccount.Namespace}, ltpaServiceAccount)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			r.CreateOrUpdate(ltpaServiceAccount, instance, func() error {
-				return nil
-			})
-			return nil, instance.Name, true, ltpaServiceAccount.Name
+			if createServiceAccount {
+				r.CreateOrUpdate(ltpaServiceAccount, instance, func() error {
+					return nil
+				})
+				return nil, instance.Name, true, ltpaServiceAccount.Name
+			}
+			return nil, "", false, ""
 		}
 		return err, "", false, ltpaServiceAccount.Name
 	}
@@ -81,7 +84,7 @@ func (r *ReconcileWebSphereLiberty) getOrSetLTPAKeysSharingLeader(instance *wlv1
 
 // Restarts the LTPA keys generation process if the LTPA Secret has not been generated yet and this application instance is the leader
 func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.WebSphereLibertyApplication) error {
-	err, _, isLTPAKeySharingLeader, _ := r.getOrSetLTPAKeysSharingLeader(instance)
+	err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, true)
 	if err != nil {
 		return err
 	}
@@ -107,7 +110,7 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication) (error, string) {
 	// Don't generate LTPA keys if this instance is not the leader
-	err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getOrSetLTPAKeysSharingLeader(instance)
+	err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getLTPAKeysSharingLeader(instance, true)
 	if err != nil {
 		return err, ""
 	}
@@ -299,7 +302,7 @@ func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *wlv1.WebSp
 // Deletes resources used to create the LTPA keys file
 func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *wlv1.WebSphereLibertyApplication) error {
 	// Don't delete LTPA keys resources if this instance is not the leader
-	err, _, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getOrSetLTPAKeysSharingLeader(instance)
+	err, _, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getLTPAKeysSharingLeader(instance, false)
 	if err != nil {
 		return err
 	}
