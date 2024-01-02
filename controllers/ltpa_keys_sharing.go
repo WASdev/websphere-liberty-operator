@@ -109,8 +109,7 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication) (error, string) {
-	// Don't generate LTPA keys if this instance is not the leader
-	err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getLTPAKeysSharingLeader(instance, true)
+	err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, false)
 	if err != nil {
 		return err, ""
 	}
@@ -145,6 +144,10 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
 	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
+		err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getLTPAKeysSharingLeader(instance, true)
+		if err != nil {
+			return err, ""
+		}
 		// If this instance is not the leader, exit the reconcile loop
 		if !isLTPAKeySharingLeader {
 			return fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + ltpaKeySharingLeaderName + "' to generate the shared LTPA keys file for the namespace '" + instance.Namespace + "'."), ""
