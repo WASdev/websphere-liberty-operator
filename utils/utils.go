@@ -63,6 +63,9 @@ const (
 	productIDKey                 string = "productID"
 	productMetricKey             string = "productMetric"
 	productNameKey               string = "productName"
+	cloudPakNameKey              string = "cloudpakName"
+	cloudPakRatioKey             string = "productCloudpakRatio"
+	cloudPakIdKey                string = "cloudpakId"
 )
 
 var editionProductID = map[wlv1.LicenseEdition]string{
@@ -213,6 +216,9 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 		delete(pts.Annotations, productChargedContainersKey)
 		delete(pts.Annotations, productMetricKey)
 		delete(pts.Annotations, productNameKey)
+		delete(pts.Annotations, cloudPakNameKey)
+		delete(pts.Annotations, cloudPakRatioKey)
+		delete(pts.Annotations, cloudPakIdKey)
 		return
 	}
 	pid := ""
@@ -244,17 +250,17 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	pts.Annotations[productNameKey] = string(la.Spec.License.Edition)
 
 	if entitlement == wlv1.LicenseEntitlementStandalone {
-		delete(pts.Annotations, "cloudpakName")
-		delete(pts.Annotations, "cloudpakId")
-		delete(pts.Annotations, "productCloudpakRatio")
+		delete(pts.Annotations, cloudPakNameKey)
+		delete(pts.Annotations, cloudPakIdKey)
+		delete(pts.Annotations, cloudPakRatioKey)
 	} else {
-		pts.Annotations["cloudpakName"] = string(entitlement)
-		pts.Annotations["productCloudpakRatio"] = ratio
+		pts.Annotations[cloudPakNameKey] = string(entitlement)
+		pts.Annotations[cloudPakRatioKey] = ratio
 		cloudpakId := ""
 		if val, ok := entitlementCloudPakID[entitlement]; ok {
 			cloudpakId = val
 		}
-		pts.Annotations["cloudpakId"] = cloudpakId
+		pts.Annotations[cloudPakIdKey] = cloudpakId
 	}
 }
 

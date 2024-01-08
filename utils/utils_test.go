@@ -385,10 +385,20 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 
 	// Test that annotations are skipped, even where they where previously set
 	pts.Annotations[productIDKey] = editionProductID[webspherelibertyv1.LicenseEditionBase]
+	pts.Annotations[productChargedContainersKey] = "app"
+	pts.Annotations[productMetricKey] = "PROCESSOR_VALUE_UNIT"
+	pts.Annotations[productNameKey] = "random-product-name" // This doesn't need to be correct, just checking it gets removed
+	pts.Annotations[cloudPakNameKey] = "random-name"
+	pts.Annotations[cloudPakRatioKey] = "4:1"
+	pts.Annotations[cloudPakIdKey] = "random-pak-id"
 	CustomizeLicenseAnnotations(pts, app)
 	if (pts.Annotations[productIDKey] != "") || (pts.Annotations[productChargedContainersKey] != "") || (pts.Annotations[productMetricKey] != "") || (pts.Annotations[productNameKey] != "") {
 		t.Errorf("License annotations should not be set when %s is set: '%s', '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
 			pts.Annotations[productIDKey], pts.Annotations[productChargedContainersKey], pts.Annotations[productMetricKey], pts.Annotations[productNameKey])
+	}
+	if (pts.Annotations[cloudPakNameKey] != "") || (pts.Annotations[cloudPakRatioKey] != "") || (pts.Annotations[cloudPakIdKey] != "") {
+		t.Errorf("Cloud pak annotations should not be set when %s is set: '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
+			pts.Annotations[cloudPakNameKey], pts.Annotations[cloudPakRatioKey], pts.Annotations[cloudPakIdKey])
 	}
 
 }
