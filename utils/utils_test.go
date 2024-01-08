@@ -382,8 +382,12 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 		t.Errorf("License annotations should not be set when %s is set: '%s', '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
 			pts.Annotations[productIDKey], pts.Annotations[productChargedContainersKey], pts.Annotations[productMetricKey], pts.Annotations[productNameKey])
 	}
+	if (pts.Annotations[cloudPakNameKey] != "") || (pts.Annotations[cloudPakRatioKey] != "") || (pts.Annotations[cloudPakIdKey] != "") {
+		t.Errorf("License annotations should not be set when %s is set: '%s', '%s', '%s'", excludeLicenseAnnotationsKey,
+			pts.Annotations[cloudPakNameKey], pts.Annotations[cloudPakRatioKey], pts.Annotations[cloudPakIdKey])
+	}
 
-	// Test that annotations are skipped, even where they where previously set
+	// Test that annotations are skipped, even where they were previously set
 	pts.Annotations[productIDKey] = editionProductID[webspherelibertyv1.LicenseEditionBase]
 	pts.Annotations[productChargedContainersKey] = "app"
 	pts.Annotations[productMetricKey] = "PROCESSOR_VALUE_UNIT"
