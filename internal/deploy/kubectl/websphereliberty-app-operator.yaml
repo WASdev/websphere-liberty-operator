@@ -330,8 +330,8 @@ spec:
         - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
           value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:b295be1aeefeae9f36b991a70dfd8ef615e3f4a849d6d6091cf51f55221e3c0d
         - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
-          value: icr.io/cpopen/websphere-liberty-operator:daily
-        image: icr.io/cpopen/websphere-liberty-operator:daily
+          value: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:f2d0f568b217ab3c8cbc92e7dd9cbcf6f427ec989c2523aa55e58ca3c58ccd18
+        image: cp.stg.icr.io/cp/websphere-liberty-operator@sha256:f2d0f568b217ab3c8cbc92e7dd9cbcf6f427ec989c2523aa55e58ca3c58ccd18
         livenessProbe:
           failureThreshold: 3
           httpGet:
