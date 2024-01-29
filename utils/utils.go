@@ -50,7 +50,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.3.0"
+const OperandVersion = "1.3.1"
 const ltpaKeysMountPath = "/config/managedLTPA"
 const ltpaServerXMLOverridesMountPath = "/config/configDropins/overrides/"
 const LTPAServerXMLSuffix = "-managed-ltpa-server-xml"
@@ -696,7 +696,7 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 	job.Spec.Template.Spec.Containers = []corev1.Container{
 		{
 			Name:            job.Spec.Template.ObjectMeta.Name,
-			Image:           la.GetApplicationImage(),
+			Image:           la.GetStatus().GetImageReference(),
 			ImagePullPolicy: *la.GetPullPolicy(),
 			SecurityContext: rcoutils.GetSecurityContext(la),
 			Command:         []string{"/bin/bash", "-c"},
