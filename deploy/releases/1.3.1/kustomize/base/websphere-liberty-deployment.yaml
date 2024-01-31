@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
+    control-plane: websphere-liberty-controller-manager
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: websphere-liberty-operator
+      app.kubernetes.io/name: websphere-liberty-operator
+      control-plane: websphere-liberty-controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+        productChargedContainers: ALL
+        productID: cb1747ecb831410f88006195f024183f
+        productMetric: FREE
+        productName: WebSphere Liberty Operator
+      labels:
+        app.kubernetes.io/instance: websphere-liberty-operator
+        app.kubernetes.io/name: websphere-liberty-operator
+        control-plane: websphere-liberty-controller-manager
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --enable-leader-election
+        command:
+        - /manager
+        env:
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
+          value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:d735c2ceae5945a0f20adcbcb04e55472d2520b6d1abb6d3049c8521234d3b7a
+        - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
+          value: icr.io/cpopen/websphere-liberty-operator@sha256:991cc30ce26c63514e2961e12a476d547cce3a81d8cbfcb14e4b40266aa11234
+        image: icr.io/cpopen/websphere-liberty-operator@sha256:991cc30ce26c63514e2961e12a476d547cce3a81d8cbfcb14e4b40266aa11234
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: manager
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 20
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: 400m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      hostIPC: false
+      hostNetwork: false
+      hostPID: false
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: websphere-liberty-controller-manager
+      terminationGracePeriodSeconds: 10
