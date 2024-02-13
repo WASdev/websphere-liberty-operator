@@ -57,6 +57,17 @@ const LTPAServerXMLSuffix = "-managed-ltpa-server-xml"
 const ltpaKeysFileName = "ltpa.keys"
 const ltpaXMLFileName = "managedLTPA.xml"
 
+const (
+	excludeLicenseAnnotationsKey string = "liberty.websphere.ibm.com/exclude-licensing-annotations"
+	productChargedContainersKey  string = "productChargedContainers"
+	productIDKey                 string = "productID"
+	productMetricKey             string = "productMetric"
+	productNameKey               string = "productName"
+	cloudPakNameKey              string = "cloudpakName"
+	cloudPakRatioKey             string = "productCloudpakRatio"
+	cloudPakIdKey                string = "cloudpakId"
+)
+
 var editionProductID = map[wlv1.LicenseEdition]string{
 	wlv1.LicenseEditionBase: "e7daacc46bbe4e2dacd2af49145a4723",
 	wlv1.LicenseEditionCore: "87f3487c22f34742a799164f3f3ffa78",
@@ -198,12 +209,24 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 }
 
 func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
+	exclude := la.Annotations[excludeLicenseAnnotationsKey]
+	if exclude == "true" {
+		log.Info("No license annotations will be added as annotation " + excludeLicenseAnnotationsKey + " is 'true'")
+		delete(pts.Annotations, productIDKey)
+		delete(pts.Annotations, productChargedContainersKey)
+		delete(pts.Annotations, productMetricKey)
+		delete(pts.Annotations, productNameKey)
+		delete(pts.Annotations, cloudPakNameKey)
+		delete(pts.Annotations, cloudPakRatioKey)
+		delete(pts.Annotations, cloudPakIdKey)
+		return
+	}
 	pid := ""
 	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
 		pid = val
 	}
-	pts.Annotations["productID"] = pid
-	pts.Annotations["productChargedContainers"] = "app"
+	pts.Annotations[productIDKey] = pid
+	pts.Annotations[productChargedContainersKey] = "app"
 
 	entitlement := la.Spec.License.ProductEntitlementSource
 
@@ -211,7 +234,7 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
 		metricValue = "VIRTUAL_PROCESSOR_CORE"
 	}
-	pts.Annotations["productMetric"] = metricValue
+	pts.Annotations[productMetricKey] = metricValue
 
 	ratio := ""
 	switch la.Spec.License.Edition {
@@ -224,20 +247,20 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	default:
 		ratio = "4:1"
 	}
-	pts.Annotations["productName"] = string(la.Spec.License.Edition)
+	pts.Annotations[productNameKey] = string(la.Spec.License.Edition)
 
 	if entitlement == wlv1.LicenseEntitlementStandalone {
-		delete(pts.Annotations, "cloudpakName")
-		delete(pts.Annotations, "cloudpakId")
-		delete(pts.Annotations, "productCloudpakRatio")
+		delete(pts.Annotations, cloudPakNameKey)
+		delete(pts.Annotations, cloudPakIdKey)
+		delete(pts.Annotations, cloudPakRatioKey)
 	} else {
-		pts.Annotations["cloudpakName"] = string(entitlement)
-		pts.Annotations["productCloudpakRatio"] = ratio
+		pts.Annotations[cloudPakNameKey] = string(entitlement)
+		pts.Annotations[cloudPakRatioKey] = ratio
 		cloudpakId := ""
 		if val, ok := entitlementCloudPakID[entitlement]; ok {
 			cloudpakId = val
 		}
-		pts.Annotations["cloudpakId"] = cloudpakId
+		pts.Annotations[cloudPakIdKey] = cloudpakId
 	}
 }
 
@@ -586,10 +609,10 @@ func Remove(list []string, s string) []string {
 
 func GetWLOLicenseAnnotations() map[string]string {
 	annotations := make(map[string]string)
-	annotations["productID"] = "cb1747ecb831410f88006195f024183f"
-	annotations["productName"] = "WebSphere Liberty Operator"
-	annotations["productMetric"] = "FREE"
-	annotations["productChargedContainers"] = "ALL"
+	annotations[productIDKey] = "cb1747ecb831410f88006195f024183f"
+	annotations[productNameKey] = "WebSphere Liberty Operator"
+	annotations[productMetricKey] = "FREE"
+	annotations[productChargedContainersKey] = "ALL"
 	return annotations
 }
 
