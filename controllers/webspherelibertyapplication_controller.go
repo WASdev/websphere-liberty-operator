@@ -946,20 +946,15 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 	}
 }
 
-// If a custome hostname was previously set, but is now not set, any previous
-// route needs to be deleted, as the host in a route cannot be unset
-// and the default generated hostname is difficult to manually recreate
-func shouldDeleteRoute(ba common.BaseComponent) bool {
-	rh := ba.GetStatus().GetReferences()[common.StatusReferenceRouteHost]
-	if rh != "" {
-		// The host was previously set.
-		// If the host is now empty, delete the old route
-		rt := ba.GetRoute()
-		if rt == nil || (rt.GetHost() == "" && common.Config[common.OpConfigDefaultHostname] == "") {
-			return true
-		}
+func (r *ReconcileWebSphereLiberty) getKubeAPIServerEndpoints() (*corev1.Endpoints, error) {
+	serviceName := "kubernetes"
+	namespace := "default"
+	endpoints := &corev1.Endpoints{}
+	if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints); err != nil {
+		return nil, err
+	} else {
+		return endpoints, nil
 	}
-	return false
 }
 
 func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace string) (*corev1.Endpoints, error) {
