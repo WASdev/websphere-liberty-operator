@@ -43,6 +43,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -54,8 +55,9 @@ import (
 )
 
 const (
-	OperatorName      = "websphere-liberty-operator"
-	OperatorShortName = "wlo"
+	OperatorName                      = "websphere-liberty-operator"
+	OperatorShortName                 = "wlo"
+	OperatorAllowAPIServerAccessLabel = "webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access"
 )
 
 // ReconcileWebSphereLiberty reconciles a WebSphereLibertyApplication object
@@ -74,6 +76,7 @@ const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.i
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=apps,resources=deployments/finalizers;statefulsets,verbs=update,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=core,resources=services;secrets;serviceaccounts;configmaps;persistentvolumeclaims,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
+// +kubebuilder:rbac:groups=core,resources=endpoints,verbs=get;list,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;delete,namespace=websphere-liberty-operator
@@ -398,6 +401,53 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return r.ManageError(errors.New("Failed to generate TLS certificate. Ensure cert-manager is installed and running"),
 			common.StatusConditionTypeReconciled, instance)
 	}
+
+	// Kube API Server NetworkPolicy (credit to Martin Smithson)
+	apiServerNetworkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{
+		Name:      instance.Name + "-egress-apiserver-access",
+		Namespace: instance.Namespace,
+	}}
+	apiServerEndpoints, err := r.getKubeAPIServerEndpoints()
+	apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			OperatorAllowAPIServerAccessLabel: "true",
+		},
+	}
+	rule := networkingv1.NetworkPolicyEgressRule{}
+	if err == nil {
+		// Define the port
+		port := networkingv1.NetworkPolicyPort{}
+		port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
+		var portNumber intstr.IntOrString = intstr.FromInt((int)(apiServerEndpoints.Subsets[0].Ports[0].Port))
+		port.Port = &portNumber
+		rule.Ports = append(rule.Ports, port)
+
+		// Add the endpoint address as ipBlock entries
+		for _, endpoint := range apiServerEndpoints.Subsets {
+			for _, address := range endpoint.Addresses {
+				peer := networkingv1.NetworkPolicyPeer{}
+				ipBlock := networkingv1.IPBlock{}
+				ipBlock.CIDR = address.IP + "/32"
+
+				peer.IPBlock = &ipBlock
+				rule.To = append(rule.To, peer)
+			}
+		}
+	} else {
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{},
+		}
+		rule.To = append(rule.To, peer)
+		reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
+	}
+	apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
+	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
+		apiServerNetworkPolicy.Labels = ba.GetLabels()
+		apiServerNetworkPolicy.Annotations = oputils.MergeMaps(apiServerNetworkPolicy.Annotations, ba.GetAnnotations())
+		apiServerNetworkPolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeEgress}
+		return nil
+	})
 
 	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
 	if np := instance.Spec.NetworkPolicy; np == nil || np != nil && !np.IsDisabled() {

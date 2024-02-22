@@ -700,9 +700,11 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 	return false
 }
 
-func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string, allowAPIServerAccessLabel string) {
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
+	// Enable NetworkPolicy Egress access to Kube API Server
+	job.Spec.Template.Labels = rcoutils.MergeMaps(job.Spec.Template.Labels, map[string]string{allowAPIServerAccessLabel: "true"})
 	job.Spec.Template.Spec.Containers = []corev1.Container{
 		{
 			Name:            job.Spec.Template.ObjectMeta.Name,
