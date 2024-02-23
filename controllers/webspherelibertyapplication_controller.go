@@ -407,14 +407,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		Name:      instance.Name + "-egress-apiserver-access",
 		Namespace: instance.Namespace,
 	}}
-	apiServerEndpoints, err := r.getKubeAPIServerEndpoints()
 	apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			OperatorAllowAPIServerAccessLabel: "true",
 		},
 	}
 	rule := networkingv1.NetworkPolicyEgressRule{}
-	if err == nil {
+	if apiServerEndpoints, err := r.getKubeAPIServerEndpoints(); err == nil {
 		// Define the port
 		port := networkingv1.NetworkPolicyPort{}
 		port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
@@ -433,6 +432,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				rule.To = append(rule.To, peer)
 			}
 		}
+		reqLogger.Info("Found endpoints for kubernetes service in the default namespace")
 	} else {
 		peer := networkingv1.NetworkPolicyPeer{}
 		peer.NamespaceSelector = &metav1.LabelSelector{
