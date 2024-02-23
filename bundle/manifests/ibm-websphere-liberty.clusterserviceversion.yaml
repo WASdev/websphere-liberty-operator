@@ -869,6 +869,7 @@ spec:
                 app.kubernetes.io/managed-by: olm
                 app.kubernetes.io/name: websphere-liberty-operator
                 control-plane: controller-manager
+                webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access: "true"
             spec:
               affinity:
                 nodeAffinity:

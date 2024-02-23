@@ -26,6 +26,7 @@ spec:
         app.kubernetes.io/instance: websphere-liberty-operator
         app.kubernetes.io/name: websphere-liberty-operator
         control-plane: websphere-liberty-controller-manager
+        webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access: "true"
     spec:
       affinity:
         nodeAffinity:
