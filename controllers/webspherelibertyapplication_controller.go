@@ -407,6 +407,41 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		Name:      instance.Name + "-egress-dns-and-apiserver-access",
 		Namespace: instance.Namespace,
 	}}
+	apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			OperatorAllowAPIServerAccessLabel: "true",
+		},
+	}
+	rule := networkingv1.NetworkPolicyEgressRule{}
+	if apiServerEndpoints, err := r.getKubeAPIServerEndpoints(); err == nil {
+		// Define the port
+		port := networkingv1.NetworkPolicyPort{}
+		port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
+		var portNumber intstr.IntOrString = intstr.FromInt((int)(apiServerEndpoints.Subsets[0].Ports[0].Port))
+		port.Port = &portNumber
+		rule.Ports = append(rule.Ports, port)
+
+		// Add the endpoint address as ipBlock entries
+		for _, endpoint := range apiServerEndpoints.Subsets {
+			for _, address := range endpoint.Addresses {
+				peer := networkingv1.NetworkPolicyPeer{}
+				ipBlock := networkingv1.IPBlock{}
+				ipBlock.CIDR = address.IP + "/32"
+
+				peer.IPBlock = &ipBlock
+				rule.To = append(rule.To, peer)
+			}
+		}
+		reqLogger.Info("Found endpoints for kubernetes service in the default namespace")
+	} else {
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{},
+		}
+		rule.To = append(rule.To, peer)
+		reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
+	}
+	apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
 	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
 		apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
 			MatchLabels: map[string]string{
