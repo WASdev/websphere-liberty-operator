@@ -450,6 +450,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	})
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile API server network policy")
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
 	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
