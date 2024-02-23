@@ -21,6 +21,7 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+        webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access: "true"
       annotations:
         productID: "cb1747ecb831410f88006195f024183f"
         productName: "WebSphere Liberty Operator"
