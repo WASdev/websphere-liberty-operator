@@ -412,8 +412,30 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			OperatorAllowAPIServerAccessLabel: "true",
 		},
 	}
+	// Add OpenShift DNS NetworkPolicy (if applicable)
+	if r.IsOpenShift() {
+		dnsRule := networkingv1.NetworkPolicyEgressRule{}
+		if dnsEndpoints, err := r.getEndpoints("dns-default", "openshift-dns"); err == nil {
+			if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
+				dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+			}
+			if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
+				dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+			}
+			reqLogger.Info("Found endpoints for dns-default service in the openshift-dns namespace")
+		} else {
+			peer := networkingv1.NetworkPolicyPeer{}
+			peer.NamespaceSelector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{},
+			}
+			dnsRule.To = append(dnsRule.To, peer)
+			reqLogger.Info("Failed to retrieve endpoints for dns-default service in the openshift-dns namespace. Using more permissive rule.")
+		}
+		apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, dnsRule)
+	}
+
 	rule := networkingv1.NetworkPolicyEgressRule{}
-	if apiServerEndpoints, err := r.getKubeAPIServerEndpoints(); err == nil {
+	if apiServerEndpoints, err := r.getEndpoints("kubernetes", "default"); err == nil {
 		// Define the port
 		port := networkingv1.NetworkPolicyPort{}
 		port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
