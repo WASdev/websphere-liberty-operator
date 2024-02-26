@@ -403,6 +403,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Kube API Server NetworkPolicy (credit to Martin Smithson)
+	reqLogger.Info("Start API Server Network Policy Reconcile")
 	apiServerNetworkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{
 		Name:      instance.Name + "-egress-apiserver-access",
 		Namespace: instance.Namespace,
