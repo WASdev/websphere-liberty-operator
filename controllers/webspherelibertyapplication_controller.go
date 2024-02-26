@@ -413,6 +413,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				OperatorAllowAPIServerAccessLabel: "true",
 			},
 		}
+		apiServerNetworkPolicy.Spec.Egress = make([]networkingv1.NetworkPolicyEgressRule, 0)
 		// Add OpenShift DNS NetworkPolicy (if applicable)
 		if r.IsOpenShift() {
 			dnsRule := networkingv1.NetworkPolicyEgressRule{}
