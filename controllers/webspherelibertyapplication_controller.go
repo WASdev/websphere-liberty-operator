@@ -946,9 +946,7 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 	}
 }
 
-func (r *ReconcileWebSphereLiberty) getKubeAPIServerEndpoints() (*corev1.Endpoints, error) {
-	serviceName := "kubernetes"
-	namespace := "default"
+func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace string) (*corev1.Endpoints, error) {
 	endpoints := &corev1.Endpoints{}
 	if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints); err != nil {
 		return nil, err
