@@ -471,10 +471,10 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
 	}
 	apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
+	apiServerNetworkPolicy.Labels = ba.GetLabels()
+	apiServerNetworkPolicy.Annotations = oputils.MergeMaps(apiServerNetworkPolicy.Annotations, ba.GetAnnotations())
+	apiServerNetworkPolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeEgress}
 	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
-		apiServerNetworkPolicy.Labels = ba.GetLabels()
-		apiServerNetworkPolicy.Annotations = oputils.MergeMaps(apiServerNetworkPolicy.Annotations, ba.GetAnnotations())
-		apiServerNetworkPolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeEgress}
 		return nil
 	})
 	if err != nil {
