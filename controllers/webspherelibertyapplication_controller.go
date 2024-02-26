@@ -412,68 +412,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			OperatorAllowAPIServerAccessLabel: "true",
 		},
 	}
-	// Add OpenShift DNS NetworkPolicy (if applicable)
-	if r.IsOpenShift() {
-		dnsRule := networkingv1.NetworkPolicyEgressRule{}
-		if dnsEndpoints, err := r.getEndpoints("dns-default", "openshift-dns"); err == nil {
-			if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
-				dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
-			}
-			if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
-				dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
-			}
-			peer := networkingv1.NetworkPolicyPeer{}
-			peer.NamespaceSelector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"kubernetes.io/metadata.name": "openshift-dns",
-				},
-			}
-			dnsRule.To = append(dnsRule.To, peer)
-			reqLogger.Info("Found endpoints for dns-default service in the openshift-dns namespace")
-		} else {
-			peer := networkingv1.NetworkPolicyPeer{}
-			peer.NamespaceSelector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{},
-			}
-			dnsRule.To = append(dnsRule.To, peer)
-			reqLogger.Info("Failed to retrieve endpoints for dns-default service in the openshift-dns namespace. Using more permissive rule.")
-		}
-		apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, dnsRule)
-	}
-
-	rule := networkingv1.NetworkPolicyEgressRule{}
-	if apiServerEndpoints, err := r.getEndpoints("kubernetes", "default"); err == nil {
-		// Define the port
-		port := networkingv1.NetworkPolicyPort{}
-		port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
-		var portNumber intstr.IntOrString = intstr.FromInt((int)(apiServerEndpoints.Subsets[0].Ports[0].Port))
-		port.Port = &portNumber
-		rule.Ports = append(rule.Ports, port)
-
-		// Add the endpoint address as ipBlock entries
-		for _, endpoint := range apiServerEndpoints.Subsets {
-			for _, address := range endpoint.Addresses {
-				peer := networkingv1.NetworkPolicyPeer{}
-				ipBlock := networkingv1.IPBlock{}
-				ipBlock.CIDR = address.IP + "/32"
-
-				peer.IPBlock = &ipBlock
-				rule.To = append(rule.To, peer)
-			}
-		}
-		reqLogger.Info("Found endpoints for kubernetes service in the default namespace")
-	} else {
-		peer := networkingv1.NetworkPolicyPeer{}
-		peer.NamespaceSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{},
-		}
-		rule.To = append(rule.To, peer)
-		reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
-	}
-	apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
-	apiServerNetworkPolicy.Labels = ba.GetLabels()
-	apiServerNetworkPolicy.Annotations = oputils.MergeMaps(apiServerNetworkPolicy.Annotations, ba.GetAnnotations())
-	apiServerNetworkPolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeEgress}
 	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
 		apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
 			MatchLabels: map[string]string{
