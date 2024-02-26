@@ -422,6 +422,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
 				dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
 			}
+			peer := networkingv1.NetworkPolicyPeer{}
+			peer.NamespaceSelector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"kubernetes.io/metadata.name": "openshift-dns",
+				},
+			}
+			dnsRule.To = append(dnsRule.To, peer)
 			reqLogger.Info("Found endpoints for dns-default service in the openshift-dns namespace")
 		} else {
 			peer := networkingv1.NetworkPolicyPeer{}
