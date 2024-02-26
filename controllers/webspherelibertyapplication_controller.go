@@ -407,11 +407,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		Name:      instance.Name + "-egress-dns-and-apiserver-access",
 		Namespace: instance.Namespace,
 	}}
-	apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			OperatorAllowAPIServerAccessLabel: "true",
-		},
-	}
 	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
 		apiServerNetworkPolicy.Spec.PodSelector = metav1.LabelSelector{
 			MatchLabels: map[string]string{
