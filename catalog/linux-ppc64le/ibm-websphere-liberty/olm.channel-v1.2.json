@@ -1,0 +1,11 @@
+{
+    "schema": "olm.channel",
+    "name": "v1.2",
+    "package": "ibm-websphere-liberty",
+    "entries": [
+        {
+            "name": "ibm-websphere-liberty.v1.2.2",
+            "skipRange": ">=1.0.0 <1.2.2"
+        }
+    ]
+}

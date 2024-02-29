@@ -1,0 +1,1030 @@
+{
+    "schema": "olm.bundle",
+    "name": "ibm-websphere-liberty.v1.2.2",
+    "package": "ibm-websphere-liberty",
+    "image": "icr.io/cpopen/websphere-liberty-operator-bundle@sha256:df4e8c18770d107a7a9126fd45e47f5dac2da3d2ffac53357156771e8e19bd0c",
+    "properties": [
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyApplication",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyDump",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyTrace",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.package",
+            "value": {
+                "packageName": "ibm-websphere-liberty",
+                "version": "1.2.2"
+            }
+        },
+        {
+            "type": "olm.csv.metadata",
+            "value": {
+                "annotations": {
+                    "alm-examples": "[\n  {\n    \"apiVersion\": \"liberty.websphere.ibm.com/v1\",\n    \"kind\": \"WebSphereLibertyApplication\",\n    \"metadata\": {\n      \"name\": \"websphereliberty-app-sample\"\n    },\n    \"spec\": {\n      \"applicationImage\": \"icr.io/appcafe/open-liberty/samples/getting-started@sha256:6bf52d536e94d6aa6eaa3ca9639e0fe9f5e71dbd891c50362939dd6aca519d02\",\n      \"expose\": true,\n      \"license\": {\n        \"accept\": false,\n        \"edition\": \"IBM WebSphere Application Server\",\n        \"productEntitlementSource\": \"Standalone\"\n      },\n      \"manageTLS\": true,\n      \"replicas\": 1\n    }\n  },\n  {\n    \"apiVersion\": \"liberty.websphere.ibm.com/v1\",\n    \"kind\": \"WebSphereLibertyDump\",\n    \"metadata\": {\n      \"name\": \"websphereliberty-dump-sample\"\n    },\n    \"spec\": {\n      \"include\": [\n        \"thread\",\n        \"heap\"\n      ],\n      \"license\": {\n        \"accept\": false\n      },\n      \"podName\": \"Specify_Pod_Name_Here\"\n    }\n  },\n  {\n    \"apiVersion\": \"liberty.websphere.ibm.com/v1\",\n    \"kind\": \"WebSphereLibertyTrace\",\n    \"metadata\": {\n      \"name\": \"websphereliberty-trace-sample\"\n    },\n    \"spec\": {\n      \"license\": {\n        \"accept\": false\n      },\n      \"maxFileSize\": 20,\n      \"maxFiles\": 5,\n      \"podName\": \"Specify_Pod_Name_Here\",\n      \"traceSpecification\": \"*=info:com.ibm.ws.webcontainer*=all\"\n    }\n  }\n]",
+                    "capabilities": "Auto Pilot",
+                    "categories": "Application Runtime",
+                    "containerImage": "icr.io/cpopen/websphere-liberty-operator@sha256:9b87643c1c1246f5b244c470ef4c4578af664ec5cd432d14be2372fc8289b00d",
+                    "createdAt": "2023-08-16T18:04:31Z",
+                    "description": "Deploy and manage containerized Liberty applications",
+                    "olm.skipRange": ">=1.0.0 <1.2.2",
+                    "operators.openshift.io/infrastructure-features": "[\"disconnected\"]",
+                    "operators.operatorframework.io/builder": "operator-sdk-v1.24.0",
+                    "operators.operatorframework.io/project_layout": "go.kubebuilder.io/v3",
+                    "repository": "https://github.com/WASdev/websphere-liberty-operator",
+                    "support": "IBM"
+                },
+                "apiServiceDefinitions": {},
+                "crdDescriptions": {
+                    "owned": [
+                        {
+                            "name": "webspherelibertyapplications.liberty.websphere.ibm.com",
+                            "version": "v1",
+                            "kind": "WebSphereLibertyApplication",
+                            "displayName": "WebSphereLibertyApplication",
+                            "description": "Represents the deployment of a WebSphere Liberty application. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.",
+                            "resources": [
+                                {
+                                    "name": "",
+                                    "kind": "Deployment",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "HorizontalPodAutoscaler",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "NetworkPolicy",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "Route",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "Secret",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "Service",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "ServiceAccount",
+                                    "version": "v1"
+                                },
+                                {
+                                    "name": "",
+                                    "kind": "StatefulSet",
+                                    "version": "v1"
+                                }
+                            ],
+                            "statusDescriptors": [
+                                {
+                                    "path": "endpoints[0].uri",
+                                    "displayName": "Application",
+                                    "description": "Exposed URI of the application endpoint",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:org.w3:link"
+                                    ]
+                                },
+                                {
+                                    "path": "binding",
+                                    "displayName": "Service Binding"
+                                },
+                                {
+                                    "path": "conditions",
+                                    "displayName": "Status Conditions",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:io.kubernetes.conditions"
+                                    ]
+                                },
+                                {
+                                    "path": "binding.name",
+                                    "displayName": "Secret",
+                                    "description": "Service Binding Secret",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:io.kubernetes:Secret"
+                                    ]
+                                }
+                            ],
+                            "specDescriptors": [
+                                {
+                                    "path": "applicationImage",
+                                    "displayName": "Application Image",
+                                    "description": "Application image to deploy.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "autoscaling.maxReplicas",
+                                    "displayName": "Max Replicas",
+                                    "description": "Required field for autoscaling. Upper limit for the number of pods that can be set by the autoscaler. Parameter .spec.resources.requests.cpu must also be specified.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "license",
+                                    "displayName": "License",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc",
+                                    "displayName": "OIDC"
+                                },
+                                {
+                                    "path": "sso.oidc[0].id",
+                                    "displayName": "ID",
+                                    "description": "The unique ID for the provider. Default value is oidc."
+                                },
+                                {
+                                    "path": "applicationName",
+                                    "displayName": "Application Name",
+                                    "description": "Name of the application. Defaults to the name of this custom resource.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "autoscaling.minReplicas",
+                                    "displayName": "Min Replicas",
+                                    "description": "Lower limit for the number of pods that can be set by the autoscaler.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oauth2",
+                                    "displayName": "OAuth2"
+                                },
+                                {
+                                    "path": "sso.oidc[0].discoveryEndpoint",
+                                    "displayName": "Discovery Endpoint",
+                                    "description": "Specifies a discovery endpoint URL for the OpenID Connect provider. Required field."
+                                },
+                                {
+                                    "path": "applicationVersion",
+                                    "displayName": "Application Version",
+                                    "description": "Version of the application.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "autoscaling.targetCPUUtilizationPercentage",
+                                    "displayName": "Target CPU Utilization Percentage",
+                                    "description": "Target average CPU utilization, represented as a percentage of requested CPU, over all the pods.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.github",
+                                    "displayName": "GitHub"
+                                },
+                                {
+                                    "path": "sso.oidc[0].groupNameAttribute",
+                                    "displayName": "Group Name Attribute",
+                                    "description": "Specifies the name of the claim. Use its value as the user group membership."
+                                },
+                                {
+                                    "path": "pullPolicy",
+                                    "displayName": "Pull Policy",
+                                    "description": "Policy for pulling container images. Defaults to IfNotPresent.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:imagePullPolicy"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].userNameAttribute",
+                                    "displayName": "User Name Attribute",
+                                    "description": "Specifies the name of the claim. Use its value as the authenticated user principal."
+                                },
+                                {
+                                    "path": "sso.redirectToRPHostAndPort",
+                                    "displayName": "Redirect to RP Host and Port",
+                                    "description": "Specifies a callback protocol, host and port number."
+                                },
+                                {
+                                    "path": "pullSecret",
+                                    "displayName": "Pull Secret",
+                                    "description": "Name of the Secret to use to pull images from the specified repository. It is not required if the cluster is configured with a global image pull secret.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:io.kubernetes:Secret"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.mapToUserRegistry",
+                                    "displayName": "Map to User Registry",
+                                    "description": "Specifies whether to map a user identifier to a registry user. This parameter applies to all providers.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].displayName",
+                                    "displayName": "Display Name",
+                                    "description": "The name of the social login configuration for display."
+                                },
+                                {
+                                    "path": "serviceAccountName",
+                                    "displayName": "Service Account Name",
+                                    "description": "Name of the service account to use for deploying the application. A service account is automatically created if it's not specified.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].userInfoEndpointEnabled",
+                                    "displayName": "User Info Endpoint Enabled",
+                                    "description": "Specifies whether the UserInfo endpoint is contacted.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "createKnativeService",
+                                    "displayName": "Create Knative Service",
+                                    "description": "Create Knative resources and use Knative serving.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].realmNameAttribute",
+                                    "displayName": "Realm Name Attribute",
+                                    "description": "Specifies the name of the claim. Use its value as the subject realm."
+                                },
+                                {
+                                    "path": "expose",
+                                    "displayName": "Expose",
+                                    "description": "Expose the application externally via a Route, a Knative Route or an Ingress resource.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "manageTLS",
+                                    "displayName": "Manage TLS",
+                                    "description": "Enable management of TLS certificates. Defaults to true.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].scope",
+                                    "displayName": "Scope",
+                                    "description": "Specifies one or more scopes to request."
+                                },
+                                {
+                                    "path": "replicas",
+                                    "displayName": "Replicas",
+                                    "description": "Number of pods to create. Defaults to 1. Not applicable when .spec.autoscaling or .spec.createKnativeService is specified.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:podCount"
+                                    ]
+                                },
+                                {
+                                    "path": "service.port",
+                                    "displayName": "Service Port",
+                                    "description": "The port exposed by the container.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].tokenEndpointAuthMethod",
+                                    "displayName": "Token Endpoint Auth Method",
+                                    "description": "Specifies the required authentication method."
+                                },
+                                {
+                                    "path": "autoscaling",
+                                    "displayName": "Auto Scaling"
+                                },
+                                {
+                                    "path": "service.type",
+                                    "displayName": "Service Type",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oidc[0].hostNameVerificationEnabled",
+                                    "displayName": "Host Name Verification Enabled",
+                                    "description": "Specifies whether to enable host name verification when the client contacts the provider.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "resources",
+                                    "displayName": "Resource Requirements",
+                                    "description": "Resource requests and limits for the application container.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+                                    ]
+                                },
+                                {
+                                    "path": "service.nodePort",
+                                    "displayName": "Node Port",
+                                    "description": "Node proxies this port into your service.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "probes",
+                                    "displayName": "Probes"
+                                },
+                                {
+                                    "path": "service.portName",
+                                    "displayName": "Port Name",
+                                    "description": "The name for the port exposed by the container.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "deployment",
+                                    "displayName": "Deployment"
+                                },
+                                {
+                                    "path": "service.annotations",
+                                    "displayName": "Service Annotations",
+                                    "description": "Annotations to be added to the service.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "service.certificate.annotations",
+                                    "displayName": "Annotations",
+                                    "description": "Annotations to be added to the service certificate.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "service.targetPort",
+                                    "displayName": "Target Port",
+                                    "description": "The port that the operator assigns to containers inside pods. Defaults to the value of .spec.service.port.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:number"
+                                    ]
+                                },
+                                {
+                                    "path": "statefulSet",
+                                    "displayName": "StatefulSet"
+                                },
+                                {
+                                    "path": "service",
+                                    "displayName": "Service"
+                                },
+                                {
+                                    "path": "service.certificateSecretRef",
+                                    "displayName": "Certificate Secret Reference",
+                                    "description": "A name of a secret that already contains TLS key, certificate and CA to be mounted in the pod. The following keys are valid in the secret: ca.crt, tls.crt, and tls.key.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route",
+                                    "displayName": "Route"
+                                },
+                                {
+                                    "path": "service.certificate",
+                                    "displayName": "Service Certificate",
+                                    "description": "Configure service certificate."
+                                },
+                                {
+                                    "path": "semeruCloudCompiler",
+                                    "displayName": "Semeru Cloud Compiler",
+                                    "description": "Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT) compilation requests from the application."
+                                },
+                                {
+                                    "path": "service.ports",
+                                    "displayName": "Ports",
+                                    "description": "An array consisting of service ports."
+                                },
+                                {
+                                    "path": "networkPolicy",
+                                    "displayName": "Network Policy"
+                                },
+                                {
+                                    "path": "service.bindable",
+                                    "displayName": "Bindable",
+                                    "description": "Expose the application as a bindable service. Defaults to false.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "serviceability",
+                                    "displayName": "Serviceability"
+                                },
+                                {
+                                    "path": "sso",
+                                    "displayName": "Single Sign-On"
+                                },
+                                {
+                                    "path": "deployment.updateStrategy",
+                                    "displayName": "Deployment Update Strategy",
+                                    "description": "Specifies the strategy to replace old deployment pods with new pods.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:updateStrategy"
+                                    ]
+                                },
+                                {
+                                    "path": "monitoring",
+                                    "displayName": "Monitoring"
+                                },
+                                {
+                                    "path": "env",
+                                    "displayName": "Environment Variables",
+                                    "description": "An array of environment variables for the application container."
+                                },
+                                {
+                                    "path": "envFrom",
+                                    "displayName": "Environment Variables from Sources",
+                                    "description": "List of sources to populate environment variables in the application container."
+                                },
+                                {
+                                    "path": "statefulSet.updateStrategy",
+                                    "displayName": "StatefulSet Update Strategy",
+                                    "description": "Specifies the strategy to replace old StatefulSet pods with new pods."
+                                },
+                                {
+                                    "path": "statefulSet.storage",
+                                    "displayName": "Storage"
+                                },
+                                {
+                                    "path": "volumes",
+                                    "displayName": "Volumes",
+                                    "description": "Represents a volume with data that is accessible to the application container."
+                                },
+                                {
+                                    "path": "statefulSet.storage.size",
+                                    "displayName": "Storage Size",
+                                    "description": "A convenient field to set the size of the persisted storage.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "volumeMounts",
+                                    "displayName": "Volume Mounts",
+                                    "description": "Represents where to mount the volumes into the application container."
+                                },
+                                {
+                                    "path": "initContainers",
+                                    "displayName": "Init Containers",
+                                    "description": "List of containers to run before other containers in a pod."
+                                },
+                                {
+                                    "path": "statefulSet.storage.className",
+                                    "displayName": "Storage Class Name",
+                                    "description": "A convenient field to request the storage class of the persisted storage. The name can not be specified or updated after the storage is created.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "sidecarContainers",
+                                    "displayName": "Sidecar Containers",
+                                    "description": "List of sidecar containers. These are additional containers to be added to the pods."
+                                },
+                                {
+                                    "path": "statefulSet.storage.mountPath",
+                                    "displayName": "Storage Mount Path",
+                                    "description": "The directory inside the container where this persisted storage will be bound to.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "affinity",
+                                    "displayName": "Affinity"
+                                },
+                                {
+                                    "path": "statefulSet.storage.volumeClaimTemplate",
+                                    "displayName": "Storage Volume Claim Template",
+                                    "description": "A YAML object that represents a volumeClaimTemplate component of a StatefulSet.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:PersistentVolumeClaim"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext",
+                                    "displayName": "Security Context",
+                                    "description": "Security context for the application container."
+                                },
+                                {
+                                    "path": "monitoring.labels",
+                                    "displayName": "Monitoring Labels",
+                                    "description": "Labels to set on ServiceMonitor.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "monitoring.endpoints",
+                                    "displayName": "Monitoring Endpoints",
+                                    "description": "A YAML snippet representing an array of Endpoint component from ServiceMonitor.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:endpointList"
+                                    ]
+                                },
+                                {
+                                    "path": "affinity.nodeAffinity",
+                                    "displayName": "Node Affinity",
+                                    "description": "Controls which nodes the pod are scheduled to run on, based on labels on the node.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:nodeAffinity"
+                                    ]
+                                },
+                                {
+                                    "path": "affinity.podAffinity",
+                                    "displayName": "Pod Affinity",
+                                    "description": "Controls the nodes the pod are scheduled to run on, based on labels on the pods that are already running on the node.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:podAffinity"
+                                    ]
+                                },
+                                {
+                                    "path": "affinity.podAntiAffinity",
+                                    "displayName": "Pod Anti Affinity",
+                                    "description": "Enables the ability to prevent running a pod on the same node as another pod.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:podAntiAffinity"
+                                    ]
+                                },
+                                {
+                                    "path": "affinity.nodeAffinityLabels",
+                                    "displayName": "Node Affinity Labels",
+                                    "description": "A YAML object that contains a set of required labels and their values.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route.annotations",
+                                    "displayName": "Route Annotations",
+                                    "description": "Annotations to be added to the Route.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route.host",
+                                    "displayName": "Route Host",
+                                    "description": "Hostname to be used for the Route.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route.path",
+                                    "displayName": "Route Path",
+                                    "description": "Path to be used for Route.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route.pathType",
+                                    "displayName": "Path Type",
+                                    "description": "Path type to be used for Ingress. This does not apply to Route on OpenShift.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Exact",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Prefix",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:ImplementationSpecific"
+                                    ]
+                                },
+                                {
+                                    "path": "route.certificateSecretRef",
+                                    "displayName": "Certificate Secret Reference",
+                                    "description": "A name of a secret that already contains TLS key, certificate and CA to be used in the route. It can also contain destination CA certificate. The following keys are valid in the secret: ca.crt, destCA.crt, tls.crt, and tls.key.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "route.termination",
+                                    "displayName": "Termination",
+                                    "description": "TLS termination policy. Can be one of edge, reencrypt and passthrough.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:select:edge",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:reencrypt",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:passthrough"
+                                    ]
+                                },
+                                {
+                                    "path": "route.insecureEdgeTerminationPolicy",
+                                    "displayName": "Insecure Edge Termination Policy",
+                                    "description": "HTTP traffic policy with TLS enabled. Can be one of Allow, Redirect and None.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Allow",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Redirect",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:None"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.liveness",
+                                    "displayName": "Liveness Probe",
+                                    "description": "Periodic probe of container liveness. Container will be restarted if the probe fails."
+                                },
+                                {
+                                    "path": "probes.readiness",
+                                    "displayName": "Readiness Probe",
+                                    "description": "Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails."
+                                },
+                                {
+                                    "path": "probes.startup",
+                                    "displayName": "Startup Probe",
+                                    "description": "Probe to determine successful initialization. If specified, other probes are not executed until this completes successfully."
+                                },
+                                {
+                                    "path": "networkPolicy.disable",
+                                    "displayName": "Disable",
+                                    "description": "Disable the creation of the network policy. Defaults to false.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "semeruCloudCompiler.enable",
+                                    "displayName": "Enable",
+                                    "description": "Enable the Semeru Cloud Compiler. Defaults to false.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "networkPolicy.namespaceLabels",
+                                    "displayName": "Namespace Labels",
+                                    "description": "Specify the labels of namespaces that incoming traffic is allowed from.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "semeruCloudCompiler.replicas",
+                                    "displayName": "Replicas",
+                                    "description": "Number of desired pods for the Semeru Cloud Compiler. Defaults to 1.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:podCount"
+                                    ]
+                                },
+                                {
+                                    "path": "networkPolicy.fromLabels",
+                                    "displayName": "From Labels",
+                                    "description": "Specify the labels of pod(s) that incoming traffic is allowed from.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "semeruCloudCompiler.resources",
+                                    "displayName": "Resource Requirements",
+                                    "description": "Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
+                                    ]
+                                },
+                                {
+                                    "path": "license.edition",
+                                    "displayName": "Edition",
+                                    "description": "Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment"
+                                },
+                                {
+                                    "path": "license.productEntitlementSource",
+                                    "displayName": "Product Entitlement Source",
+                                    "description": "Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition"
+                                },
+                                {
+                                    "path": "license.metric",
+                                    "displayName": "Metric",
+                                    "description": "Deprecated. Charge metric code is now automatically determined based on the specified product edition and entitlement source.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "license.accept",
+                                    "displayName": "Accept License",
+                                    "description": "I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:checkbox"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oauth2[0].accessTokenRequired",
+                                    "displayName": "Access Token Required",
+                                    "description": "Determines whether the access token that is provided in the request is used for authentication.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oauth2[0].accessTokenSupported",
+                                    "displayName": "Access Token Supported",
+                                    "description": "Determines whether to support access token authentication if an access token is provided in the request.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "sso.oauth2[0].id",
+                                    "displayName": "ID",
+                                    "description": "Specifies the unique ID for the provider. The default value is oauth2."
+                                },
+                                {
+                                    "path": "sso.oauth2[0].userApi",
+                                    "displayName": "User API",
+                                    "description": "The URL for retrieving the user information."
+                                },
+                                {
+                                    "path": "sso.oauth2[0].userApiType",
+                                    "displayName": "User API Type",
+                                    "description": "Indicates which specification to use for the user API."
+                                },
+                                {
+                                    "path": "probes.liveness.exec",
+                                    "displayName": "Livness Probe's Exec",
+                                    "description": "Hide liveness probe's Exec field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.liveness.tcpSocket",
+                                    "displayName": "Livness Probe's Exec",
+                                    "description": "Hide liveness probe's TCP Socket field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.readiness.exec",
+                                    "displayName": "Readiness Probe's Exec",
+                                    "description": "Hide readiness probe's Exec field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.readiness.tcpSocket",
+                                    "displayName": "Readiness Probe's TCP Socket",
+                                    "description": "Hide readiness probe's TCP Socket field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.startup.exec",
+                                    "displayName": "Startup Probe's Exec",
+                                    "description": "Hide startup probe's Exec field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "probes.startup.tcpSocket",
+                                    "displayName": "Startup Probe's Exec",
+                                    "description": "Hide startup probe's TCP Socket field",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:hidden"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.seccompProfile.type",
+                                    "displayName": "Type",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:select:RuntimeDefault",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Localhost",
+                                        "urn:alm:descriptor:com.tectonic.ui:select:Unconfined"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.seccompProfile.localhostProfile",
+                                    "displayName": "Localhost Profile",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text",
+                                        "urn:alm:descriptor:com.tectonic.ui:fieldDependency:securityContext.seccompProfile.type:Localhost"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.readOnlyRootFilesystem",
+                                    "displayName": "Read-Only Root Filesystem",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.runAsNonRoot",
+                                    "displayName": "Run as Non-Root",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.privileged",
+                                    "displayName": "Privileged",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.allowPrivilegeEscalation",
+                                    "displayName": "Allow Privilege Escalation",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.windowsOptions.gmsaCredentialSpecName",
+                                    "displayName": "GMSA Credential Spec Name",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.windowsOptions.gmsaCredentialSpec",
+                                    "displayName": "GMSA Credential Spec",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.windowsOptions.hostProcess",
+                                    "displayName": "Host Process",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+                                    ]
+                                },
+                                {
+                                    "path": "securityContext.seLinuxOptions",
+                                    "displayName": "SE Linux Options"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "webspherelibertydumps.liberty.websphere.ibm.com",
+                            "version": "v1",
+                            "kind": "WebSphereLibertyDump",
+                            "displayName": "WebSphereLibertyDump",
+                            "description": "Day-2 operation for generating server dumps. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.",
+                            "statusDescriptors": [
+                                {
+                                    "path": "dumpFile",
+                                    "displayName": "Dump File Path",
+                                    "description": "Location of the generated dump file",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                }
+                            ],
+                            "specDescriptors": [
+                                {
+                                    "path": "license",
+                                    "displayName": "License",
+                                    "description": "License information is required.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "license.accept",
+                                    "displayName": "Accept License",
+                                    "description": "The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:checkbox"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "webspherelibertytraces.liberty.websphere.ibm.com",
+                            "version": "v1",
+                            "kind": "WebSphereLibertyTrace",
+                            "displayName": "WebSphereLibertyTrace",
+                            "description": "Day-2 operation for gathering server traces. Documentation: For more information about installation parameters, see https://ibm.biz/wlo-crs. License: By installing this product, you accept the license terms at https://ibm.biz/was-license.",
+                            "specDescriptors": [
+                                {
+                                    "path": "license",
+                                    "displayName": "License",
+                                    "description": "License information is required.",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:text"
+                                    ]
+                                },
+                                {
+                                    "path": "license.accept",
+                                    "displayName": "Accept License",
+                                    "description": "The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license",
+                                    "x-descriptors": [
+                                        "urn:alm:descriptor:com.tectonic.ui:checkbox"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "description": "# Name\n\nIBM&reg; WebSphere&reg; Liberty\n\n# Introduction\n\nIBM WebSphere Liberty is a modern Java EE, Jakarta EE, MicroProfile runtime, ideal for building new cloud-native applications and modernizing existing applications. Liberty is highly efficient and optimized for modern cloud technologies and practices, making it an ideal choice for container and Kubernetes-based deployments.\n\nThe WebSphere Liberty Operator allows you to deploy and manage containerized Liberty applications securely and easily on Red Hat OpenShift as well as other Kubernetes-based platforms in a consistent way. You can also perform Day-2 operations such as gathering traces and memory dumps easily using the operator.\n\n## Details \n\nKey features provided by the operator:\n\n### Simplified license tracking\nSpecify the edition and the product entitlement source for your applications and the operator will automatically add the necessary WebSphere license metadata on the deployed workloads. You can use the IBM License Service to view the aggregated license usage information for all applications.\n\n### Integration with Certificate Managers\nThe [cert-manager APIs](https://cert-manager.io/) when available on the cluster will be used to generate certificates for the application. Otherwise, on Red Hat OpenShift, the operator will generate certificates using OpenShift's Certificate Manager. The operator will automatically provision TLS certificates for applications' pods and they are automatically refreshed when the certificates are updated. Optionally, you can bring your own (BYO) certificate authority (CA) or Issuer to generate certificates to secure your applications.\n\n### Automatically restrict network communication\nNetwork policies are created for each application by default to limit incoming traffic to pods in the same namespace that are part of the same application. Only the ports configured by the service are allowed. The network policy can be configured to allow either namespaces and/or pods with certain labels. On OpenShift, the operator automatically configures network policy to allow traffic from ingress, when the application is exposed, and from the monitoring stack.\n\n### Integration with Semeru Cloud Compiler\nUse a single toggle to stand up a compatible Semeru Cloud Compiler instance to handle compilation requests from the multiple instances of the same application. Liberty Operator automatically sets up encrypted communication between the compiler and the application. It also handles application upgrade scenarios gracefully to ensure compiler and application instances remain compatible.\n\n### Exposing metrics to Prometheus\nExpose the Liberty application's metrics via the Prometheus Operator. You can pick between a basic mode, where you simply specify the label that Prometheus is watching to scrape the metrics from the container, or you can specify the full `ServiceMonitor` spec embedded into the WebSphereLibertyApplication's `.spec.monitoring` field to control configurations such as poll interval and security credentials.\n\n### Single Sign-On (SSO)\nLiberty runtime provides capabilities to delegate authentication to external providers. Your application users can log in using their existing social media credentials from providers such as Google, Facebook, LinkedIn, Twitter, GitHub, and any OpenID Connect (OIDC) or OAuth 2.0 clients. WebSphere Liberty Operator allows you to easily configure and manage the single sign-on information for your applications.\n\n### Easily mount logs and transaction directories\nDo you need to mount the logs and transaction data from your application to an external volume such as NFS (or any storage supported in your cluster)? Simply specify the volume size and the location to persist and the operator takes care of the rest. For example, add the following configuration into the WebSphereLibertyApplication's `.spec.storage` field :\n``` size: 2Gi mountPath: \"/logs\" ```\n\n### Service Binding\nYour runtime components can expose services by a simple toggle. We take care of the heavy lifting such as creating Kubernetes secrets with information other services can use to bind. We also keep the bindable information synchronized, so your applications can dynamically reconnect to their required services without any intervention or interruption.\n\n### Integration with Knative (OpenShift Serverless)\nDeploy your serverless runtime component using a single toggle. The operator will convert all of its generated resources into [Knative](https://knative.dev) resources, allowing the application to automatically scale to 0 when it is idle.\n\n### Application Lifecycle\nYou can deploy your Liberty application container by either pointing to a container image, or an OpenShift ImageStream. When using an ImageStream the operator will watch for any updates and will automatically re-deploy the new image.\n\n### Custom RBAC\nThis Operator is capable of using a custom Kubernetes service account from the caller, allowing it to follow RBAC restrictions. By default, it creates a service account if one is not specified, which can also be bound with specific roles.\n\n### Environment Configuration\nYou can configure a variety of artifacts with your deployment, such as labels, annotations, and environment variables from a ConfigMap, a Secret, or a value.\n\n### Routing\nExpose your application to external users via a single toggle to create a Route on OpenShift or an Ingress on other Kubernetes environments. Advanced configuration, such as TLS settings, are also easily enabled. Renewed certificates are automatically made available to the Liberty server.\n\n### High Availability via Horizontal Pod Autoscaling\nRun multiple instances of your application for high availability. Either specify a static number of replicas or easily configure horizontal auto-scaling to create (and delete) instances based on resource consumption.\n\n### Persistence and advanced storage\nEnable persistence for your application by specifying simple requirements: just tell us the size of the storage and where you would like it to be mounted and we will create and manage that storage for you. This toggles a StatefulSet resource instead of a Deployment resource, so your container can recover transactions and state upon a pod restart. We offer an advanced mode where you can specify a built-in PersistentVolumeClaim, allowing you to configure many details of the persistent volume, such as its storage class and access mode. You can also easily configure and use single storage for serviceability-related day-2 operations, such as gathering server traces and dumps.\n\n### Integration with OpenShift's Topology UI\nWe set the corresponding labels to support OpenShift's Developer Topology UI, which allows you to visualize your entire set of deployments and services and how they are connected.\n\n## Supported platforms\n\nKubernetes platform installed on one of the following platforms:\n- Linux&reg; x86_64 (amd64)\n- Linux&reg; on IBM&reg; Z (s390x)\n- Linux&reg; on Power&reg; (ppc64le)\n\n## Prerequisites\n\nReview the [system requirements](https://ibm.biz/wlo-sys-req) for details. \n\n## Resources Required\n\nReview the [resource requirements](https://ibm.biz/wlo-reqs) before you plan to install IBM WebSphere Liberty Operator.\n\n## Storage\n\nPlease see the [storage requirements](https://ibm.biz/wlo-reqs) for details.\n\n## SecurityContextConstraints Requirements\n\nThe IBM WebSphere Liberty Operator runs in the `restricted` security context constraints on OpenShift.\n\n## Documentation\n\nSee [IBM WebSphere Liberty documentation](https://ibm.biz/wlo-docs).\n\n## Installing\n\n[Install](https://ibm.biz/wlo-install) the IBM WebSphere Liberty Operator to the desired namespace and deploy the [sample Liberty application](https://ibm.biz/wlo-deploy-sample-app) or [your custom Liberty applications](https://ibm.biz/wlo-deploy-custom-app).\n\n## Configuration\n\nThe WebSphere Liberty Operator provides various customization options to configure the application deployments. Please see the [custom resources](https://ibm.biz/wlo-crs) and [configuration examples](https://ibm.biz/wlo-config-examples) for details.\n\n## Limitations \n\nSee the [limitations](https://ibm.biz/wlo-limits) for details.\n",
+                "displayName": "IBM WebSphere Liberty",
+                "installModes": [
+                    {
+                        "type": "OwnNamespace",
+                        "supported": true
+                    },
+                    {
+                        "type": "SingleNamespace",
+                        "supported": true
+                    },
+                    {
+                        "type": "MultiNamespace",
+                        "supported": false
+                    },
+                    {
+                        "type": "AllNamespaces",
+                        "supported": true
+                    }
+                ],
+                "keywords": [
+                    "WebSphere Liberty",
+                    "MicroProfile",
+                    "Jakarta EE",
+                    "Java",
+                    "Application Server",
+                    "Application Runtime",
+                    "Runtime",
+                    "Spring",
+                    "Application",
+                    "Open Source",
+                    "WLO"
+                ],
+                "labels": {
+                    "operatorframework.io/arch.amd64": "supported",
+                    "operatorframework.io/arch.ppc64le": "supported",
+                    "operatorframework.io/arch.s390x": "supported",
+                    "operatorframework.io/os.linux": "supported"
+                },
+                "links": [
+                    {
+                        "name": "Documentation",
+                        "url": "https://ibm.biz/wlo-docs"
+                    }
+                ],
+                "maintainers": [
+                    {
+                        "name": "IBM Support",
+                        "email": "support@ibm.com"
+                    }
+                ],
+                "maturity": "stable",
+                "provider": {
+                    "name": "IBM"
+                }
+            }
+        }
+    ],
+    "relatedImages": [
+        {
+            "name": "liberty-sample-app",
+            "image": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:6bf52d536e94d6aa6eaa3ca9639e0fe9f5e71dbd891c50362939dd6aca519d02"
+        },
+        {
+            "name": "websphere-liberty-operator",
+            "image": "icr.io/cpopen/websphere-liberty-operator@sha256:9b87643c1c1246f5b244c470ef4c4578af664ec5cd432d14be2372fc8289b00d"
+        }
+    ]
+}

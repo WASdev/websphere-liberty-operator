@@ -1,0 +1,49 @@
+{
+    "schema": "olm.bundle",
+    "name": "ibm-websphere-liberty.v1.0.0",
+    "package": "ibm-websphere-liberty",
+    "image": "icr.io/cpopen/websphere-liberty-operator-bundle@sha256:fdf0ee7e5fb36cdce425d09cee7dfbb974059d1917b64917eabef14945d693fe",
+    "properties": [
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyApplication",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyDump",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.gvk",
+            "value": {
+                "group": "liberty.websphere.ibm.com",
+                "kind": "WebSphereLibertyTrace",
+                "version": "v1"
+            }
+        },
+        {
+            "type": "olm.package",
+            "value": {
+                "packageName": "ibm-websphere-liberty",
+                "version": "1.0.0"
+            }
+        }
+    ],
+    "relatedImages": [
+        {
+            "name": "",
+            "image": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3077bf2cb4c2bb4c34a37bf3557e85d508669e0f915c0a95a13f7314a517da35"
+        },
+        {
+            "name": "",
+            "image": "icr.io/cpopen/websphere-liberty-operator@sha256:0c0bc04014204899b7302d1af78d9b683f3ce27eb0b2a0431548b2a0e678ad23"
+        }
+    ]
+}
