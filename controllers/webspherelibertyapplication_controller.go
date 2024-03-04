@@ -450,6 +450,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			peer.NamespaceSelector = &metav1.LabelSelector{
 				MatchLabels: map[string]string{},
 			}
+			peer.PodSelector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{},
+			}
 			rule.To = append(rule.To, peer)
 			reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
 		}
@@ -982,32 +985,12 @@ func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endp
 		}
 		dnsRule.To = append(dnsRule.To, peer)
 		reqLogger.Info("Found endpoints for " + endpointsName + " service in the " + endpointsNamespace + " namespace")
-	} else if endpointsNamespace == "kube-system" { // For non-OCP, assume CoreDNS as the default
-		peer := networkingv1.NetworkPolicyPeer{}
-		peer.NamespaceSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				"kubernetes.io/metadata.name": endpointsNamespace,
-			},
-		}
-		dnsRule.To = append(dnsRule.To, peer)
-
-		portUDP := networkingv1.NetworkPolicyPort{}
-		udp := corev1.ProtocolUDP
-		portUDP.Protocol = &udp
-		var portNumberUDP intstr.IntOrString = intstr.FromInt((int)(53))
-		portUDP.Port = &portNumberUDP
-		dnsRule.Ports = append(dnsRule.Ports, portUDP)
-
-		portTCP := networkingv1.NetworkPolicyPort{}
-		tcp := corev1.ProtocolTCP
-		portTCP.Protocol = &tcp
-		var portNumberTCP intstr.IntOrString = intstr.FromInt((int)(53))
-		portTCP.Port = &portNumberTCP
-		dnsRule.Ports = append(dnsRule.Ports, portTCP)
-		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Defaulting to using " + endpointsName + " on port 53 for DNS access.")
 	} else {
 		peer := networkingv1.NetworkPolicyPeer{}
 		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{},
+		}
+		peer.PodSelector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{},
 		}
 		dnsRule.To = append(dnsRule.To, peer)
