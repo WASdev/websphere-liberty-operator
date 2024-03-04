@@ -950,15 +950,6 @@ func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace s
 	}
 }
 
-func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace string) (*corev1.Endpoints, error) {
-	endpoints := &corev1.Endpoints{}
-	if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints); err != nil {
-		return nil, err
-	} else {
-		return endpoints, nil
-	}
-}
-
 func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endpointsName string, endpointsNamespace string) (bool, networkingv1.NetworkPolicyEgressRule) {
 	dnsRule := networkingv1.NetworkPolicyEgressRule{}
 	if dnsEndpoints, err := r.getEndpoints(endpointsName, endpointsNamespace); err == nil {
