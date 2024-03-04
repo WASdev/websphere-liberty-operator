@@ -939,3 +939,79 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 		}
 	}
 }
+
+// If a custome hostname was previously set, but is now not set, any previous
+// route needs to be deleted, as the host in a route cannot be unset
+// and the default generated hostname is difficult to manually recreate
+func shouldDeleteRoute(ba common.BaseComponent) bool {
+	rh := ba.GetStatus().GetReferences()[common.StatusReferenceRouteHost]
+	if rh != "" {
+		// The host was previously set.
+		// If the host is now empty, delete the old route
+		rt := ba.GetRoute()
+		if rt == nil || (rt.GetHost() == "" && common.Config[common.OpConfigDefaultHostname] == "") {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace string) (*corev1.Endpoints, error) {
+	endpoints := &corev1.Endpoints{}
+	if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints); err != nil {
+		return nil, err
+	} else {
+		return endpoints, nil
+	}
+}
+
+func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endpointsName string, endpointsNamespace string) networkingv1.NetworkPolicyEgressRule {
+	dnsRule := networkingv1.NetworkPolicyEgressRule{}
+	if dnsEndpoints, err := r.getEndpoints(endpointsName, endpointsNamespace); err == nil {
+		if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
+			dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+		}
+		if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
+			dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+		}
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kubernetes.io/metadata.name": endpointsNamespace,
+			},
+		}
+		dnsRule.To = append(dnsRule.To, peer)
+		reqLogger.Info("Found endpoints for " + endpointsName + " service in the " + endpointsNamespace + " namespace")
+	} else if endpointsNamespace == "kube-system" { // For non-OCP, assume CoreDNS as the default
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kubernetes.io/metadata.name": endpointsNamespace,
+			},
+		}
+		dnsRule.To = append(dnsRule.To, peer)
+
+		portUDP := networkingv1.NetworkPolicyPort{}
+		udp := corev1.ProtocolUDP
+		portUDP.Protocol = &udp
+		var portNumberUDP intstr.IntOrString = intstr.FromInt((int)(53))
+		portUDP.Port = &portNumberUDP
+		dnsRule.Ports = append(dnsRule.Ports, portUDP)
+
+		portTCP := networkingv1.NetworkPolicyPort{}
+		tcp := corev1.ProtocolTCP
+		portTCP.Protocol = &tcp
+		var portNumberTCP intstr.IntOrString = intstr.FromInt((int)(53))
+		portTCP.Port = &portNumberTCP
+		dnsRule.Ports = append(dnsRule.Ports, portTCP)
+		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Defaulting to using " + endpointsName + " on port 53 for DNS access.")
+	} else {
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{},
+		}
+		dnsRule.To = append(dnsRule.To, peer)
+		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Using more permissive rule.")
+	}
+	return dnsRule
+}
