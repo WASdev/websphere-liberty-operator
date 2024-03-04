@@ -978,7 +978,7 @@ func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endp
 		dnsRule.Ports = append(dnsRule.Ports, portUDP)
 
 		portTCP := networkingv1.NetworkPolicyPort{}
-		tcp := corev1.ProtocolUDP
+		tcp := corev1.ProtocolTCP
 		portTCP.Protocol = &tcp
 		var portNumberTCP intstr.IntOrString = intstr.FromInt((int)(53))
 		portTCP.Port = &portNumberTCP
