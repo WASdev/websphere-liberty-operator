@@ -410,34 +410,15 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			},
 		}
 		apiServerNetworkPolicy.Spec.Egress = make([]networkingv1.NetworkPolicyEgressRule, 0)
+
+		var dnsRule networkingv1.NetworkPolicyEgressRule
 		// Add OpenShift DNS NetworkPolicy (if applicable)
 		if r.IsOpenShift() {
-			dnsRule := networkingv1.NetworkPolicyEgressRule{}
-			if dnsEndpoints, err := r.getEndpoints("dns-default", "openshift-dns"); err == nil {
-				if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
-					dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
-				}
-				if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
-					dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
-				}
-				peer := networkingv1.NetworkPolicyPeer{}
-				peer.NamespaceSelector = &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"kubernetes.io/metadata.name": "openshift-dns",
-					},
-				}
-				dnsRule.To = append(dnsRule.To, peer)
-				reqLogger.Info("Found endpoints for dns-default service in the openshift-dns namespace")
-			} else {
-				peer := networkingv1.NetworkPolicyPeer{}
-				peer.NamespaceSelector = &metav1.LabelSelector{
-					MatchLabels: map[string]string{},
-				}
-				dnsRule.To = append(dnsRule.To, peer)
-				reqLogger.Info("Failed to retrieve endpoints for dns-default service in the openshift-dns namespace. Using more permissive rule.")
-			}
-			apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, dnsRule)
+			dnsRule = r.getDNSEgressRule(reqLogger, "dns-default", "openshift-dns")
+		} else { // Otherwise, support CoreDNS NetworkPolicy by default
+			dnsRule = r.getDNSEgressRule(reqLogger, "kube-dns", "kube-system")
 		}
+		apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, dnsRule)
 
 		rule := networkingv1.NetworkPolicyEgressRule{}
 		if apiServerEndpoints, err := r.getEndpoints("kubernetes", "default"); err == nil {
@@ -961,4 +942,53 @@ func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace s
 	} else {
 		return endpoints, nil
 	}
+}
+
+func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endpointsName string, endpointsNamespace string) networkingv1.NetworkPolicyEgressRule {
+	dnsRule := networkingv1.NetworkPolicyEgressRule{}
+	if dnsEndpoints, err := r.getEndpoints(endpointsName, endpointsNamespace); err == nil {
+		if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
+			dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+		}
+		if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns-tcp"); endpointPort != nil {
+			dnsRule.Ports = append(dnsRule.Ports, lutils.CreateNetworkPolicyPortFromEndpointPort(endpointPort))
+		}
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kubernetes.io/metadata.name": endpointsNamespace,
+			},
+		}
+		dnsRule.To = append(dnsRule.To, peer)
+		reqLogger.Info("Found endpoints for " + endpointsName + " service in the " + endpointsNamespace + " namespace")
+	} else if endpointsNamespace == "kube-system" { // For non-OCP, assume CoreDNS as the default
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"kubernetes.io/metadata.name": endpointsNamespace,
+			},
+		}
+		portUDP := networkingv1.NetworkPolicyPort{}
+		udp := corev1.ProtocolUDP
+		portUDP.Protocol = &udp
+		var portNumberUDP intstr.IntOrString = intstr.FromInt((int)(53))
+		portUDP.Port = &portNumberUDP
+		dnsRule.Ports = append(dnsRule.Ports, portUDP)
+
+		portTCP := networkingv1.NetworkPolicyPort{}
+		tcp := corev1.ProtocolUDP
+		portTCP.Protocol = &tcp
+		var portNumberTCP intstr.IntOrString = intstr.FromInt((int)(53))
+		portTCP.Port = &portNumberTCP
+		dnsRule.Ports = append(dnsRule.Ports, portTCP)
+		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Defaulting to using " + endpointsName + " on port 53 for DNS access.")
+	} else {
+		peer := networkingv1.NetworkPolicyPeer{}
+		peer.NamespaceSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{},
+		}
+		dnsRule.To = append(dnsRule.To, peer)
+		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Using more permissive rule.")
+	}
+	return dnsRule
 }
