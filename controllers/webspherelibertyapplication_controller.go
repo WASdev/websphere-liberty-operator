@@ -404,7 +404,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	// Kube API Server NetworkPolicy (based upon impl. by Martin Smithson)
 	apiServerNetworkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{
-		Name:      instance.Name + "-egress-apiserver-access",
+		Name:      instance.Name + "-egress-dns-and-apiserver-access",
 		Namespace: instance.Namespace,
 	}}
 	err = r.CreateOrUpdate(apiServerNetworkPolicy, instance, func() error {
@@ -416,16 +416,20 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		apiServerNetworkPolicy.Spec.Egress = make([]networkingv1.NetworkPolicyEgressRule, 0)
 
 		var dnsRule networkingv1.NetworkPolicyEgressRule
-		// Add OpenShift DNS NetworkPolicy (if applicable)
+		var usingPermissiveRule bool
+		// If allowed, add an Egress rule to access the OpenShift DNS or K8s CoreDNS. Otherwise, use a permissive cluster-wide Egress rule.
 		if r.IsOpenShift() {
-			dnsRule = r.getDNSEgressRule(reqLogger, "dns-default", "openshift-dns")
-		} else { // Otherwise, support CoreDNS NetworkPolicy by default
-			dnsRule = r.getDNSEgressRule(reqLogger, "kube-dns", "kube-system")
+			usingPermissiveRule, dnsRule = r.getDNSEgressRule(reqLogger, "dns-default", "openshift-dns")
+		} else {
+			usingPermissiveRule, dnsRule = r.getDNSEgressRule(reqLogger, "kube-dns", "kube-system")
 		}
 		apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, dnsRule)
 
-		rule := networkingv1.NetworkPolicyEgressRule{}
+		// If allowed, add an Egress rule to access the API server.
+		// Otherwise, if the OpenShift DNS or K8s CoreDNS Egress rule does not provide permissive cluster-wide access
+		// and the K8s API server could not be found, use a permissive cluster-wide Egress rule.
 		if apiServerEndpoints, err := r.getEndpoints("kubernetes", "default"); err == nil {
+			rule := networkingv1.NetworkPolicyEgressRule{}
 			// Define the port
 			port := networkingv1.NetworkPolicyPort{}
 			port.Protocol = &apiServerEndpoints.Subsets[0].Ports[0].Protocol
@@ -444,19 +448,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 					rule.To = append(rule.To, peer)
 				}
 			}
+			apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
 			reqLogger.Info("Found endpoints for kubernetes service in the default namespace")
-		} else {
-			peer := networkingv1.NetworkPolicyPeer{}
-			peer.NamespaceSelector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{},
-			}
-			peer.PodSelector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{},
-			}
-			rule.To = append(rule.To, peer)
-			reqLogger.Info("Failed to retrieve endpoints for kubernetes service in the default namespace. Using more permissive rule.")
+		} else if !usingPermissiveRule {
+			rule := networkingv1.NetworkPolicyEgressRule{}
+			apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
+			reqLogger.Info("Found endpoints for kubernetes service in the default namespace")
 		}
-		apiServerNetworkPolicy.Spec.Egress = append(apiServerNetworkPolicy.Spec.Egress, rule)
 		apiServerNetworkPolicy.Labels = ba.GetLabels()
 		apiServerNetworkPolicy.Annotations = oputils.MergeMaps(apiServerNetworkPolicy.Annotations, ba.GetAnnotations())
 		apiServerNetworkPolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeEgress}
@@ -968,7 +966,7 @@ func (r *ReconcileWebSphereLiberty) getEndpoints(serviceName string, namespace s
 	}
 }
 
-func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endpointsName string, endpointsNamespace string) networkingv1.NetworkPolicyEgressRule {
+func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endpointsName string, endpointsNamespace string) (bool, networkingv1.NetworkPolicyEgressRule) {
 	dnsRule := networkingv1.NetworkPolicyEgressRule{}
 	if dnsEndpoints, err := r.getEndpoints(endpointsName, endpointsNamespace); err == nil {
 		if endpointPort := lutils.GetEndpointPortByName(&dnsEndpoints.Subsets[0].Ports, "dns"); endpointPort != nil {
@@ -985,16 +983,11 @@ func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endp
 		}
 		dnsRule.To = append(dnsRule.To, peer)
 		reqLogger.Info("Found endpoints for " + endpointsName + " service in the " + endpointsNamespace + " namespace")
-	} else {
-		peer := networkingv1.NetworkPolicyPeer{}
-		peer.NamespaceSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{},
-		}
-		peer.PodSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{},
-		}
-		dnsRule.To = append(dnsRule.To, peer)
-		reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Using more permissive rule.")
+		return false, dnsRule
 	}
-	return dnsRule
+	// use permissive rule
+	// egress:
+	//   - {}
+	reqLogger.Info("Failed to retrieve endpoints for " + endpointsName + " service in the " + endpointsNamespace + "  namespace. Using more permissive rule.")
+	return true, dnsRule
 }
