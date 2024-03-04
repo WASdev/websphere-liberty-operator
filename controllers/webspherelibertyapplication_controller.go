@@ -968,6 +968,8 @@ func (r *ReconcileWebSphereLiberty) getDNSEgressRule(reqLogger logr.Logger, endp
 				"kubernetes.io/metadata.name": endpointsNamespace,
 			},
 		}
+		dnsRule.To = append(dnsRule.To, peer)
+
 		portUDP := networkingv1.NetworkPolicyPort{}
 		udp := corev1.ProtocolUDP
 		portUDP.Protocol = &udp
