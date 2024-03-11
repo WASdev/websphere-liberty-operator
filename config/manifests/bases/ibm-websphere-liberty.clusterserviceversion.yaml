@@ -570,6 +570,10 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
+      - displayName: Status Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
       - description: Location of the generated dump file
         displayName: Dump File Path
         path: dumpFile
