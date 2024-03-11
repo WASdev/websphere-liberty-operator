@@ -96,7 +96,6 @@ func SetOperationCondtion(c []OperationStatusCondition, oc OperationStatusCondit
 		return c
 	}
 	oc.LastUpdateTime = metav1.Time{Time: time.Now()}
-	// c = append(c, oc)
-	c = append([]OperationStatusCondition{oc}, c...)
+	c = append(c, oc)
 	return c
 }
