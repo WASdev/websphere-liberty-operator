@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -139,7 +140,7 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 	_, err = utils.ExecuteCommandInContainer(r.RestConfig, pod.Name, pod.Namespace, "app", []string{"/bin/sh", "-c", dumpCmd})
 	if err != nil {
 		//handle error
-		reqLogger.Error(err, "Execute dump cmd failed ", "cmd", dumpCmd)
+		reqLogger.Error(err, "Execute dump cmd failed.. ", "cmd", dumpCmd)
 		r.Recorder.Event(instance, "Warning", "ProcessingError", err.Error())
 		c = webspherelibertyv1.OperationStatusCondition{
 			Type:    webspherelibertyv1.OperationStatusConditionTypeCompleted,
@@ -156,6 +157,7 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 			Message: err.Error(),
 		}
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
+		reqLogger.Info("conditions:", fmt.Sprint(instance.Status.Conditions))
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
