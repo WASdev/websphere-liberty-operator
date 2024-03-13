@@ -57,6 +57,7 @@ type LicenseSimple struct {
 // Defines the observed state of WebSphereLibertyTrace operation
 type WebSphereLibertyTraceStatus struct {
 	// +listType=atomic
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Status Conditions",xDescriptors="urn:alm:descriptor:io.kubernetes.conditions"
 	Conditions       []OperationStatusCondition `json:"conditions,omitempty"`
 	OperatedResource OperatedResource           `json:"operatedResource,omitempty"`
 	Versions         TraceStatusVersions        `json:"versions,omitempty"`
