@@ -81,21 +81,6 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 	//do not reconcile if the dump already started
 	oc := webspherelibertyv1.GetOperationCondtion(instance.Status.Conditions, webspherelibertyv1.OperationStatusConditionTypeStarted)
 	if oc != nil && oc.Status == corev1.ConditionTrue {
-		//check if the Dump failed
-		reqLogger.Info("-- Dump already started")
-		oc = webspherelibertyv1.GetOperationCondtion(instance.Status.Conditions, webspherelibertyv1.OperationStatusConditionTypeCompleted)
-		if oc != nil && oc.Status == corev1.ConditionFalse {
-			reqLogger.Info("-- Dump failed")
-			f := webspherelibertyv1.OperationStatusCondition{
-				Type:    webspherelibertyv1.OperationStatusConditionTypeFailed,
-				Status:  corev1.ConditionTrue,
-				Reason:  oc.Reason,
-				Message: oc.Message,
-			}
-			instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
-			instance.Status.Versions.Reconciled = utils.OperandVersion
-			r.Client.Status().Update(context.TODO(), instance)
-		}
 		return reconcile.Result{}, err
 	}
 
@@ -117,10 +102,8 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
 		// Additionally, set the condition to Failed to update the UI
 		f := webspherelibertyv1.OperationStatusCondition{
-			Type:    webspherelibertyv1.OperationStatusConditionTypeFailed,
-			Status:  corev1.ConditionTrue,
-			Reason:  "Error",
-			Message: "Failed to find a pod or pod is not in running state",
+			Type:   webspherelibertyv1.OperationStatusConditionTypeFailed,
+			Status: corev1.ConditionTrue,
 		}
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 		instance.Status.Versions.Reconciled = utils.OperandVersion
@@ -158,6 +141,12 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 			Message: err.Error(),
 		}
 		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		// Additionally, set the condition to Failed to update the UI
+		f := webspherelibertyv1.OperationStatusCondition{
+			Type:   webspherelibertyv1.OperationStatusConditionTypeFailed,
+			Status: corev1.ConditionTrue,
+		}
+		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
