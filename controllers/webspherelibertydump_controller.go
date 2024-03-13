@@ -82,8 +82,10 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 	oc := webspherelibertyv1.GetOperationCondtion(instance.Status.Conditions, webspherelibertyv1.OperationStatusConditionTypeStarted)
 	if oc != nil && oc.Status == corev1.ConditionTrue {
 		//check if the Dump failed
+		reqLogger.Info("-- Dump already started")
 		oc = webspherelibertyv1.GetOperationCondtion(instance.Status.Conditions, webspherelibertyv1.OperationStatusConditionTypeCompleted)
 		if oc != nil && oc.Status == corev1.ConditionFalse {
+			reqLogger.Info("-- Dump failed")
 			f := webspherelibertyv1.OperationStatusCondition{
 				Type:    webspherelibertyv1.OperationStatusConditionTypeFailed,
 				Status:  corev1.ConditionTrue,
