@@ -350,13 +350,9 @@ test-e2e:
                      --test-tag "${BUILD_NUMBER}" --target "${RELEASE_TARGET}"
 
 test-pipeline-e2e:
-	./operators/scripts/test/e2e-ocp.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" \
-                     --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
-                     --registry-name "${PIPELINE_REGISTRY}" --registry-image "${PIPELINE_OPERATOR_IMAGE}" \
-                     --registry-user "${PIPELINE_USERNAME}" --registry-password "${PIPELINE_PASSWORD}" \
-                     --test-tag "${BUILD_NUMBER}" --release "${RELEASE_TARGET}" --channel "${DEFAULT_CHANNEL}" \
-					 --install-mode "${INSTALL_MODE}" --architecture "${ARCHITECTURE}" \
-					 --digest "${DIGEST}" --version "${VERSION}"
+	./operators/scripts/test/e2e-ocp.sh --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
+                                            --test-tag "${BUILD_NUMBER}" --install-mode "${INSTALL_MODE}" --channel "${DEFAULT_CHANNEL}" \
+                                            --architecture "${ARCHITECTURE}" --digest "${DIGEST}" --version "${VERSION}"
 
 bundle-build-podman:
 	podman build -f bundle.Dockerfile -t "${BUNDLE_IMG}"
