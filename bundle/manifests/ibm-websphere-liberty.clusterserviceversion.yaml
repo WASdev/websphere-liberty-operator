@@ -62,7 +62,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-01-30T02:09:24Z"
+    createdAt: "2024-03-08T19:52:11Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -395,6 +395,8 @@ spec:
           container.
         displayName: Volumes
         path: volumes
+      - displayName: Generation
+        path: generation
       - description: The directory inside the container where this persisted storage
           will be bound to.
         displayName: Storage Mount Path
