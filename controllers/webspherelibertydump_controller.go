@@ -94,12 +94,18 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 		reqLogger.Error(err, message)
 		r.Recorder.Event(instance, "Warning", "ProcessingError", message)
 		c := webspherelibertyv1.OperationStatusCondition{
-			Type:    webspherelibertyv1.OperationStatusConditionTypeStarted,
-			Status:  corev1.ConditionFalse,
+			Type:   webspherelibertyv1.OperationStatusConditionTypeStarted,
+			Status: corev1.ConditionFalse,
+		}
+		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		// Additionally, set the condition to Failed to update the UI
+		f := webspherelibertyv1.OperationStatusCondition{
+			Type:    webspherelibertyv1.OperationStatusConditionTypeFailed,
+			Status:  corev1.ConditionTrue,
 			Reason:  "Error",
 			Message: "Failed to find a pod or pod is not in running state",
 		}
-		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
@@ -120,22 +126,32 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 		Type:   webspherelibertyv1.OperationStatusConditionTypeStarted,
 		Status: corev1.ConditionTrue,
 	}
-
 	instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+	f := webspherelibertyv1.OperationStatusCondition{
+		Type:   webspherelibertyv1.OperationStatusConditionTypeFailed,
+		Status: corev1.ConditionFalse,
+	}
+	instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 	r.Client.Status().Update(context.TODO(), instance)
 
 	_, err = utils.ExecuteCommandInContainer(r.RestConfig, pod.Name, pod.Namespace, "app", []string{"/bin/sh", "-c", dumpCmd})
 	if err != nil {
 		//handle error
-		reqLogger.Error(err, "Execute dump cmd failed ", "cmd", dumpCmd)
+		reqLogger.Error(err, "Execute dump cmd failed.. ", "cmd", dumpCmd)
 		r.Recorder.Event(instance, "Warning", "ProcessingError", err.Error())
 		c = webspherelibertyv1.OperationStatusCondition{
-			Type:    webspherelibertyv1.OperationStatusConditionTypeCompleted,
-			Status:  corev1.ConditionFalse,
+			Type:   webspherelibertyv1.OperationStatusConditionTypeCompleted,
+			Status: corev1.ConditionFalse,
+		}
+		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		// Additionally, set the condition to Failed to update the UI
+		f = webspherelibertyv1.OperationStatusCondition{
+			Type:    webspherelibertyv1.OperationStatusConditionTypeFailed,
+			Status:  corev1.ConditionTrue,
 			Reason:  "Error",
 			Message: err.Error(),
 		}
-		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+		instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.Client.Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
@@ -146,8 +162,12 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 		Type:   webspherelibertyv1.OperationStatusConditionTypeCompleted,
 		Status: corev1.ConditionTrue,
 	}
-
 	instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, c)
+	f = webspherelibertyv1.OperationStatusCondition{
+		Type:   webspherelibertyv1.OperationStatusConditionTypeFailed,
+		Status: corev1.ConditionFalse,
+	}
+	instance.Status.Conditions = webspherelibertyv1.SetOperationCondtion(instance.Status.Conditions, f)
 	instance.Status.DumpFile = dumpFileName
 	instance.Status.Versions.Reconciled = utils.OperandVersion
 	r.Client.Status().Update(context.TODO(), instance)
