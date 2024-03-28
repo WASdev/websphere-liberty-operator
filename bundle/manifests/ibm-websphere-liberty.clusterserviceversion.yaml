@@ -62,7 +62,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-01-30T02:09:24Z"
+    createdAt: "2024-02-23T20:12:48Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -870,6 +870,7 @@ spec:
                 app.kubernetes.io/managed-by: olm
                 app.kubernetes.io/name: websphere-liberty-operator
                 control-plane: controller-manager
+                webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access: "true"
             spec:
               affinity:
                 nodeAffinity:
@@ -1034,6 +1035,13 @@ spec:
           - list
           - update
           - watch
+        - apiGroups:
+          - ""
+          resources:
+          - endpoints
+          verbs:
+          - get
+          - list
         - apiGroups:
           - ""
           resources:
