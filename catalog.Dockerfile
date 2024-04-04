@@ -37,11 +37,8 @@ RUN microdnf update && microdnf clean all
 COPY --from=builder /bin/opm /bin/opm
 COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
 
-ARG ARCH=linux-amd64
-RUN mkdir /catalog
 # Note: the COPY directive can also point to a directory structure and it will recurse thru the directory structure and use any yaml/json files it locates
-COPY --chown=1001:0 catalog /catalog
-RUN cp -r "catalog/linux-$ARCH" /configs
+COPY catalog /configs
 
 # Validate catalog file
 RUN ["/bin/opm", "validate", "/configs"]

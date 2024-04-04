@@ -319,7 +319,7 @@ build-bundle-pipeline:
 	./operators/scripts/build/build-bundle.sh --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-catalog-pipeline:
-	./operators/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}"
+	./operators/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}" --arch "{ARCH}"
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
