@@ -71,9 +71,8 @@ compliance-checks:
 
 containerize:
   dind: true
-  dind-image: icr.io/continuous-delivery/base-images/multiarch-dind:v1.3.0
   abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.24
   script: |
     #!/usr/bin/env bash
     echo $STAGE
