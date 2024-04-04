@@ -310,7 +310,7 @@ build-manifest:
 	./operators/scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-operator-pipeline:
-	./operators/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION} --arch "${ARCH}
+	./operators/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}" --arch "${ARCH}"
 
 build-manifest-pipeline:
 	./operators/scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"
