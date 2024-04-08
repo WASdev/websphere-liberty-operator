@@ -336,8 +336,6 @@ spec:
           container.
         displayName: Volumes
         path: volumes
-      - displayName: Generation
-        path: generation
       - description: The directory inside the container where this persisted storage
           will be bound to.
         displayName: Storage Mount Path
