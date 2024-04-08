@@ -166,9 +166,6 @@ type WebSphereLibertyApplicationSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:order=26,type=spec,displayName="Topology Spread Constraints"
 	TopologySpreadConstraints *WebSphereLibertyApplicationTopologySpreadConstraints `json:"topologySpreadConstraints,omitempty"`
-
-	// +operator-sdk:csv:customresourcedefinitions:order=27,type=spec,displayName="Generation"
-	Generation *int32 `json:"generation,omitempty"`
 }
 
 // License information is required.
@@ -515,7 +512,8 @@ type WebSphereLibertyApplicationStatus struct {
 
 	SemeruCompiler *SemeruCompilerStatus `json:"semeruCompiler,omitempty"`
 
-	ObservedGeneration *int32 `json:"observedGeneration,omitempty"`
+	// The last generation of this WebSphereLibertyApplication instance observed by the operator.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // Defines possible status conditions.
