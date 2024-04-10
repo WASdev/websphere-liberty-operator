@@ -62,7 +62,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-01-30T02:09:24Z"
+    createdAt: "2024-03-13T13:19:52Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -705,6 +705,10 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
+      - displayName: Status Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
       - description: Location of the generated dump file
         displayName: Dump File Path
         path: dumpFile
@@ -729,6 +733,11 @@ spec:
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
+      statusDescriptors:
+      - displayName: Status Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
       version: v1
   displayName: IBM WebSphere Liberty
   description: |
