@@ -612,7 +612,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	} else if ok {
 		if instance.Spec.Expose != nil && *instance.Spec.Expose {
-			if shouldDeleteRoute(ba) {
+			if oputils.ShouldDeleteRoute(ba) {
 				reqLogger.Info("Custom hostname has been removed from route, deleting and recreating the route")
 				route := &routev1.Route{ObjectMeta: defaultMeta}
 				err = r.DeleteResource(route)
@@ -868,20 +868,4 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 			}
 		}
 	}
-}
-
-// If a custome hostname was previously set, but is now not set, any previous
-// route needs to be deleted, as the host in a route cannot be unset
-// and the default generated hostname is difficult to manually recreate
-func shouldDeleteRoute(ba common.BaseComponent) bool {
-	rh := ba.GetStatus().GetReferences()[common.StatusReferenceRouteHost]
-	if rh != "" {
-		// The host was previously set.
-		// If the host is now empty, delete the old route
-		rt := ba.GetRoute()
-		if rt == nil || (rt.GetHost() == "" && common.Config[common.OpConfigDefaultHostname] == "") {
-			return true
-		}
-	}
-	return false
 }
