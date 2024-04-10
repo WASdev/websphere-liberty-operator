@@ -310,7 +310,7 @@ build-manifest:
 	./operators/scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-operator-pipeline:
-	./operators/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}" --arch "${ARCH}"
+	./operators/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}" --arch "${ARCH}" --enable-buildx "${ENABLE_BUILDX}"
 
 build-manifest-pipeline:
 	./operators/scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"
@@ -319,7 +319,7 @@ build-bundle-pipeline:
 	./operators/scripts/build/build-bundle.sh --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-catalog-pipeline:
-	./operators/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}" --arch "{ARCH}"
+	./operators/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}" --arch "{ARCH}" --enable-buildx "${ENABLE_BUILDX}"
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
