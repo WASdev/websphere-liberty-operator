@@ -344,6 +344,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 			}
 
+			instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 			instance.Status.Versions.Reconciled = lutils.OperandVersion
 			reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
 			return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)

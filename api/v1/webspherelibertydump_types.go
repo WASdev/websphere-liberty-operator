@@ -57,6 +57,8 @@ type WebSphereLibertyDumpStatus struct {
 	// Location of the generated dump file
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Dump File Path",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	DumpFile string `json:"dumpFile,omitempty"`
+	// The last generation of this WebSphereLibertyDump instance observed by the operator.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 type DumpStatusVersions struct {
