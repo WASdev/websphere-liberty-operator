@@ -328,7 +328,7 @@ catalog-build: opm ## Build a catalog image.
 	$(OPM) index add $(SKIP_TLS_VERIFY) --container-tool $(CONTAINER_COMMAND)  --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT) --permissive
 
 kind-e2e-test:
-	./operators/scripts/test/e2e-kind.sh --test-tag "${TRAVIS_BUILD_NUMBER}"
+	./operators/scripts/test/e2e-kind.sh --test-tag "${BUILD_NUMBER}"
 
 build-manifest:
 	./operators/scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
@@ -347,16 +347,12 @@ build-catalog-pipeline: opm ## Build a catalog image.
 
 test-e2e:
 	./scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
-                     --test-tag "${TRAVIS_BUILD_NUMBER}" --target "${RELEASE_TARGET}"
+                     --test-tag "${BUILD_NUMBER}" --target "${RELEASE_TARGET}"
 
 test-pipeline-e2e:
-	./operators/scripts/test/e2e-ocp.sh -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" \
-                     --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
-                     --registry-name "${PIPELINE_REGISTRY}" --registry-image "${PIPELINE_OPERATOR_IMAGE}" \
-                     --registry-user "${PIPELINE_USERNAME}" --registry-password "${PIPELINE_PASSWORD}" \
-                     --test-tag "${TRAVIS_BUILD_NUMBER}" --release "${RELEASE_TARGET}" --channel "${DEFAULT_CHANNEL}" \
-					 --install-mode "${INSTALL_MODE}" --architecture "${ARCHITECTURE}" \
-					 --digest "${DIGEST}" --version "${VERSION}"
+	./operators/scripts/test/e2e-ocp.sh --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
+                                            --test-tag "${BUILD_NUMBER}" --install-mode "${INSTALL_MODE}" --channel "${DEFAULT_CHANNEL}" \
+                                            --architecture "${ARCHITECTURE}" --digest "${DIGEST}" --version "${VERSION}"
 
 bundle-build-podman:
 	podman build -f bundle.Dockerfile -t "${BUNDLE_IMG}"
