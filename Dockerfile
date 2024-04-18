@@ -1,7 +1,7 @@
 # Build the manager binary
 FROM registry.access.redhat.com/ubi8-minimal:latest as builder
 
-ARG GO_PLATFORM=amd64
+ARG TARGETARCH
 ARG GO_VERSION_ARG
 ENV PATH=$PATH:/usr/local/go/bin
 RUN microdnf install tar gzip
@@ -11,12 +11,18 @@ WORKDIR /workspace
 COPY go.mod go.mod
 COPY go.sum go.sum
 
-RUN if [ -z "${GO_VERSION_ARG}" ]; then \
+RUN if [ -z "${TARGETARCH}" ]; then \
+      GO_PLATFORM=amd64; \
+    else \
+      GO_PLATFORM="${TARGETARCH}"; \
+    fi; \
+    if [ -z "${GO_VERSION_ARG}" ]; then \
       GO_VERSION=$(grep '^go [0-9]\+.[0-9]\+' go.mod | cut -d ' ' -f 2); \
     else \
       GO_VERSION=${GO_VERSION_ARG}; \
     fi; \
     rm -rf /usr/local/go; \
+    echo "https://golang.org/dl/go${GO_VERSION}.linux-${GO_PLATFORM}.tar.gz"; \
     curl -L --output - "https://golang.org/dl/go${GO_VERSION}.linux-${GO_PLATFORM}.tar.gz" | tar -xz -C /usr/local/
 
 # cache deps before building and copying source so that we don't need to re-download as much
