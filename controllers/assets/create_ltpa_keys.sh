@@ -48,12 +48,14 @@ if [ $NOT_FOUND_COUNT -eq 0 ]; then
         if [[ "$GET_SECRET_EXIT_CODE" -eq 6 ]]; then
             log "Could not resolve hostname ${APISERVER}."
             log "Is a NetworkPolicy blocking the pod's egress traffic? This pod must enable egress traffic to the API server and the cluster's DNS provider."
-            log "$RETRY_MESSAGE"
+        elif [[ "$GET_SECRET_EXIT_CODE" -eq 28 ]]; then
+            log "Connection timed out trying to reach ${APISERVER}."
+            log "Is a NetworkPolicy blocking the pod's egress traffic? This pod must enable egress traffic to the API server and the cluster's DNS provider."
         fi
     else
         error "Failed to parse response from the API server."
-        log "$RETRY_MESSAGE"
     fi
+    log "$RETRY_MESSAGE"
     exit 0; 
 fi
 
