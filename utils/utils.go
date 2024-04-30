@@ -58,14 +58,13 @@ const ltpaKeysFileName = "ltpa.keys"
 const ltpaXMLFileName = "managedLTPA.xml"
 
 const (
-	excludeLicenseAnnotationsKey string = "liberty.websphere.ibm.com/exclude-licensing-annotations"
-	productChargedContainersKey  string = "productChargedContainers"
-	productIDKey                 string = "productID"
-	productMetricKey             string = "productMetric"
-	productNameKey               string = "productName"
-	cloudPakNameKey              string = "cloudpakName"
-	cloudPakRatioKey             string = "productCloudpakRatio"
-	cloudPakIdKey                string = "cloudpakId"
+	productChargedContainersKey string = "productChargedContainers"
+	productIDKey                string = "productID"
+	productMetricKey            string = "productMetric"
+	productNameKey              string = "productName"
+	cloudPakNameKey             string = "cloudpakName"
+	cloudPakRatioKey            string = "productCloudpakRatio"
+	cloudPakIdKey               string = "cloudpakId"
 )
 
 var editionProductID = map[wlv1.LicenseEdition]string{
@@ -209,18 +208,6 @@ func CustomizeLibertyAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 }
 
 func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication) {
-	exclude := la.Annotations[excludeLicenseAnnotationsKey]
-	if exclude == "true" {
-		log.Info("No license annotations will be added as annotation " + excludeLicenseAnnotationsKey + " is 'true'")
-		delete(pts.Annotations, productIDKey)
-		delete(pts.Annotations, productChargedContainersKey)
-		delete(pts.Annotations, productMetricKey)
-		delete(pts.Annotations, productNameKey)
-		delete(pts.Annotations, cloudPakNameKey)
-		delete(pts.Annotations, cloudPakRatioKey)
-		delete(pts.Annotations, cloudPakIdKey)
-		return
-	}
 	pid := ""
 	if val, ok := editionProductID[la.Spec.License.Edition]; ok {
 		pid = val
