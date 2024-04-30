@@ -512,7 +512,7 @@ type WebSphereLibertyApplicationStatus struct {
 
 	SemeruCompiler *SemeruCompilerStatus `json:"semeruCompiler,omitempty"`
 
-	// The last generation of this WebSphereLibertyApplication instance observed by the operator.
+	// The generation identifier of this WebSphereLibertyApplication instance completely reconciled by the Operator.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
