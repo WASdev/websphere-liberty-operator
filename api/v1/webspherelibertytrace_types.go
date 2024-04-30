@@ -60,6 +60,8 @@ type WebSphereLibertyTraceStatus struct {
 	Conditions       []OperationStatusCondition `json:"conditions,omitempty"`
 	OperatedResource OperatedResource           `json:"operatedResource,omitempty"`
 	Versions         TraceStatusVersions        `json:"versions,omitempty"`
+	// The generation identifier of this WebSphereLibertyTrace instance completely reconciled by the Operator.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 type TraceStatusVersions struct {

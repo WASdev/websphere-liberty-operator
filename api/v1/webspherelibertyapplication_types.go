@@ -511,6 +511,9 @@ type WebSphereLibertyApplicationStatus struct {
 	References common.StatusReferences `json:"references,omitempty"`
 
 	SemeruCompiler *SemeruCompilerStatus `json:"semeruCompiler,omitempty"`
+
+	// The generation identifier of this WebSphereLibertyApplication instance completely reconciled by the Operator.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // Defines possible status conditions.

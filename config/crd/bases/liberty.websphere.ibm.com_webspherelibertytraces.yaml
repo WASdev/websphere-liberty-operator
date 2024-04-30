@@ -122,6 +122,11 @@ spec:
                   type: object
                 type: array
                 x-kubernetes-list-type: atomic
+              observedGeneration:
+                description: The generation identifier of this WebSphereLibertyTrace
+                  instance completely reconciled by the Operator.
+                format: int64
+                type: integer
               operatedResource:
                 description: OperatedResource ...
                 properties:
