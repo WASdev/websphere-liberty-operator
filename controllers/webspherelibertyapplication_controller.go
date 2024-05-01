@@ -258,21 +258,24 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	if oputils.GetServiceAccountName(instance) == "" {
-		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
-		err = r.CreateOrUpdate(serviceAccount, instance, func() error {
-			return oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
-		})
-		if err != nil {
-			reqLogger.Error(err, "Failed to reconcile ServiceAccount")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-		}
-	} else {
-		serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
-		err = r.DeleteResource(serviceAccount)
-		if err != nil {
-			reqLogger.Error(err, "Failed to delete ServiceAccount")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	serviceAccountName := oputils.GetServiceAccountName(instance)
+	if serviceAccountName != defaultMeta.Name {
+		if serviceAccountName == "" {
+			serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
+			err = r.CreateOrUpdate(serviceAccount, instance, func() error {
+				return oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
+			})
+			if err != nil {
+				reqLogger.Error(err, "Failed to reconcile ServiceAccount")
+				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			}
+		} else {
+			serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
+			err = r.DeleteResource(serviceAccount)
+			if err != nil {
+				reqLogger.Error(err, "Failed to delete ServiceAccount")
+				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			}
 		}
 	}
 
