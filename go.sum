@@ -42,6 +42,8 @@ github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk5
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20240501200723-fc6ae9079c88 h1:v+D27NsIOia3fLxx9Z8n0WEvHJZsASrnsygOUT60z9g=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20240501200723-fc6ae9079c88/go.mod h1:QI32wLzUBxvvisPG+p1XeogxeUhk64Vc/U0lx7rxx5M=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20240510131031-d7ca862afa46 h1:3qrdycEhTI1oU3xYyG7BThe9c3FPr79k6DgpmeaZkaw=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20240510131031-d7ca862afa46/go.mod h1:SCojMAukVov6aOA8VEjpr0nLcheOrtoAVUGRvLT9qyI=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
