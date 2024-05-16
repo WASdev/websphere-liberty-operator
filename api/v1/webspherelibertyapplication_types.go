@@ -790,21 +790,6 @@ func (p *WebSphereLibertyApplicationProbes) GetStartupProbe() *common.BaseCompon
 	return p.Startup
 }
 
-// PatchLivenessProbe updates values for and returns the liveness probe
-func (p *WebSphereLibertyApplicationProbes) PatchLivenessProbe(ba common.BaseComponent, probe *common.BaseComponentProbe) *common.BaseComponentProbe {
-	return probe
-}
-
-// PatchReadinessProbe updates values for and returns the readiness probe
-func (p *WebSphereLibertyApplicationProbes) PatchReadinessProbe(ba common.BaseComponent, probe *common.BaseComponentProbe) *common.BaseComponentProbe {
-	return probe
-}
-
-// PatchStartupProbe updates values for and returns the startup probe
-func (p *WebSphereLibertyApplicationProbes) PatchStartupProbe(ba common.BaseComponent, probe *common.BaseComponentProbe) *common.BaseComponentProbe {
-	return probe
-}
-
 // GetDefaultLivenessProbe returns default values for liveness probe
 func (p *WebSphereLibertyApplicationProbes) GetDefaultLivenessProbe(ba common.BaseComponent) *common.BaseComponentProbe {
 	return common.GetDefaultMicroProfileLivenessProbe(ba)
