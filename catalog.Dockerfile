@@ -26,7 +26,7 @@ LABEL operators.operatorframework.io.index.configs.v1=/configs \
       url=$VCS_URL
 
 ## Copy Apache license and notices
-COPY LICENSE NOTICES /licenses
+COPY --chown=1001:0 LICENSE NOTICES /licenses/
 
 USER root
 
