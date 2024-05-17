@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 
+	networkingv1 "k8s.io/api/networking/v1"
+
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
@@ -34,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -700,9 +703,11 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 	return false
 }
 
-func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string, allowAPIServerAccessLabel string) {
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
+	// Enable NetworkPolicy Egress access to Kube API Server
+	job.Spec.Template.Labels = rcoutils.MergeMaps(job.Spec.Template.Labels, map[string]string{allowAPIServerAccessLabel: "true"})
 	job.Spec.Template.Spec.Containers = []corev1.Container{
 		{
 			Name:            job.Spec.Template.ObjectMeta.Name,
@@ -768,4 +773,23 @@ func GetRequiredLabels(name string, instance string) map[string]string {
 	}
 	requiredLabels["app.kubernetes.io/managed-by"] = "websphere-liberty-operator"
 	return requiredLabels
+}
+
+func GetEndpointPortByName(endpointPorts *[]corev1.EndpointPort, name string) *corev1.EndpointPort {
+	if endpointPorts != nil {
+		for _, endpointPort := range *endpointPorts {
+			if endpointPort.Name == name {
+				return &endpointPort
+			}
+		}
+	}
+	return nil
+}
+
+func CreateNetworkPolicyPortFromEndpointPort(endpointPort *corev1.EndpointPort) networkingv1.NetworkPolicyPort {
+	port := networkingv1.NetworkPolicyPort{}
+	port.Protocol = &endpointPort.Protocol
+	var portNumber intstr.IntOrString = intstr.FromInt((int)(endpointPort.Port))
+	port.Port = &portNumber
+	return port
 }

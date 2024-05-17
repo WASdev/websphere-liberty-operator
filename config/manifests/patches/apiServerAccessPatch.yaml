@@ -1,0 +1,14 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: ibm-websphere-liberty.v0.0.0
+  namespace: placeholder
+spec:
+  install:
+    spec:
+      deployments:
+        - spec:
+            template:
+              metadata:
+                labels:
+                  webspherelibertyapps.liberty.websphere.ibm.com/allow-apiserver-access: "true"
