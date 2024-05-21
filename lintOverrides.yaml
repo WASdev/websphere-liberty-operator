@@ -9,3 +9,5 @@ overrides:
       - bundle/manifests/liberty.websphere.ibm.com_webspherelibertytraces.yaml
   - reason: "This is only needed for products storing their container images in IBM Entitled Registry, which the WebSphere Liberty Operator does not"
     rule: ServiceAccountHasPullSecret
+  - reason: "Running pre-production so catalog image not in registry yet"
+    rule: CatalogImageMissing
