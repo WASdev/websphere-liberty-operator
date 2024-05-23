@@ -61,7 +61,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-05-15T18:51:13Z"
+    createdAt: "2024-05-16T12:09:32Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.2'
     operators.openshift.io/infrastructure-features: '["disconnected"]'

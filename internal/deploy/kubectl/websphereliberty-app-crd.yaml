@@ -3193,8 +3193,6 @@ spec:
                             description: Scheme to use for connecting to the host.
                               Defaults to HTTP.
                             type: string
-                        required:
-                        - port
                         type: object
                       initialDelaySeconds:
                         description: 'Number of seconds after the container has started
@@ -3344,8 +3342,6 @@ spec:
                             description: Scheme to use for connecting to the host.
                               Defaults to HTTP.
                             type: string
-                        required:
-                        - port
                         type: object
                       initialDelaySeconds:
                         description: 'Number of seconds after the container has started
@@ -3496,8 +3492,6 @@ spec:
                             description: Scheme to use for connecting to the host.
                               Defaults to HTTP.
                             type: string
-                        required:
-                        - port
                         type: object
                       initialDelaySeconds:
                         description: 'Number of seconds after the container has started
