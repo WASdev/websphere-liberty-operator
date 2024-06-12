@@ -34,6 +34,7 @@ test:
 static-scan:
   dind: true
   abort_on_failure: false
+  next-stage: containerize
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
@@ -41,10 +42,25 @@ static-scan:
 
     ./operators/scripts/pipeline/static-scan-stage.sh
 
+containerize:
+  dind: true
+  abort_on_failure: true
+  next-stage: compliance-checks
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
+  script: |
+    #!/usr/bin/env bash
+    echo $STAGE
+
+    # instruct bash to exit if any command fails
+    set -e
+    
+    ./operators/scripts/pipeline/containerize-stage.sh
+
 compliance-checks:
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
   dind: true
   abort_on_failure: false
+  next-stage: sign-artifact
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.3
   image_pull_policy: IfNotPresent  
   sources:
   - repo: https://github.ibm.com/open-toolchain/compliance-commons.git
@@ -68,19 +84,6 @@ compliance-checks:
     echo $STAGE
 
     ./operators/scripts/pipeline/compliance-checks-stage.sh
-
-containerize:
-  dind: true
-  abort_on_failure: true
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
-  script: |
-    #!/usr/bin/env bash
-    echo $STAGE
-
-    # instruct bash to exit if any command fails
-    set -e
-    
-    ./operators/scripts/pipeline/containerize-stage.sh
 
 sign-artifact:
   abort_on_failure: false
