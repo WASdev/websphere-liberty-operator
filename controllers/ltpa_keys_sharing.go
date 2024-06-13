@@ -82,9 +82,9 @@ func (r *ReconcileWebSphereLiberty) getLTPAKeysSharingLeader(instance *wlv1.WebS
 	return nil, ltpaKeySharingLeaderName, false, ltpaServiceAccount.Name
 }
 
-// Restarts the LTPA keys generation process if the LTPA Secret has not been generated yet and this application instance is the leader
+// If the LTPA Secret is being created but does not exist yet, the LTPA instance leader will halt the process and restart creation of LTPA keys
 func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.WebSphereLibertyApplication) error {
-	err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, true)
+	err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, false)
 	if err != nil {
 		return err
 	}
@@ -109,11 +109,6 @@ func (r *ReconcileWebSphereLiberty) restartLTPAKeysGeneration(instance *wlv1.Web
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication) (error, string) {
-	err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, false)
-	if err != nil {
-		return err, ""
-	}
-
 	// Initialize LTPA resources
 	ltpaXMLSecret := &corev1.Secret{}
 	ltpaXMLSecret.Name = OperatorShortName + lutils.LTPAServerXMLSuffix
@@ -142,7 +137,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	ltpaSecret.Namespace = instance.GetNamespace()
 	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecret.Name, "")
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
-	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
+	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
 		err, ltpaKeySharingLeaderName, isLTPAKeySharingLeader, ltpaServiceAccountName := r.getLTPAKeysSharingLeader(instance, true)
 		if err != nil {
@@ -273,6 +268,10 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	} else if err != nil {
 		return err, ""
 	} else {
+		err, _, isLTPAKeySharingLeader, _ := r.getLTPAKeysSharingLeader(instance, false)
+		if err != nil {
+			return err, ""
+		}
 		if !isLTPAKeySharingLeader {
 			return nil, ltpaSecret.Name
 		}
@@ -326,6 +325,14 @@ func (r *ReconcileWebSphereLiberty) deleteLTPAKeysResources(instance *wlv1.WebSp
 	ltpaKeysCreationScriptConfigMap.Name = OperatorShortName + "-managed-ltpa-script"
 	ltpaKeysCreationScriptConfigMap.Namespace = instance.GetNamespace()
 	err = r.DeleteResource(ltpaKeysCreationScriptConfigMap)
+	if err != nil {
+		return err
+	}
+
+	ltpaJobRequest := &corev1.ConfigMap{}
+	ltpaJobRequest.Name = OperatorShortName + "-managed-ltpa-job-request"
+	ltpaJobRequest.Namespace = instance.GetNamespace()
+	err = r.DeleteResource(ltpaJobRequest)
 	if err != nil {
 		return err
 	}
