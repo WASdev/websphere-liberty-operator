@@ -623,7 +623,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 
 // ConfigureLTPA setups the shared-storage for LTPA keys file generation
 func ConfigureLTPA(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string) {
-	// Mount a volume /config/ltpa to store the ltpa.keys file
+	// Mount a volume /config/managedLTPA to store the ltpa.keys file
 	ltpaKeyVolumeMount := GetLTPAKeysVolumeMount(la, ltpaKeysFileName)
 	if !isVolumeMountFound(pts, ltpaKeyVolumeMount.Name) {
 		pts.Spec.Containers[0].VolumeMounts = append(pts.Spec.Containers[0].VolumeMounts, ltpaKeyVolumeMount)
@@ -700,7 +700,7 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 	return false
 }
 
-func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string) {
+func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSecretName string, serviceAccountName string, ltpaScriptName string, ltpaJobRequestName string) {
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
 	job.Spec.Template.Spec.Containers = []corev1.Container{
@@ -711,7 +711,7 @@ func CustomizeLTPAJob(job *v1.Job, la *wlv1.WebSphereLibertyApplication, ltpaSec
 			SecurityContext: rcoutils.GetSecurityContext(la),
 			Command:         []string{"/bin/bash", "-c"},
 			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
-			Args: []string{ltpaKeysMountPath + "/bin/create_ltpa_keys.sh " + la.GetNamespace() + " " + ltpaSecretName + " " + ltpaKeysFileName + " " + encodingType},
+			Args: []string{ltpaKeysMountPath + "/bin/create_ltpa_keys.sh " + la.GetNamespace() + " " + ltpaSecretName + " " + ltpaKeysFileName + " " + encodingType + " " + ltpaJobRequestName},
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      ltpaScriptName,
