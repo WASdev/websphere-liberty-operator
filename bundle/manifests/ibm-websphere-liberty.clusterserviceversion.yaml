@@ -61,7 +61,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-05-15T18:51:13Z"
+    createdAt: "2024-07-12T09:39:54Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.2'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -421,6 +421,12 @@ spec:
       - description: Security context for the application container.
         displayName: Security Context
         path: securityContext
+      - description: Disable information about services being injected into the application
+          pod's environment variables. Default to false.
+        displayName: Disable Service Links
+        path: disableServiceLinks
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Labels to set on ServiceMonitor.
         displayName: Monitoring Labels
         path: monitoring.labels
