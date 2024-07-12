@@ -374,23 +374,26 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 }
 
 func checkRatio(ratio string, edition webspherelibertyv1.LicenseEdition, pes webspherelibertyv1.LicenseEntitlement) bool {
-	if ratio == "11:2" && edition == webspherelibertyv1.LicenseEditionBase && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
-		return true
-	}
-	if ratio == "11:1" && edition == webspherelibertyv1.LicenseEditionCore && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
-		return true
-	}
-	if ratio == "3:2" && edition == webspherelibertyv1.LicenseEditionND && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
-		return true
-	}
-	if ratio == "4:1" && edition == webspherelibertyv1.LicenseEditionBase {
-		return true
-	}
-	if ratio == "8:1" && edition == webspherelibertyv1.LicenseEditionCore {
-		return true
-	}
-	if ratio == "1:1" && edition == webspherelibertyv1.LicenseEditionND {
-		return true
+	if pes == webspherelibertyv1.LicenseEntitlementCP4AppsAdvanced {
+		if ratio == "11:2" && edition == webspherelibertyv1.LicenseEditionBase {
+			return true
+		}
+		if ratio == "11:1" && edition == webspherelibertyv1.LicenseEditionCore {
+			return true
+		}
+		if ratio == "3:2" && edition == webspherelibertyv1.LicenseEditionND {
+			return true
+		}
+	} else {
+		if ratio == "4:1" && edition == webspherelibertyv1.LicenseEditionBase {
+			return true
+		}
+		if ratio == "8:1" && edition == webspherelibertyv1.LicenseEditionCore {
+			return true
+		}
+		if ratio == "1:1" && edition == webspherelibertyv1.LicenseEditionND {
+			return true
+		}
 	}
 	return false
 }
