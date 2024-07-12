@@ -34,6 +34,7 @@ import (
 // Defines the desired state of WebSphereLibertyApplication.
 type WebSphereLibertyApplicationSpec struct {
 
+	// The license must be reviewed and accepted before the application can be deployed.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	License License `json:"license"`
 
@@ -172,7 +173,6 @@ type WebSphereLibertyApplicationSpec struct {
 	DisableServiceLinks *bool `json:"disableServiceLinks,omitempty"`
 }
 
-// License information is required.
 type License struct {
 	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
 	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"

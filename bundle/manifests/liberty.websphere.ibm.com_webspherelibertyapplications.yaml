@@ -2438,7 +2438,8 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               license:
-                description: License information is required.
+                description: The license must be reviewed and accepted before the
+                  application can be deployed.
                 properties:
                   accept:
                     description: |-
