@@ -218,18 +218,22 @@ const (
 )
 
 // Defines the possible values for product entitlement source
-// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
+// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
 type LicenseEntitlement string
 
 const (
 	// Entitlement source Standalone
 	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
-	// Entitlement source IBM Cloud Pak for Applications
-	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
-	// Entitlement source IBM WebSphere Application Server Family Edition
-	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM Cloud Pak for Applications Advanced
+	LicenseEntitlementCP4AppsAdvanced LicenseEntitlement = "IBM Cloud Pak for Applications Advanced"
+	// Entitlement source IBM Cloud Pak for Applications Standard
+	LicenseEntitlementCP4AppsStandard LicenseEntitlement = "IBM Cloud Pak for Applications Standard"
 	// Entitlement source IBM WebSphere Hybrid Edition
 	LicenseEntitlementWSHE LicenseEntitlement = "IBM WebSphere Hybrid Edition"
+	// Entitlement source IBM WebSphere Application Server Family Edition
+	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM Cloud Pak for Applications
+	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
 )
 
 // Defines the topology spread constraints

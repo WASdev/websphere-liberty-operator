@@ -74,9 +74,11 @@ var editionProductID = map[wlv1.LicenseEdition]string{
 }
 
 var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
-	wlv1.LicenseEntitlementCP4Apps:       "4df52d2cdc374ba09f631a650ad2b5bf",
-	wlv1.LicenseEntitlementFamilyEdition: "be8ae84b3dd04d81b90af0d846849182",
-	wlv1.LicenseEntitlementWSHE:          "6358611af04743f99f42dadcd6e39d52",
+	wlv1.LicenseEntitlementCP4AppsAdvanced: "217562c7767641d982cc6df6bcb5cb87",
+	wlv1.LicenseEntitlementCP4AppsStandard: "4df52d2cdc374ba09f631a650ad2b5bf",
+	wlv1.LicenseEntitlementWSHE:            "6358611af04743f99f42dadcd6e39d52",
+	wlv1.LicenseEntitlementFamilyEdition:   "be8ae84b3dd04d81b90af0d846849182",
+	wlv1.LicenseEntitlementCP4Apps:         "4df52d2cdc374ba09f631a650ad2b5bf",
 }
 
 // Validate if the WebSpherLibertyApplication is valid
@@ -218,7 +220,7 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	entitlement := la.Spec.License.ProductEntitlementSource
 
 	metricValue := "PROCESSOR_VALUE_UNIT"
-	if entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
+	if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced || entitlement == wlv1.LicenseEntitlementCP4AppsStandard || entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
 		metricValue = "VIRTUAL_PROCESSOR_CORE"
 	}
 	pts.Annotations[productMetricKey] = metricValue
@@ -226,14 +228,27 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	ratio := ""
 	switch la.Spec.License.Edition {
 	case wlv1.LicenseEditionBase:
-		ratio = "4:1"
+		if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
+			ratio = "11:2"
+		} else {
+			ratio = "4:1"
+		}
 	case wlv1.LicenseEditionCore:
-		ratio = "8:1"
+		if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
+			ratio = "11:1"
+		} else {
+			ratio = "8:1"
+		}
 	case wlv1.LicenseEditionND:
-		ratio = "1:1"
+		if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
+			ratio = "3:2"
+		} else {
+			ratio = "1:1"
+		}
 	default:
 		ratio = "4:1"
 	}
+
 	pts.Annotations[productNameKey] = string(la.Spec.License.Edition)
 
 	if entitlement == wlv1.LicenseEntitlementStandalone {

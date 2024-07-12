@@ -275,16 +275,22 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementWSHE})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4AppsAdvanced})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionBase, pes: webspherelibertyv1.LicenseEntitlementCP4AppsStandard})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementStandalone})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementWSHE})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4AppsAdvanced})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionCore, pes: webspherelibertyv1.LicenseEntitlementCP4AppsStandard})
 
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementStandalone})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4Apps})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementFamilyEdition})
 	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementWSHE})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4AppsAdvanced})
+	td = append(td, licenseTestData{edition: webspherelibertyv1.LicenseEditionND, pes: webspherelibertyv1.LicenseEntitlementCP4AppsStandard})
 
 	for _, s := range td {
 		t.Logf("Testing %#v\n", s)
@@ -353,8 +359,8 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 				t.Errorf("cloudpakId should not exist but was %s\n", pts.Annotations["cloudpakId"])
 			}
 		} else {
-			if !checkRatio(pts.Annotations["productCloudpakRatio"], s.edition) {
-				t.Errorf("Unexpected productCloudpakRatio %s for edition %s\n", pts.Annotations["productCloudpakRatio"], s.edition)
+			if !checkRatio(pts.Annotations["productCloudpakRatio"], s.edition, s.pes) {
+				t.Errorf("Unexpected productCloudpakRatio %s for edition %s and entitlement %s\n", pts.Annotations["productCloudpakRatio"], s.edition, s.pes)
 			}
 			if !checkID(pts.Annotations["cloudpakId"], s.pes) {
 				t.Errorf("Unexpected cloudpakId %s for entitlement %s\n", pts.Annotations["cloudpakId"], s.pes)
@@ -367,7 +373,16 @@ func TestCustomizeLicenseAnnotations(t *testing.T) {
 	}
 }
 
-func checkRatio(ratio string, edition webspherelibertyv1.LicenseEdition) bool {
+func checkRatio(ratio string, edition webspherelibertyv1.LicenseEdition, pes webspherelibertyv1.LicenseEntitlement) bool {
+	if ratio == "11:2" && edition == webspherelibertyv1.LicenseEditionBase && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
+		return true
+	}
+	if ratio == "11:1" && edition == webspherelibertyv1.LicenseEditionCore && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
+		return true
+	}
+	if ratio == "3:2" && edition == webspherelibertyv1.LicenseEditionND && pes == webspherelibertyv1.LicenseEntitlementCP4Apps {
+		return true
+	}
 	if ratio == "4:1" && edition == webspherelibertyv1.LicenseEditionBase {
 		return true
 	}
@@ -387,6 +402,12 @@ func checkID(id string, pes webspherelibertyv1.LicenseEntitlement) bool {
 		return true
 	}
 	if id == "6358611af04743f99f42dadcd6e39d52" && pes == webspherelibertyv1.LicenseEntitlementWSHE {
+		return true
+	}
+	if id == "4df52d2cdc374ba09f631a650ad2b5bf" && pes == webspherelibertyv1.LicenseEntitlementCP4AppsStandard {
+		return true
+	}
+	if id == "217562c7767641d982cc6df6bcb5cb87" && pes == webspherelibertyv1.LicenseEntitlementCP4AppsAdvanced {
 		return true
 	}
 	return false
