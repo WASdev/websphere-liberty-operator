@@ -178,7 +178,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
-	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 

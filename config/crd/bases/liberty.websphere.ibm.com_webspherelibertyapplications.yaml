@@ -2462,14 +2462,16 @@ spec:
                     type: string
                   productEntitlementSource:
                     description: 'Entitlement source for the product. Defaults to
-                      Standalone. Other options: IBM Cloud Pak for Applications, IBM
-                      WebSphere Application Server Family Edition, IBM WebSphere Hybrid
-                      Edition'
+                      Standalone. Other options: IBM Cloud Pak for Applications Advanced,
+                      IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid
+                      Edition, IBM WebSphere Application Server Family Edition'
                     enum:
                     - Standalone
-                    - IBM Cloud Pak for Applications
-                    - IBM WebSphere Application Server Family Edition
+                    - IBM Cloud Pak for Applications Advanced
+                    - IBM Cloud Pak for Applications Standard
                     - IBM WebSphere Hybrid Edition
+                    - IBM WebSphere Application Server Family Edition
+                    - IBM Cloud Pak for Applications
                     type: string
                 required:
                 - accept
