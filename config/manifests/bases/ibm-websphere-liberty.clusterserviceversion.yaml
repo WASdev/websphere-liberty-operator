@@ -66,7 +66,9 @@ spec:
         path: autoscaling.maxReplicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - displayName: License
+      - description: The license must be reviewed and accepted before the application
+          can be deployed.
+        displayName: License
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
@@ -503,8 +505,10 @@ spec:
         displayName: Edition
         path: license.edition
       - description: 'Entitlement source for the product. Defaults to Standalone.
-          Other options: IBM Cloud Pak for Applications, IBM WebSphere Application
-          Server Family Edition, IBM WebSphere Hybrid Edition'
+          Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for
+          Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application
+          Server Family Edition. Option IBM Cloud Pak for Applications is deprecated.
+          Use option IBM Cloud Pak for Applications Standard instead.'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
       - description: Deprecated. Charge metric code is now automatically determined

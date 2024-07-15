@@ -34,6 +34,7 @@ import (
 // Defines the desired state of WebSphereLibertyApplication.
 type WebSphereLibertyApplicationSpec struct {
 
+	// The license must be reviewed and accepted before the application can be deployed.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	License License `json:"license"`
 
@@ -172,13 +173,12 @@ type WebSphereLibertyApplicationSpec struct {
 	DisableServiceLinks *bool `json:"disableServiceLinks,omitempty"`
 }
 
-// License information is required.
 type License struct {
 	// Product edition. Defaults to IBM WebSphere Application Server. Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere Application Server Network Deployment
 	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
-	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications, IBM WebSphere Application Server Family Edition, IBM WebSphere Hybrid Edition
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications Standard instead.
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
@@ -218,18 +218,22 @@ const (
 )
 
 // Defines the possible values for product entitlement source
-// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications;IBM WebSphere Application Server Family Edition;IBM WebSphere Hybrid Edition
+// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
 type LicenseEntitlement string
 
 const (
 	// Entitlement source Standalone
 	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
-	// Entitlement source IBM Cloud Pak for Applications
-	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
-	// Entitlement source IBM WebSphere Application Server Family Edition
-	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM Cloud Pak for Applications Advanced
+	LicenseEntitlementCP4AppsAdvanced LicenseEntitlement = "IBM Cloud Pak for Applications Advanced"
+	// Entitlement source IBM Cloud Pak for Applications Standard
+	LicenseEntitlementCP4AppsStandard LicenseEntitlement = "IBM Cloud Pak for Applications Standard"
 	// Entitlement source IBM WebSphere Hybrid Edition
 	LicenseEntitlementWSHE LicenseEntitlement = "IBM WebSphere Hybrid Edition"
+	// Entitlement source IBM WebSphere Application Server Family Edition
+	LicenseEntitlementFamilyEdition LicenseEntitlement = "IBM WebSphere Application Server Family Edition"
+	// Entitlement source IBM Cloud Pak for Applications
+	LicenseEntitlementCP4Apps LicenseEntitlement = "IBM Cloud Pak for Applications"
 )
 
 // Defines the topology spread constraints
