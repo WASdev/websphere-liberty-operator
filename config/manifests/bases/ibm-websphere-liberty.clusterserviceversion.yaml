@@ -507,7 +507,8 @@ spec:
       - description: 'Entitlement source for the product. Defaults to Standalone.
           Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for
           Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application
-          Server Family Edition'
+          Server Family Edition. Option IBM Cloud Pak for Applications is deprecated.
+          Use option IBM Cloud Pak for Applications Standard instead.'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
       - description: Deprecated. Charge metric code is now automatically determined
