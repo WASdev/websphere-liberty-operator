@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR Websphere Liberty Operator Version 1.3.2
+Begin NOTICES AND INFORMATION FOR Websphere Liberty Operator Version 1.3.3
 Copyright 2023 - 2024 IBM Corporation and others
 
 
@@ -413,7 +413,6 @@ The Program includes some or all of the following that IBM obtained
 under the MIT License:
 
 github.com/BurntSushi/toml | Copyright (c) 2013 TOML authors
-github.com/alecthomas/units | Copyright (c) 2022 Alex Beimler
 github.com/antihax/optional | Copyright (c) 2016 Adam Hintz
 github.com/armon/go-socks5 | No copyright statement
 github.com/benbjohnson/clock | Copyright (c) 2014 Ben Johnson
@@ -431,14 +430,12 @@ github.com/emicklei/go-restful/v3 | Copyright (c) 2012,2013 Ernest Micklei
 github.com/flowstack/go-jsonschema | Copyright (c) 2018 Alexander Staubo
 github.com/go-kit/log | Copyright (c) 2021 Go kit
 github.com/go-logfmt/logfmt | Copyright (c) 2015 go-logfmt
-github.com/go-stack/stack | Copyright (c) 2014 Chris Hines
 github.com/josharian/intern | Copyright (c) 2019 Josh Bleecher Snyder
 github.com/jpillora/backoff | Copyright (c) 2017 Jaime Pillora
 github.com/json-iterator/go | Copyright (c) 2016 json-iterator
 github.com/jstemmer/go-junit-report | Copyright (c) 2012 Joel Stemmer
 github.com/kisielk/errcheck | Copyright (c) 2013 Kamil Kisiel
 github.com/kisielk/gotool | Copyright (c) 2013 Kamil Kisiel
-github.com/konsorten/go-windows-terminal-sequences | Copyright (c) 2017 marvin + konsorten GmbH (open-source@konsorten.de)
 github.com/kr/pretty | Copyright 2012 Keith Rarick
 github.com/kr/pty | Copyright 2012 Keith Rarick
 github.com/kr/text | Copyright 2012 Keith Rarick
@@ -447,7 +444,6 @@ github.com/nxadm/tail | Copyright 2015 Hewlett Packard Enterprise Development LP
 github.com/onsi/ginkgo | Copyright (c) 2013-2014 Onsi Fakhouri
 github.com/onsi/ginkgo/v2 | Copyright (c) 2013-2014 Onsi Fakhouri
 github.com/onsi/gomega | Copyright (c) 2013-2014 Onsi Fakhouri
-github.com/sirupsen/logrus | Copyright (c) 2014 Simon Eskildsen
 github.com/stoewer/go-strcase | Copyright (c) 2017 And Adrian Stoewer <adrian.stoewer@rz.ifi.lmu.de>
 github.com/stretchr/objx | Copyright (c) 2014 Stretchr And Inc.Copyright (c) 2017-2018 objx contributors
 github.com/stretchr/testify | Copyright (c) 2012-2020 Mat Ryer And Tyler Bunnell and contributors.
