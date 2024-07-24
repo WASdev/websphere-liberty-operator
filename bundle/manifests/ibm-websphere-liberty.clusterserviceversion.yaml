@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:e74e4c7bcc6999d704bafbb92bf78a6c776953401fd37f3597e3f4ebca0c3952",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:422a7a00edc338497c0a91890b09204b8505ef0e377bb9b5944ace0102055e91",
             "expose": true,
             "license": {
               "accept": false,
@@ -61,7 +61,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-07-15T15:45:26Z"
+    createdAt: "2024-07-24T16:14:20Z"
     description: Deploy and manage containerized Liberty applications
     olm.skipRange: '>=1.0.0 <1.3.3'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
@@ -908,7 +908,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:e74e4c7bcc6999d704bafbb92bf78a6c776953401fd37f3597e3f4ebca0c3952
+                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:422a7a00edc338497c0a91890b09204b8505ef0e377bb9b5944ace0102055e91
                 - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
                   value: icr.io/cpopen/websphere-liberty-operator:daily
                 image: icr.io/cpopen/websphere-liberty-operator:daily
@@ -1206,7 +1206,7 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:e74e4c7bcc6999d704bafbb92bf78a6c776953401fd37f3597e3f4ebca0c3952
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:422a7a00edc338497c0a91890b09204b8505ef0e377bb9b5944ace0102055e91
     name: liberty-sample-app
   - image: icr.io/cpopen/websphere-liberty-operator:daily
     name: websphere-liberty-operator
