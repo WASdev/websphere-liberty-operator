@@ -171,6 +171,10 @@ type WebSphereLibertyApplicationSpec struct {
 	// Disable information about services being injected into the application pod's environment variables. Default to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=33,type=spec,displayName="Disable Service Links",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	DisableServiceLinks *bool `json:"disableServiceLinks,omitempty"`
+
+	// Tolerations to be added to application pods. Tolerations allow the scheduler to schedule pods on nodes with matching taints.
+	// +operator-sdk:csv:customresourcedefinitions:order=34,type=spec,displayName="Tolerations"
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 type License struct {
@@ -1264,6 +1268,11 @@ func (cr *WebSphereLibertyApplicationTopologySpreadConstraints) GetDisableOperat
 // GetDisableServiceLinks returns whether service links should be disabled in the pod spec
 func (cr *WebSphereLibertyApplication) GetDisableServiceLinks() *bool {
 	return cr.Spec.DisableServiceLinks
+}
+
+// GetToleration returns pod tolerations slice
+func (cr *WebSphereLibertyApplication) GetTolerations() []corev1.Toleration {
+	return cr.Spec.Tolerations
 }
 
 // Initialize sets default values
