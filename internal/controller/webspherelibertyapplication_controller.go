@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-package controllers
+package controller
 
 import (
 	"context"
@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -828,7 +827,7 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	ok, _ = r.IsGroupVersionSupported(imagev1.SchemeGroupVersion.String(), "ImageStream")
 	if ok {
-		b = b.Watches(&source.Kind{Type: &imagev1.ImageStream{}}, &EnqueueRequestsForCustomIndexField{
+		b = b.Watches(&imagev1.ImageStream{}, &EnqueueRequestsForCustomIndexField{
 			Matcher: &ImageStreamMatcher{
 				Klient:          mgr.GetClient(),
 				WatchNamespaces: watchNamespaces,

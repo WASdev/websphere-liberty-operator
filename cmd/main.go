@@ -23,14 +23,16 @@ import (
 	"time"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
-	"github.com/WASdev/websphere-liberty-operator/controllers"
+	"github.com/WASdev/websphere-liberty-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/application-stacks/runtime-component-operator/utils"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -38,6 +40,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -88,30 +91,38 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
+		WebhookServer: &webhook.DefaultServer{
+			Options: webhook.Options{
+				Port: 9443,
+			},
+		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "7111f50b.websphere.ibm.com",
 		LeaseDuration:          &leaseDuration,
 		RenewDeadline:          &renewDeadline,
-		Namespace:              watchNamespace,
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{watchNamespace: cache.Config{}},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ReconcileWebSphereLiberty{
+	if err = (&controller.ReconcileWebSphereLiberty{
 		ReconcilerBase: utils.NewReconcilerBase(mgr.GetAPIReader(), mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), mgr.GetEventRecorderFor("websphere-liberty-operator")),
-		Log:            ctrl.Log.WithName("controllers").WithName("WebSphereLibertyApplication"),
+		Log:            ctrl.Log.WithName("controller").WithName("WebSphereLibertyApplication"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "WebSphereLibertyApplication")
 		os.Exit(1)
 	}
-	if err = (&controllers.ReconcileWebSphereLibertyDump{
-		Log:        ctrl.Log.WithName("controllers").WithName("WebSphereLibertyDump"),
+	if err = (&controller.ReconcileWebSphereLibertyDump{
+		Log:        ctrl.Log.WithName("controller").WithName("WebSphereLibertyDump"),
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -120,8 +131,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "WebSphereLibertyDump")
 		os.Exit(1)
 	}
-	if err = (&controllers.ReconcileWebSphereLibertyTrace{
-		Log:        ctrl.Log.WithName("controllers").WithName("WebSphereLibertyTrace"),
+	if err = (&controller.ReconcileWebSphereLibertyTrace{
+		Log:        ctrl.Log.WithName("controller").WithName("WebSphereLibertyTrace"),
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -141,7 +152,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	utils.CreateConfigMap(controllers.OperatorName)
+	utils.CreateConfigMap(controller.OperatorName)
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
