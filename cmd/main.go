@@ -93,7 +93,7 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
-			BindAddress: "0",
+			BindAddress: metricsAddr,
 		},
 		WebhookServer: &webhook.DefaultServer{
 			Options: webhook.Options{
