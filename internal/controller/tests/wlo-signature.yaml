@@ -1,0 +1,3 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyApplication
+name: "{0}-managed-wlapp"
