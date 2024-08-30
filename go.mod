@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20240828211841-f2a529fbd13f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
