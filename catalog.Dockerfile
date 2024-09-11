@@ -1,4 +1,4 @@
-FROM registry.redhat.io/openshift4/ose-operator-registry:v4.14 AS builder
+FROM registry.redhat.io/openshift4/ose-operator-registry:v4.16 AS builder
 FROM registry.redhat.io/ubi8/ubi-minimal
 
 # Add label for location of Declarative Config root directory & required OpenShift labels
