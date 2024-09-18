@@ -30,7 +30,7 @@ import (
 )
 
 // Validates the resource decision tree YAML and generates the leader tracking state (Secret) for maintaining multiple shared resources
-func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (lutils.LeaderTrackerMetadata, error) {
+func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (lutils.LeaderTrackerMetadataList, error) {
 	treeMap, replaceMap, err := tree.ParseDecisionTree(leaderTrackerType, nil)
 	if err != nil {
 		return nil, err
@@ -49,18 +49,18 @@ func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv
 
 	// return the metadata specific to the operator version, instance configuration, and shared resource being reconciled
 	if leaderTrackerType == LTPA_RESOURCE_SHARING_FILE_NAME {
-		ltpaMetadata, err := r.reconcileLTPAMetadata(instance, treeMap, latestOperandVersion, nil)
+		ltpaMetadataList, err := r.reconcileLTPAMetadata(instance, treeMap, latestOperandVersion, nil)
 		if err != nil {
 			return nil, err
 		}
-		return ltpaMetadata, nil
+		return ltpaMetadataList, nil
 	}
 	if leaderTrackerType == PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME {
-		passwordEncryptionMetadata, err := r.reconcilePasswordEncryptionMetadata(treeMap, latestOperandVersion)
+		passwordEncryptionMetadataList, err := r.reconcilePasswordEncryptionMetadata(treeMap, latestOperandVersion)
 		if err != nil {
 			return nil, err
 		}
-		return passwordEncryptionMetadata, nil
+		return passwordEncryptionMetadataList, nil
 	}
 	return nil, fmt.Errorf("a leaderTrackerType was not provided when running reconcileResourceTrackingState")
 }
@@ -89,7 +89,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebS
 		}
 		// clear instance.Name from ownership of any prior resources
 		for i := range *leaderTrackers {
-			(*leaderTrackers)[i].ClearOwnerIfMatching(instance.Name)
+			(*leaderTrackers)[i].ClearOwnerIfMatchingAndSharesLastPathParent(instance.Name, leaderMetadata.GetPath())
 		}
 		// make instance.Name the new leader
 		newLeader := lutils.LeaderTracker{
@@ -117,7 +117,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebS
 		if candidateLeader != instance.Name {
 			// clear instance.Name from ownership of any prior resources and evict the owner if the sublease has expired
 			for i := range *leaderTrackers {
-				(*leaderTrackers)[i].ClearOwnerIfMatching(instance.Name)
+				(*leaderTrackers)[i].ClearOwnerIfMatchingAndSharesLastPathParent(instance.Name, leaderMetadata.GetPath())
 				// (*leaderTrackers)[i].EvictOwnerIfSubleaseHasExpired()
 			}
 		}
@@ -148,7 +148,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebS
 			pathIndex = (*leaderTrackers)[i].PathIndex
 			(*leaderTrackers)[i].SetOwner(instance.Name)
 		} else {
-			(*leaderTrackers)[i].ClearOwnerIfMatching(instance.Name)
+			(*leaderTrackers)[i].ClearOwnerIfMatchingAndSharesLastPathParent(instance.Name, leaderMetadata.GetPath())
 		}
 	}
 	// save this new owner list
@@ -159,21 +159,47 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebS
 }
 
 func (r *ReconcileWebSphereLiberty) createNewLeaderTrackerList(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, leaderTrackerType string, assetsFolder *string) (*[]lutils.LeaderTracker, error) {
-	var resourcesList *unstructured.UnstructuredList
-	var resourceRootName string
-	var err error
+	var resourcesMatrix []*unstructured.UnstructuredList
+	var resourcesRootNameList []string
 
 	if leaderTrackerType == LTPA_RESOURCE_SHARING_FILE_NAME {
-		resourcesList, resourceRootName, err = r.GetLTPAResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder)
+		// 1. Add LTPA key Secret
+		resourcesList, resourceRootName, keyErr := r.GetLTPAKeyResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder)
+		if keyErr != nil {
+			return nil, keyErr
+		}
+		resourcesMatrix = append(resourcesMatrix, resourcesList)
+		resourcesRootNameList = append(resourcesRootNameList, resourceRootName)
+		// 2. Add LTPA password Secret (config 1)
+		resourcesList, resourceRootName, keyErr = r.GetLTPAConfigResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder, LTPA_CONFIG_1_RESOURCE_SHARING_FILE_NAME)
+		if keyErr != nil {
+			return nil, keyErr
+		}
+		resourcesMatrix = append(resourcesMatrix, resourcesList)
+		resourcesRootNameList = append(resourcesRootNameList, resourceRootName)
+		// 3. Add LTPA password Secret (config 2)
+		resourcesList, resourceRootName, keyErr = r.GetLTPAConfigResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder, LTPA_CONFIG_2_RESOURCE_SHARING_FILE_NAME)
+		if keyErr != nil {
+			return nil, keyErr
+		}
+		resourcesMatrix = append(resourcesMatrix, resourcesList)
+		resourcesRootNameList = append(resourcesRootNameList, resourceRootName)
 	} else if leaderTrackerType == PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME {
-		resourcesList, resourceRootName, err = r.GetPasswordEncryptionResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder)
+		resourcesList, resourceRootName, passwordErr := r.GetPasswordEncryptionResources(instance, treeMap, replaceMap, latestOperandVersion, assetsFolder)
+		if passwordErr != nil {
+			return nil, passwordErr
+		}
+		resourcesMatrix = append(resourcesMatrix, resourcesList)
+		resourcesRootNameList = append(resourcesRootNameList, resourceRootName)
 	} else {
-		err = fmt.Errorf("a valid leaderTrackerType was not specified for createNewLeaderTrackerList")
+		return nil, fmt.Errorf("a valid leaderTrackerType was not specified for createNewLeaderTrackerList")
 	}
-	if err != nil {
-		return nil, err
+
+	leaderTracker := make([]lutils.LeaderTracker, 0)
+	for i, resourcesList := range resourcesMatrix {
+		r.UpdateLeaderTrackersFromUnstructuredList(&leaderTracker, resourcesList, treeMap, replaceMap, latestOperandVersion, resourcesRootNameList[i])
 	}
-	return r.GetLeaderTrackersFromUnstructuredList(resourcesList, treeMap, replaceMap, latestOperandVersion, resourceRootName)
+	return &leaderTracker, nil
 }
 
 // Reconciles the latest LeaderTracker state to be used by the operator
@@ -232,12 +258,11 @@ func (r *ReconcileWebSphereLiberty) RemoveLeader(instance *wlv1.WebSphereLiberty
 	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) GetLeaderTrackersFromUnstructuredList(resourceList *unstructured.UnstructuredList, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, resourceRootName string) (*[]lutils.LeaderTracker, error) {
-	leaderTrackers := make([]lutils.LeaderTracker, 0)
+func (r *ReconcileWebSphereLiberty) UpdateLeaderTrackersFromUnstructuredList(leaderTrackers *[]lutils.LeaderTracker, resourceList *unstructured.UnstructuredList, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, resourceRootName string) error {
 	for i, resource := range resourceList.Items {
 		labelsMap, _, err := unstructured.NestedMap(resource.Object, "metadata", "labels")
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if pathIndexInterface, found := labelsMap[lutils.ResourcePathIndexLabel]; found {
 			pathIndex := pathIndexInterface.(string)
@@ -276,7 +301,7 @@ func (r *ReconcileWebSphereLiberty) GetLeaderTrackersFromUnstructuredList(resour
 						}
 						return nil
 					}); err != nil {
-						return nil, err
+						return err
 					}
 				}
 			} else if pathErr == nil { // only update the path metadata if this operator's decision tree structure recognizes the resource
@@ -287,14 +312,14 @@ func (r *ReconcileWebSphereLiberty) GetLeaderTrackersFromUnstructuredList(resour
 			}
 			nameString, _, err := unstructured.NestedString(resource.Object, "metadata", "name")
 			if err != nil {
-				return nil, err
+				return err
 			}
 			leader.Name = nameString[len(resourceRootName):]
 			leader.EvictOwner()
-			lutils.InsertIntoSortedLeaderTrackers(&leaderTrackers, &leader)
+			lutils.InsertIntoSortedLeaderTrackers(leaderTrackers, &leader)
 		}
 	}
-	return &leaderTrackers, nil
+	return nil
 }
 
 func (r *ReconcileWebSphereLiberty) RemoveLeaderTrackerReference(instance *wlv1.WebSphereLibertyApplication, resourceSharingFileName string) error {
@@ -306,4 +331,13 @@ func (r *ReconcileWebSphereLiberty) RemoveLeaderTrackerReference(instance *wlv1.
 		return err
 	}
 	return r.RemoveLeader(instance, leaderTracker, leaderTrackers)
+}
+
+func hasResourceSuffixesEnv(instance *wlv1.WebSphereLibertyApplication, envName string) (string, bool) {
+	for _, env := range instance.GetEnv() {
+		if env.Name == envName {
+			return env.Value, true
+		}
+	}
+	return "", false
 }

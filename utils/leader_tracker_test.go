@@ -629,7 +629,7 @@ func TestCreateUnstructuredResourceFromSignatureWithInvalidSignature(t *testing.
 
 func TestCreateUnstructuredResourceListFromSignature(t *testing.T) {
 	testsFolder := getTestsFolder()
-	unstructuredLibertyAppList, err := CreateUnstructuredResourceListFromSignature("wlo", &testsFolder, "wlo")
+	unstructuredLibertyAppList, _, err := CreateUnstructuredResourceListFromSignature("wlo", &testsFolder, "wlo")
 	tests := []Test{
 		{"create unstructured resource list from signature - no error", nil, err},
 		{"create unstructured resource list from signature - liberty app list kind ", "WebSphereLibertyApplication", unstructuredLibertyAppList.GetKind()},
@@ -642,7 +642,7 @@ func TestCreateUnstructuredResourceListFromSignature(t *testing.T) {
 
 func TestCreateUnstructuredResourceListFromSignatureWithInvalidSignature(t *testing.T) {
 	testsFolder := getTestsFolder()
-	unstructuredLibertyAppList, err := CreateUnstructuredResourceListFromSignature("invalid-wlo", &testsFolder, "wlo")
+	unstructuredLibertyAppList, _, err := CreateUnstructuredResourceListFromSignature("invalid-wlo", &testsFolder, "wlo")
 	var nilUnstructuredLibertyAppList *unstructured.UnstructuredList
 	tests := []Test{
 		{"create unstructured resource list from signature, invalid YAML - has error", false, err == nil},
@@ -669,7 +669,7 @@ func TestCreateUnstructuredResourceFromSignatureWithUserError(t *testing.T) {
 
 func TestCreateUnstructuredResourceListFromSignatureWithUserError(t *testing.T) {
 	testsFolder := getTestsFolder()
-	unstructuredLibertyAppList, err := CreateUnstructuredResourceListFromSignature("user-error-wlo", &testsFolder)
+	unstructuredLibertyAppList, _, err := CreateUnstructuredResourceListFromSignature("user-error-wlo", &testsFolder)
 	var nilUnstructuredLibertyAppList *unstructured.UnstructuredList
 	tests := []Test{
 		{"create unstructured resource from signature, invalid YAML - has error", false, err == nil},
