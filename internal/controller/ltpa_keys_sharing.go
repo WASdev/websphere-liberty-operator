@@ -696,7 +696,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 				}
 			}
 		} else { // otherwise, create the LTPA Config
-
 			err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaJobRequest.Name, Namespace: ltpaJobRequest.Namespace}, ltpaJobRequest)
 			if err != nil {
 				// Create the Job Request if it doesn't exist
