@@ -3,6 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.22
 
 require (
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20240917212943-7ad4f0b5d302
 	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20240827210204-41c90b82ea72
 	github.com/cert-manager/cert-manager v1.13.6
 	github.com/go-logr/logr v1.3.0
@@ -10,6 +11,7 @@ require (
 	github.com/openshift/library-go v0.0.0-20231002074440-3f69f773d102
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.71.2
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.9
 	k8s.io/apimachinery v0.28.9
 	k8s.io/client-go v0.28.9
@@ -18,7 +20,6 @@ require (
 )
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20240828211841-f2a529fbd13f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
@@ -67,7 +68,6 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.28.9 // indirect
 	k8s.io/component-base v0.28.9 // indirect

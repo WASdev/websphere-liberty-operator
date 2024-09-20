@@ -34,17 +34,17 @@ import (
 
 const PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME = "password-encryption"
 
-func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, string, error) {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		_, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
+		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil && !kerrors.IsNotFound(err) {
-			return "", "", err
+			return "", "", "", err
 		}
 		// non-leaders should still be able to pass this process to return the encryption secret name
 		if thisInstanceIsLeader {
 			// Is there a password encryption key to duplicate for internal use?
 			if err := r.mirrorEncryptionKeySecretState(instance, passwordEncryptionMetadata); err != nil {
-				return "Failed to process the password encryption key Secret", "", err
+				return "Failed to process the password encryption key Secret", "", "", err
 			}
 		}
 
@@ -58,72 +58,86 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 					// Create the Liberty config that will mount into the pods
 					err := r.createPasswordEncryptionKeyLibertyConfig(instance, passwordEncryptionMetadata, encryptionKey)
 					if err != nil {
-						return "Failed to create Liberty resources to share the password encryption key", "", err
+						return "Failed to create Liberty resources to share the password encryption key", "", "", err
+					}
+				} else {
+					// non-leaders should yield for the password encryption leader to mirror the encryption key's state
+					if !r.encryptionKeySecretMirrored(instance, passwordEncryptionMetadata) {
+						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to mirror the shared Password Encryption Key Secret for the namespace '" + instance.Namespace + "'.")
 					}
 				}
-				return "", encryptionSecret.Name, nil
+				return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
 			}
 		} else if !kerrors.IsNotFound(err) {
-			return "Failed to get the password encryption key Secret", "", err
+			return "Failed to get the password encryption key Secret", "", "", err
 		}
 	} else {
 		err := r.RemoveLeaderTrackerReference(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
-			return "Failed to remove leader tracking reference to the password encryption key", "", err
+			return "Failed to remove leader tracking reference to the password encryption key", "", "", err
 		}
 	}
-	return "", "", nil
+	return "", "", "", nil
 }
 
-func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionMetadata(treeMap map[string]interface{}, latestOperandVersion string) (*lutils.PasswordEncryptionMetadata, error) {
-	metadata := &lutils.PasswordEncryptionMetadata{}
+func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionMetadata(treeMap map[string]interface{}, latestOperandVersion string) (lutils.LeaderTrackerMetadataList, error) {
+	metadataList := &lutils.PasswordEncryptionMetadataList{}
+	metadataList.Items = []lutils.LeaderTrackerMetadata{}
 
-	pathOptions, pathChoices := r.getPasswordEncryptionPathOptionsAndChoices(latestOperandVersion)
+	pathOptionsList, pathChoicesList := r.getPasswordEncryptionPathOptionsAndChoices(latestOperandVersion)
+	for i := range pathOptionsList {
+		metadata := &lutils.PasswordEncryptionMetadata{}
+		pathOptions := pathOptionsList[i]
+		pathChoices := pathChoicesList[i]
 
-	// convert the path options and choices into a labelString, for a path of length n, the labelString is
-	// constructed as a weaved array in format "<pathOptions[0]>.<pathChoices[0]>.<pathOptions[1]>.<pathChoices[1]>...<pathOptions[n-1]>.<pathChoices[n-1]>"
-	labelString, err := tree.GetLabelFromDecisionPath(latestOperandVersion, pathOptions, pathChoices)
-	if err != nil {
-		return metadata, err
+		// convert the path options and choices into a labelString, for a path of length n, the labelString is
+		// constructed as a weaved array in format "<pathOptions[0]>.<pathChoices[0]>.<pathOptions[1]>.<pathChoices[1]>...<pathOptions[n-1]>.<pathChoices[n-1]>"
+		labelString, err := tree.GetLabelFromDecisionPath(latestOperandVersion, pathOptions, pathChoices)
+		if err != nil {
+			return metadataList, err
+		}
+		// validate that the decision path such as "v1_4_0.managePasswordEncryption.true" is a valid subpath in treeMap
+		// an error here indicates a build time error created by the operator developer or pollution of the password-encryption-decision-tree.yaml
+		// NOTE: validSubPath is a substring of labelString and a valid path within treeMap; it will always hold that len(validSubPath) <= len(labelString)
+		validSubPath, err := tree.CanTraverseTree(treeMap, labelString, true)
+		if err != nil {
+			return metadataList, err
+		}
+		// NOTE: Checking the leaderTracker can be skipped assuming there is only one password encryption key per namespace
+		// Leader tracker reconcile is only required to prevent overriding other shared resources (i.e. password encryption keys) in the same namespace
+		// Uncomment code below to extend to multiple password encryption keys per namespace. See ltpa_keys_sharing.go for an example.
+
+		// // retrieve the password encryption leader tracker to re-use an existing name or to create a new metadata.Name
+		// leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+		// if err != nil {
+		// 	return metadataList, err
+		// }
+		// // if the leaderTracker is on a mismatched version, wait for a subsequent reconcile loop to re-create the leader tracker
+		// if leaderTracker.Labels[lutils.LeaderVersionLabel] != latestOperandVersion {
+		// 	return metadataList, fmt.Errorf("waiting for the Leader Tracker to be updated")
+		// }
+
+		// to avoid limitation with Kubernetes label values having a max length of 63, translate validSubPath into a path index
+		pathIndex := tree.GetLeafIndex(treeMap, validSubPath)
+		versionedPathIndex := fmt.Sprintf("%s.%d", latestOperandVersion, pathIndex)
+
+		metadata.Path = validSubPath
+		metadata.PathIndex = versionedPathIndex
+		metadata.Name = r.getPasswordEncryptionMetadataName() // You could augment this function to extend to multiple password encryption keys per namespace. See ltpa_keys_sharing.go for an example.
+		metadataList.Items = append(metadataList.Items, metadata)
 	}
-	// validate that the decision path such as "v1_4_0.managePasswordEncryption.true" is a valid subpath in treeMap
-	// an error here indicates a build time error created by the operator developer or pollution of the password-encryption-decision-tree.yaml
-	// NOTE: validSubPath is a substring of labelString and a valid path within treeMap; it will always hold that len(validSubPath) <= len(labelString)
-	validSubPath, err := tree.CanTraverseTree(treeMap, labelString, true)
-	if err != nil {
-		return metadata, err
-	}
-	// NOTE: Checking the leaderTracker can be skipped assuming there is only one password encryption key per namespace
-	// Leader tracker reconcile is only required to prevent overriding other shared resources (i.e. password encryption keys) in the same namespace
-	// Uncomment code below to extend to multiple password encryption keys per namespace. See ltpa_keys_sharing.go for an example.
-
-	// // retrieve the password encryption leader tracker to re-use an existing name or to create a new metadata.Name
-	// leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, r.GetClient())
-	// if err != nil {
-	// 	return metadata, err
-	// }
-	// // if the leaderTracker is on a mismatched version, wait for a subsequent reconcile loop to re-create the leader tracker
-	// if leaderTracker.Labels[lutils.LeaderVersionLabel] != latestOperandVersion {
-	// 	return metadata, fmt.Errorf("waiting for the Leader Tracker to be updated")
-	// }
-
-	// to avoid limitation with Kubernetes label values having a max length of 63, translate validSubPath into a path index
-	pathIndex := tree.GetLeafIndex(treeMap, validSubPath)
-	versionedPathIndex := fmt.Sprintf("%s.%d", latestOperandVersion, pathIndex)
-
-	metadata.Path = validSubPath
-	metadata.PathIndex = versionedPathIndex
-	metadata.Name = r.getPasswordEncryptionMetadataName() // You could augment this function to extend to multiple password encryption keys per namespace. See ltpa_keys_sharing.go for an example.
-	return metadata, nil
+	return metadataList, nil
 }
 
-func (r *ReconcileWebSphereLiberty) getPasswordEncryptionPathOptionsAndChoices(latestOperandVersion string) ([]string, []string) {
-	var pathOptions, pathChoices []string
+func (r *ReconcileWebSphereLiberty) getPasswordEncryptionPathOptionsAndChoices(latestOperandVersion string) ([][]string, [][]string) {
+	var pathOptionsList, pathChoicesList [][]string
 	if latestOperandVersion == "v1_4_0" {
-		pathOptions = []string{"managePasswordEncryption"}
-		pathChoices = []string{"true"} // there is only one possible password encryption key per namespace which corresponds to one path only
+		pathOptions := []string{"managePasswordEncryption"}
+		pathChoices := []string{"true"} // there is only one possible password encryption key per namespace which corresponds to one path only
+		pathOptionsList = append(pathOptionsList, pathOptions)
+		pathChoicesList = append(pathChoicesList, pathChoices)
 	}
-	return pathOptions, pathChoices
+	return pathOptionsList, pathChoicesList
 }
 
 func (r *ReconcileWebSphereLiberty) getPasswordEncryptionMetadataName() string {
@@ -152,12 +166,26 @@ func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance
 
 // Returns the Secret that contains the password encryption key used internally by the operator
 func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
-	return r.getSecret(instance, lutils.PasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name+"-internal")
+	return r.getSecret(instance, lutils.LocalPasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name+"-internal")
 }
 
 // Returns the Secret that contains the password encryption key provided by the user
 func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
 	return r.getSecret(instance, lutils.PasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name)
+}
+
+func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
+	userEncryptionSecret, err := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	if err != nil {
+		return false
+	}
+	internalEncryptionSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	if err != nil {
+		return false
+	}
+	internalPasswordEncryptionKey := string(internalEncryptionSecret.Data["passwordEncryptionKey"])
+	userPasswordEncryptionKey := string(userEncryptionSecret.Data["passwordEncryptionKey"])
+	return userPasswordEncryptionKey != "" && internalPasswordEncryptionKey == userPasswordEncryptionKey
 }
 
 func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
@@ -276,7 +304,7 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 
 // Tracks existing password encryption resources by populating a LeaderTracker array used to initialize the LeaderTracker
 func (r *ReconcileWebSphereLiberty) GetPasswordEncryptionResources(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, assetsFolder *string) (*unstructured.UnstructuredList, string, error) {
-	passwordEncryptionResources, err := lutils.CreateUnstructuredResourceListFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
+	passwordEncryptionResources, _, err := lutils.CreateUnstructuredResourceListFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
 	if err != nil {
 		return nil, "", err
 	}
