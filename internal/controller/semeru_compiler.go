@@ -442,7 +442,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 	svcCert.Name = getSemeruCompilerNameWithGeneration(wlva)
 	svcCert.Namespace = wlva.GetNamespace()
 	customIssuer := &certmanagerv1.Issuer{ObjectMeta: metav1.ObjectMeta{
-		Name:      "wlo-" + "-custom-issuer",
+		Name:      OperatorShortName + "-custom-issuer",
 		Namespace: svcCert.Namespace,
 	}}
 
