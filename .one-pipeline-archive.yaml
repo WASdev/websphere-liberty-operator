@@ -4,7 +4,7 @@ setup:
   image: icr.io/continuous-delivery/pipeline/pipeline-base-ubi:3.12
   script: |
     #!/usr/bin/env bash
-    GHE_TOKEN=$(get_env git-token)
+    GHE_TOKEN=$(get_env appplatform-git-token)
     ARCHIVE_DESTINATION_REPO=$(get_env archive-destination-repo)
     REPO=$(get_env repository)
     ARCHIVE_PARAMETERS=$(get_env archive-parameters)
