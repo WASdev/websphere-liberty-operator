@@ -113,7 +113,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		oputils.CreateConfigMap(OperatorName)
 	} else {
-		common.Config.LoadFromConfigMap(configMap)
+		common.LoadFromConfigMap(common.Config, configMap)
 	}
 
 	// Fetch the WebSphereLiberty instance
