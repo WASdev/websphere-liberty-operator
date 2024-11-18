@@ -131,6 +131,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return reconcile.Result{}, err
 	}
 
+	if err = common.Config.CheckValidValue(common.OpConfigReconcileIntervalSeconds, OperatorName); err != nil {
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
+	if err = common.Config.CheckValidValue(common.OpConfigReconcileIntervalPercentage, OperatorName); err != nil {
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
 	if err != nil {
 		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
@@ -834,7 +842,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 }
 
 func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
-	if r.CheckApplicationStatus(ba) == corev1.ConditionTrue {
+	_, condition := r.CheckApplicationStatus(ba)
+	if condition.GetStatus() == corev1.ConditionTrue {
 		statusCondition := ba.GetStatus().GetCondition(common.StatusConditionTypeReady)
 		return statusCondition != nil && statusCondition.GetMessage() == common.StatusConditionTypeReadyMessage
 	}

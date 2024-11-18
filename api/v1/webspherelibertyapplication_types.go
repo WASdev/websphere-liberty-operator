@@ -545,6 +545,9 @@ type WebSphereLibertyApplicationStatus struct {
 
 	// The generation identifier of this WebSphereLibertyApplication instance completely reconciled by the Operator.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// The reconciliation interval in seconds.
+	ReconcileInterval *int32 `json:"reconcileInterval,omitempty"`
 }
 
 // Defines possible status conditions.
@@ -554,6 +557,9 @@ type StatusCondition struct {
 	Message            string                 `json:"message,omitempty"`
 	Status             corev1.ConditionStatus `json:"status,omitempty"`
 	Type               StatusConditionType    `json:"type,omitempty"`
+
+	// The count of the number of reconciles the condition status type has not changed.
+	UnchangedConditionCount *int32 `json:"unchangedConditionCount,omitempty"`
 }
 
 // Defines the type of status condition.
@@ -1046,6 +1052,14 @@ func (s *WebSphereLibertyApplicationStatus) SetReference(name string, value stri
 	s.References[name] = value
 }
 
+func (s *WebSphereLibertyApplicationStatus) GetReconcileInterval() *int32 {
+	return s.ReconcileInterval
+}
+
+func (s *WebSphereLibertyApplicationStatus) SetReconcileInterval(interval *int32) {
+	s.ReconcileInterval = interval
+}
+
 // GetMinReplicas returns minimum replicas
 func (a *WebSphereLibertyApplicationAutoScaling) GetMinReplicas() *int32 {
 	return a.MinReplicas
@@ -1511,6 +1525,7 @@ func (s *WebSphereLibertyApplicationStatus) SetCondition(c common.StatusConditio
 	condition.SetMessage(c.GetMessage())
 	condition.SetStatus(c.GetStatus())
 	condition.SetType(c.GetType())
+	condition.SetUnchangedConditionCount(c.GetUnchangedConditionCount())
 	if !found {
 		s.Conditions = append(s.Conditions, *condition)
 	}
@@ -1528,6 +1543,24 @@ func (s *WebSphereLibertyApplicationStatus) UnsetCondition(c common.StatusCondit
 				s.Conditions = append(s.Conditions[:i], s.Conditions[i+1])
 			}
 			return
+		}
+	}
+}
+
+func (sc *StatusCondition) GetUnchangedConditionCount() *int32 {
+	return sc.UnchangedConditionCount
+}
+
+func (sc *StatusCondition) SetUnchangedConditionCount(count *int32) {
+	sc.UnchangedConditionCount = count
+}
+
+func (s *WebSphereLibertyApplicationStatus) UnsetUnchangedConditionCount(conditionType common.StatusConditionType) {
+	// Reset unchanged count for other status conditions
+	var emptyCount *int32
+	for i := range s.Conditions {
+		if s.Conditions[i].GetType() != conditionType && s.Conditions[i].GetUnchangedConditionCount() != nil {
+			s.Conditions[i].SetUnchangedConditionCount(emptyCount)
 		}
 	}
 }
