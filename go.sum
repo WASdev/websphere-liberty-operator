@@ -6,6 +6,8 @@ github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20241118200244-c535feadcf4
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20241118200244-c535feadcf42/go.mod h1:+s432/Ut8VSUHpvnird0mBa5o0O4MdSxVXfyePHOaNA=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241118182902-2340c1cdeff2 h1:dv5rxcqVkCFbWtH4N4U8AA7M284DXhXgC3eEls2KETk=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241118182902-2340c1cdeff2/go.mod h1:Q//a3yubxjR3+COorasymYRuuiDPs0Usgl9YuADkD6U=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241120210837-2650f9d4b763 h1:qs+ovAwqaRrx2MTvtM8Elc3anZNUNBDah3KwDeNabb8=
+github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241120210837-2650f9d4b763/go.mod h1:Q//a3yubxjR3+COorasymYRuuiDPs0Usgl9YuADkD6U=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
