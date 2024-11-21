@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/application-stacks/runtime-component-operator/utils"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -78,7 +79,14 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	utils.CreateConfigMap(controller.OperatorName)
+
+	opts := zap.Options{
+		Level:           common.LevelFunc,
+		StacktraceLevel: common.StackLevelFunc,
+		Development:     true,
+	}
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	// see https://github.com/operator-framework/operator-sdk/issues/1813
 	leaseDuration := 30 * time.Second
@@ -151,8 +159,6 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-
-	utils.CreateConfigMap(controller.OperatorName)
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
