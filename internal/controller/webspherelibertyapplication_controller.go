@@ -31,7 +31,6 @@ import (
 	oputils "github.com/application-stacks/runtime-component-operator/utils"
 
 	webspherelibertyv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
-
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	imageutil "github.com/openshift/library-go/pkg/image/imageutil"
@@ -47,6 +46,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -114,7 +114,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
 		oputils.CreateConfigMap(OperatorName)
 	} else {
-		common.Config.LoadFromConfigMap(configMap)
+		common.LoadFromConfigMap(common.Config, configMap)
 	}
 
 	// Fetch the WebSphereLiberty instance
@@ -132,11 +132,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return reconcile.Result{}, err
 	}
 
-	if err = common.Config.CheckValidValue(common.OpConfigReconcileIntervalSeconds, OperatorName); err != nil {
+	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalSeconds, OperatorName); err != nil {
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
-	if err = common.Config.CheckValidValue(common.OpConfigReconcileIntervalPercentage, OperatorName); err != nil {
+	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalPercentage, OperatorName); err != nil {
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
@@ -958,7 +958,12 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 			},
 		})
 	}
-	return b.Complete(r)
+
+	maxConcurrentReconciles := oputils.GetMaxConcurrentReconciles()
+
+	return b.WithOptions(controller.Options{
+		MaxConcurrentReconciles: maxConcurrentReconciles,
+	}).Complete(r)
 }
 
 func getMonitoringEnabledLabelName(ba common.BaseComponent) string {
