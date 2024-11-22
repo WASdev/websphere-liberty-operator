@@ -485,7 +485,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 		svcCert.Spec.DNSNames[0] = svcCert.Name + "." + wlva.Namespace + ".svc"
 		svcCert.Spec.DNSNames[1] = svcCert.Name + "." + wlva.Namespace + ".svc.cluster.local"
 		svcCert.Spec.CommonName = svcCert.Name
-		duration, err := time.ParseDuration(common.LoadFromConfig(common.Config, common.OpConfigCMCADuration))
+		duration, err := time.ParseDuration(common.LoadFromConfig(common.Config, common.OpConfigCMCertDuration))
 		if err != nil {
 			return err
 		}
