@@ -53,7 +53,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.4.0"
+const OperandVersion = "1.4.1"
 
 // LTPA constants
 const managedLTPAMountPath = "/config/managedLTPA"
