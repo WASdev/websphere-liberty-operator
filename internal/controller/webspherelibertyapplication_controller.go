@@ -340,7 +340,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// If semeru compiler is enabled, make sure its ready
 	if r.isSemeruEnabled(instance) {
 		message = "Check Semeru Compiler resources ready"
-		reqLogger.Info(message)
+		reqDebugLogger.Info(message)
 		err = r.areSemeruCompilerResourcesReady(instance)
 		if err != nil {
 			reqLogger.Error(err, message)
@@ -377,7 +377,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 		}
 		if isKnativeSupported {
-			reqLogger.Info("Knative is supported and Knative Service is enabled")
+			reqDebugLogger.Info("Knative is supported and Knative Service is enabled")
 			ksvc := &servingv1.Service{ObjectMeta: defaultMeta}
 			err = r.CreateOrUpdate(ksvc, instance, func() error {
 				oputils.CustomizeKnativeService(ksvc, instance)
