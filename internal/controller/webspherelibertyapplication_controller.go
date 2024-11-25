@@ -21,8 +21,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"golang.org/x/time/rate"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/go-logr/logr"
@@ -851,6 +854,14 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 	return false
 }
 
+func DefaultWebSphereLibertyApplicationControllerRateLimiter() workqueue.RateLimiter {
+	return workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		// 100 qps, 1000 bucket size.
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(100), 1000)},
+	)
+}
+
 func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 
 	mgr.GetFieldIndexer().IndexField(context.Background(), &webspherelibertyv1.WebSphereLibertyApplication{}, indexFieldImageStreamName, func(obj client.Object) []string {
@@ -963,6 +974,7 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 
 	return b.WithOptions(controller.Options{
 		MaxConcurrentReconciles: maxConcurrentReconciles,
+		RateLimiter:             DefaultWebSphereLibertyApplicationControllerRateLimiter(),
 	}).Complete(r)
 }
 
