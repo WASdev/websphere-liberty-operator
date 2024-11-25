@@ -857,8 +857,7 @@ func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common
 func DefaultWebSphereLibertyApplicationControllerRateLimiter() workqueue.RateLimiter {
 	return workqueue.NewMaxOfRateLimiter(
 		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
-		// 100 qps, 1000 bucket size.
-		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(100), 1000)},
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Inf, 1000)},
 	)
 }
 
