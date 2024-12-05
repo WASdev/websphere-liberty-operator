@@ -1,10 +1,7 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.4.0
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.4.1
 Copyright 2023 - 2024 IBM Corporation and others
-
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 TABLE OF CONTENTS
 
 THIS IBM NOTICES FILE CONSISTS OF THE FOLLOWING SECTIONS:
@@ -16,8 +13,6 @@ EPL V2
 ISC
 MPL-2.0
 MIT
-
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 APACHE SOFTWARE LICENSE 2.0
@@ -450,7 +445,6 @@ github.com/hashicorp/golang-lru | https://proxy.golang.org/github.com/hashicorp/
 
 END OF MOZILLA PUBLIC LICENSE, VERSION 2.0 NOTICES AND INFORMATION
 
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 MIT LICENSE
@@ -529,13 +523,9 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
 
 END OF MIT LICENSE NOTICES AND INFORMATION
-
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.4.0 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.4.1 NOTICES FILE CONSISTS OF THE FOLLOWING 
 SECTIONS:
 
 TABLE OF CONTENTS
