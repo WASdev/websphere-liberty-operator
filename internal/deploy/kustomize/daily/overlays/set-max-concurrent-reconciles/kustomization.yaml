@@ -6,20 +6,3 @@ namespace: websphere-liberty
 
 resources:
 - ../../base
-
-configMapGenerator:
-  - envs:
-      - operator.properties
-    name: operator-config
-
-replacements:
-- source:
-    kind: ConfigMap
-    name: operator-config
-    fieldPath: data.MAX_CONCURRENT_RECONCILES
-  targets:
-  - select:
-      name: wlo-controller-manager
-      kind: Deployment
-    fieldPaths:
-      - spec.template.spec.containers.[name=manager].env.[name=MAX_CONCURRENT_RECONCILES].value
