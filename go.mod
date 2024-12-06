@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20241122163644-be3e5df8ce61
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241125214817-041cee0513b1
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20241206184458-556641161648
 	github.com/cert-manager/cert-manager v1.13.6
 	github.com/go-logr/logr v1.3.0
 	github.com/openshift/api v0.0.0-20230928134114-673ed0cfc7f1
