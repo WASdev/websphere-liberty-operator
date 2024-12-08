@@ -132,7 +132,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return reconcile.Result{}, err
 	}
 
-	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalSeconds, OperatorName); err != nil {
+	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalMinimum, OperatorName); err != nil {
 		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
@@ -926,37 +926,43 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 		},
 	}
 
-	b := ctrl.NewControllerManagedBy(mgr).For(&webspherelibertyv1.WebSphereLibertyApplication{}, builder.WithPredicates(pred)).
-		Owns(&corev1.Service{}, builder.WithPredicates(predSubResource)).
-		Owns(&corev1.Secret{}, builder.WithPredicates(predSubResource)).
-		Owns(&appsv1.Deployment{}, builder.WithPredicates(predSubResWithGenCheck)).
-		Owns(&appsv1.StatefulSet{}, builder.WithPredicates(predSubResWithGenCheck)).
-		Owns(&autoscalingv1.HorizontalPodAutoscaler{}, builder.WithPredicates(predSubResource))
+	b := ctrl.NewControllerManagedBy(mgr).For(&webspherelibertyv1.WebSphereLibertyApplication{}, builder.WithPredicates(pred))
 
-	ok, _ := r.IsGroupVersionSupported(routev1.SchemeGroupVersion.String(), "Route")
-	if ok {
-		b = b.Owns(&routev1.Route{}, builder.WithPredicates(predSubResource))
-	}
-	ok, _ = r.IsGroupVersionSupported(networkingv1.SchemeGroupVersion.String(), "Ingress")
-	if ok {
-		b = b.Owns(&networkingv1.Ingress{}, builder.WithPredicates(predSubResource))
-	}
-	ok, _ = r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
-	if ok {
-		b = b.Owns(&servingv1.Service{}, builder.WithPredicates(predSubResource))
-	}
-	ok, _ = r.IsGroupVersionSupported(prometheusv1.SchemeGroupVersion.String(), "ServiceMonitor")
-	if ok {
-		b = b.Owns(&prometheusv1.ServiceMonitor{}, builder.WithPredicates(predSubResource))
-	}
-	ok, _ = r.IsGroupVersionSupported(imagev1.SchemeGroupVersion.String(), "ImageStream")
-	if ok {
-		b = b.Watches(&imagev1.ImageStream{}, &EnqueueRequestsForCustomIndexField{
-			Matcher: &ImageStreamMatcher{
-				Klient:          mgr.GetClient(),
-				WatchNamespaces: watchNamespaces,
-			},
-		})
+	if !oputils.GetOperatorDisableWatches() {
+		b = b.Owns(&corev1.Service{}, builder.WithPredicates(predSubResource)).
+			Owns(&corev1.Secret{}, builder.WithPredicates(predSubResource)).
+			Owns(&appsv1.Deployment{}, builder.WithPredicates(predSubResWithGenCheck)).
+			Owns(&appsv1.StatefulSet{}, builder.WithPredicates(predSubResWithGenCheck))
+
+		if oputils.GetOperatorWatchHPA() {
+			b = b.Owns(&autoscalingv1.HorizontalPodAutoscaler{}, builder.WithPredicates(predSubResource))
+		}
+
+		ok, _ := r.IsGroupVersionSupported(routev1.SchemeGroupVersion.String(), "Route")
+		if ok {
+			b = b.Owns(&routev1.Route{}, builder.WithPredicates(predSubResource))
+		}
+		ok, _ = r.IsGroupVersionSupported(networkingv1.SchemeGroupVersion.String(), "Ingress")
+		if ok {
+			b = b.Owns(&networkingv1.Ingress{}, builder.WithPredicates(predSubResource))
+		}
+		ok, _ = r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
+		if ok {
+			b = b.Owns(&servingv1.Service{}, builder.WithPredicates(predSubResource))
+		}
+		ok, _ = r.IsGroupVersionSupported(prometheusv1.SchemeGroupVersion.String(), "ServiceMonitor")
+		if ok {
+			b = b.Owns(&prometheusv1.ServiceMonitor{}, builder.WithPredicates(predSubResource))
+		}
+		ok, _ = r.IsGroupVersionSupported(imagev1.SchemeGroupVersion.String(), "ImageStream")
+		if ok {
+			b = b.Watches(&imagev1.ImageStream{}, &EnqueueRequestsForCustomIndexField{
+				Matcher: &ImageStreamMatcher{
+					Klient:          mgr.GetClient(),
+					WatchNamespaces: watchNamespaces,
+				},
+			})
+		}
 	}
 
 	maxConcurrentReconciles := oputils.GetMaxConcurrentReconciles()
