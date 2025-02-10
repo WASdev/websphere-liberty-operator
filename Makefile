@@ -5,6 +5,7 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 1.4.2
 OPERATOR_SDK_RELEASE_VERSION ?= v1.37.0
+LIBERTY_VERSION ?= 25.0.0.2
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -188,7 +189,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 .PHONY: bundle
 bundle: manifests setup kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	scripts/update-sample.sh
-	
+
 	sed -i.bak "s,OPERATOR_IMAGE,${IMG},g" config/manager/manager.yaml
 	sed -i.bak "s,IMAGE,${IMG},g;s,CREATEDAT,${CREATEDAT},g" config/manifests/patches/csvAnnotations.yaml
 	operator-sdk generate kustomize manifests -q
@@ -233,8 +234,22 @@ unit-test: ## Run unit tests
 	go test -v -mod=vendor -tags=unit github.com/WASdev/websphere-liberty-operator/...
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller against the configured Kubernetes cluster in ~/.kube/config from your host.
+run: manifests generate fmt vet install-secutil ## Run a controller against the configured Kubernetes cluster in ~/.kube/config from your host.
 	go run ./cmd/main.go
+
+.PHONY: install-secutil
+install-secutil:
+ifneq (found,$(shell test -e ./opt/ol/wlp/bin/securityUtility && echo -n found))
+	@mkdir -p ./opt/ol/
+	@wget -O ./opt/ol/wlp.zip https://repo1.maven.org/maven2/io/openliberty/openliberty-kernel/$(LIBERTY_VERSION)/openliberty-kernel-$(LIBERTY_VERSION).zip
+	@unzip -d ./opt/ol/ ./opt/ol/wlp.zip
+	@rm ./opt/ol/wlp.zip
+	@mkdir -p ./opt/ol/wlp/output
+	@echo "Liberty securityUtility has been installed!"
+else
+	@mkdir -p ./opt/ol/wlp/output
+	@echo "Liberty securityUtility is already installed!"
+endif 
 
 ##@ Deployment
 
