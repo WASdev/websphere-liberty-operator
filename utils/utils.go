@@ -455,7 +455,7 @@ func CreateServiceabilityPVC(instance *wlv1.WebSphereLibertyApplication) *corev1
 			Annotations: instance.GetAnnotations(),
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: resource.MustParse(instance.GetServiceability().GetSize()),
 				},
@@ -1172,6 +1172,16 @@ func GetCommaSeparatedArray(stringList string) []string {
 }
 
 var letterNums = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+
+var letterNums2 = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+
+func GetRandomAlphanumeric(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letterNums2[rand.IntN(len(letterNums2))]
+	}
+	return string(b)
+}
 
 func GetRandomLowerAlphanumericSuffix(length int) string {
 	b := make([]rune, length)

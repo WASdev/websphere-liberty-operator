@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
@@ -714,4 +715,11 @@ func createMock2LeaderTracker() LeaderTracker {
 		PathIndex: "v1_0_0.1",
 		Sublease:  "0",
 	}
+}
+
+func TestMain(m *testing.M) {
+	LeaderTrackerMutexes.Store("ltpa", &sync.Mutex{})
+	rc := m.Run()
+	LeaderTrackerMutexes.Delete("ltpa")
+	os.Exit(rc)
 }

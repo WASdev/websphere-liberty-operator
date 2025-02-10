@@ -369,6 +369,10 @@ spec:
           runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /opt/ol/wlp/output
+          name: scratch
+          subPath: create-ltpa-keys
       hostIPC: false
       hostNetwork: false
       hostPID: false
@@ -378,3 +382,6 @@ spec:
           type: RuntimeDefault
       serviceAccountName: wlo-controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+      - emptyDir: {}
+        name: scratch
