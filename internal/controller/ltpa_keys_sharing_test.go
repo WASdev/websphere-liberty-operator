@@ -146,7 +146,7 @@ func TestLTPALeaderTracker(t *testing.T) {
 	// Second, initialize the LTPA leader tracker
 	latestOperandVersion := "v10_4_1"
 	fileName := getControllerFolder() + "/tests/ltpa-decision-tree-complex.yaml"
-	treeMap, replaceMap, err := tree.ParseDecisionTree(LTPA_RESOURCE_SHARING_FILE_NAME, &fileName, false)
+	treeMap, replaceMap, err := tree.ParseDecisionTree(LTPA_RESOURCE_SHARING_FILE_NAME, &fileName)
 	tests = []Test{
 		{"parse decision tree complex", nil, err},
 	}
