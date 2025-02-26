@@ -61,12 +61,12 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-12-06T19:19:29Z"
+    createdAt: "2025-02-26T17:31:40Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.4.1'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
-    operators.operatorframework.io/builder: operator-sdk-v1.35.0
+    operators.operatorframework.io/builder: operator-sdk-v1.39.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -595,11 +595,9 @@ spec:
         path: license.metric
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: I represent that the software in the above-referenced application
-          container includes the IBM Program referenced below and I accept the terms
-          of the license agreement corresponding to the version of IBM Program in
-          the application container by setting this value to true. See https://ibm.biz/was-license
-          for the license agreements applicable to this IBM Program
+      - description: |-
+          I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
+          to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -870,6 +868,21 @@ spec:
     mediatype: image/svg+xml
   install:
     spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: wlo-controller-manager
       deployments:
       - label:
           app.kubernetes.io/instance: websphere-liberty-operator
@@ -1015,7 +1028,6 @@ spec:
           - apps
           resources:
           - deployments/finalizers
-          - statefulsets
           verbs:
           - update
         - apiGroups:
@@ -1095,31 +1107,9 @@ spec:
           - webspherelibertyapplications
           - webspherelibertyapplications/finalizers
           - webspherelibertyapplications/status
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - liberty.websphere.ibm.com
-          resources:
           - webspherelibertydumps
           - webspherelibertydumps/finalizers
           - webspherelibertydumps/status
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - liberty.websphere.ibm.com
-          resources:
           - webspherelibertytraces
           - webspherelibertytraces/finalizers
           - webspherelibertytraces/status

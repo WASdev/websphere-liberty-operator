@@ -21,7 +21,6 @@ rules:
   - apps
   resources:
   - deployments/finalizers
-  - statefulsets
   verbs:
   - update
 - apiGroups:
@@ -101,31 +100,9 @@ rules:
   - webspherelibertyapplications
   - webspherelibertyapplications/finalizers
   - webspherelibertyapplications/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - liberty.websphere.ibm.com
-  resources:
   - webspherelibertydumps
   - webspherelibertydumps/finalizers
   - webspherelibertydumps/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - liberty.websphere.ibm.com
-  resources:
   - webspherelibertytraces
   - webspherelibertytraces/finalizers
   - webspherelibertytraces/status
