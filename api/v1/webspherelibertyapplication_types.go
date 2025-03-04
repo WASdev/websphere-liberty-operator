@@ -201,7 +201,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
-	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications Standard instead.
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Enterprise Application Runtimes, IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications Standard instead.
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
@@ -241,12 +241,14 @@ const (
 )
 
 // Defines the possible values for product entitlement source
-// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
+// +kubebuilder:validation:Enum=Standalone;IBM Enterprise Application Runtimes;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
 type LicenseEntitlement string
 
 const (
 	// Entitlement source Standalone
 	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
+	// Entitlement source IBM Enterprise Application Runtimes
+	LicenseEntitlementEAR LicenseEntitlement = "IBM Enterprise Application Runtimes"
 	// Entitlement source IBM Cloud Pak for Applications Advanced
 	LicenseEntitlementCP4AppsAdvanced LicenseEntitlement = "IBM Cloud Pak for Applications Advanced"
 	// Entitlement source IBM Cloud Pak for Applications Standard

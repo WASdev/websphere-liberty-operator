@@ -61,7 +61,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-02-12T15:19:44Z"
+    createdAt: "2025-03-03T22:01:06Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.4.1'
@@ -583,10 +583,11 @@ spec:
         displayName: Edition
         path: license.edition
       - description: 'Entitlement source for the product. Defaults to Standalone.
-          Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for
-          Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application
-          Server Family Edition. Option IBM Cloud Pak for Applications is deprecated.
-          Use option IBM Cloud Pak for Applications Standard instead.'
+          Other options: IBM Enterprise Application Runtimes, IBM Cloud Pak for Applications
+          Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid
+          Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud
+          Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications
+          Standard instead.'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
       - description: Deprecated. Charge metric code is now automatically determined
