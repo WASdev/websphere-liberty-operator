@@ -7,7 +7,9 @@ resources:
 namePrefix: wlo-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app.kubernetes.io/instance: websphere-liberty-operator
-  app.kubernetes.io/name: websphere-liberty-operator
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
 
