@@ -680,7 +680,7 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 			clientId, clientSecret, err = RegisterWithOidcProvider(regData)
 			if err != nil {
 				writeSSOSecretIfNeeded(client, ssoSecret, ssoSecretUpdates) // preserve any registrations that succeeded
-				return errors.Wrapf(err, "Error occured during registration with OIDC for provider "+clientName)
+				return errors.Wrapf(err, "Error occured during registration with OIDC for provider %q", clientName)
 			}
 			logf.Log.WithName("utils").Info("OIDC registration for id: " + clientName + " successful, obtained clientId: " + clientId)
 			ssoSecretUpdates[clientName+autoregFragment+"RegisteredOidcClientId"] = []byte(clientId)
