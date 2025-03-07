@@ -63,8 +63,8 @@ LABEL name=$NAME \
 COPY --chown=${USER_ID}:${GROUP_ID} LICENSE NOTICES /licenses/
 WORKDIR /
 COPY --from=builder --chown=${USER_ID}:${GROUP_ID} /workspace/manager .
-COPY --from=builder --chown=${USER_ID}:${GROUP_ID} /workspace/internal/controller/assets/ /internal/controller/assets
+COPY --from=builder --chown=${USER_ID}:0 /workspace/internal/controller/assets/ /internal/controller/assets
 
-USER ${USER_ID}:${GROUP_ID}
+USER ${USER_ID}
 
 ENTRYPOINT ["/manager"]
