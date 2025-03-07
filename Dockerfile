@@ -75,6 +75,6 @@ COPY --from=builder --chown=${USER_ID}:${GROUP_ID} /workspace/manager .
 COPY --from=builder --chown=${USER_ID}:${GROUP_ID} /workspace/internal/controller/assets/ /internal/controller/assets
 COPY --from=builder --chown=${USER_ID}:0 /workspace/liberty /liberty
 
-USER ${USER_ID}
+USER ${USER_ID}:${GROUP_ID}
 
 ENTRYPOINT ["/manager"]
