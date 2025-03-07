@@ -63,7 +63,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 				} else {
 					// non-leaders should yield for the password encryption leader to mirror the encryption key's state
 					if !r.encryptionKeySecretMirrored(instance, passwordEncryptionMetadata) {
-						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to mirror the shared Password Encryption Key Secret for the namespace '" + instance.Namespace + "'.")
+						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key Secret for the namespace '%s'.", leaderName, instance.Namespace)
 					}
 				}
 				return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
