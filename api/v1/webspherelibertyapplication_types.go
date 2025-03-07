@@ -1060,7 +1060,7 @@ func (s *WebSphereLibertyApplicationStatus) SetReconcileInterval(interval *int32
 }
 
 func (s *WebSphereLibertyApplicationStatus) UnsetReconcileInterval() {
-	return
+	s.ReconcileInterval = nil
 }
 
 // GetMinReplicas returns minimum replicas
