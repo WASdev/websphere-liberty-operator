@@ -82,4 +82,4 @@ testbin
 linter-tool
 bundle/tests
 operators
-opt/ol/wlp/*
+liberty/**
