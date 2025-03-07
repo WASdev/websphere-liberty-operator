@@ -267,7 +267,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		}
 		// If this instance is not the leader, exit the reconcile loop
 		if !thisInstanceIsLeader {
-			return "", "", leaderName, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to generate the shared LTPA keys file for the namespace '" + instance.Namespace + "'.")
+			return "", "", leaderName, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA keys file for the namespace '%s'.", leaderName, instance.Namespace)
 		}
 
 		// Check the password encryption key
@@ -349,9 +349,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		}
 		// If this instance is not the leader, exit the reconcile loop
 		if !thisInstanceIsLeader {
-			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to generate the shared LTPA keys file for the namespace '" + instance.Namespace + "'.")
+			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA keys file for the namespace '%s'.", leaderName, instance.Namespace)
 		}
-		return ltpaXMLSecret.Name, fmt.Errorf("An unknown error has occurred generating the LTPA Secret for namespace '" + instance.Namespace + "'.")
+		return ltpaXMLSecret.Name, fmt.Errorf("An unknown error has occurred generating the LTPA Secret for namespace '%s'.", instance.Namespace)
 	}
 
 	// LTPA config leader starts here
@@ -363,7 +363,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLSecret.Name, Namespace: ltpaXMLSecret.Namespace}, ltpaXMLSecret)
 		if err != nil {
 			if kerrors.IsNotFound(err) {
-				return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to generate the shared LTPA config for the namespace '" + instance.Namespace + "'.")
+				return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 			}
 			return ltpaXMLSecret.Name, err
 		}
@@ -371,7 +371,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		lastRotationLabel, found := ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)]
 		if !found {
 			// the label was not found, but the LTPA config leader is responsible for updating this label
-			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to update the shared LTPA config for the namespace '" + instance.Namespace + "'.")
+			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 		}
 		// non-leaders should only stop yielding (blocking) to the leader if the Liberty XML Secret has been updated to a later time than lastKeyRelatedRotation
 		lastRotationUpdated, err := lutils.CompareStringTimeGreaterThanOrEqual(lastRotationLabel, lastKeyRelatedRotation)
@@ -381,7 +381,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		if lastRotationUpdated {
 			return ltpaXMLSecret.Name, nil
 		}
-		return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to update the shared LTPA config for the namespace '" + instance.Namespace + "'.")
+		return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 	}
 
 	ltpaConfigSecret := &corev1.Secret{}
@@ -405,7 +405,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		}
 		// If this instance is not the leader, exit the reconcile loop
 		if !thisInstanceIsLeader {
-			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to generate the shared LTPA password Secret for the namespace '" + instance.Namespace + "'.")
+			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA password Secret for the namespace '%s'.", leaderName, instance.Namespace)
 		}
 
 		// 1,3,3 patch - if rawPassword field is not present, create the Secret directly or delete LTPA Secret when user attempts to use password encryption
