@@ -211,7 +211,7 @@ func TestCustomizeEnvSSO(t *testing.T) {
 
 	err := rb.GetClient().Create(context.TODO(), ssoSecret)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("%s", err.Error())
 	}
 	wl := createWebSphereLibertyApp(name, namespace, spec)
 	oputils.CustomizePodSpec(pts, wl)

@@ -680,7 +680,7 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 			clientId, clientSecret, err = RegisterWithOidcProvider(regData)
 			if err != nil {
 				writeSSOSecretIfNeeded(client, ssoSecret, ssoSecretUpdates) // preserve any registrations that succeeded
-				return errors.Wrapf(err, "Error occured during registration with OIDC for provider "+clientName)
+				return errors.Wrapf(err, "Error occured during registration with OIDC for provider %s", clientName)
 			}
 			logf.Log.WithName("utils").Info("OIDC registration for id: " + clientName + " successful, obtained clientId: " + clientId)
 			ssoSecretUpdates[clientName+autoregFragment+"RegisteredOidcClientId"] = []byte(clientId)
@@ -1173,6 +1173,16 @@ func GetCommaSeparatedArray(stringList string) []string {
 }
 
 var letterNums = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+
+var letterNums2 = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+
+func GetRandomAlphanumeric(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letterNums2[rand.IntN(len(letterNums2))]
+	}
+	return string(b)
+}
 
 func GetRandomLowerAlphanumericSuffix(length int) string {
 	b := make([]rune, length)
