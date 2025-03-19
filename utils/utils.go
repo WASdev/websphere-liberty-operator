@@ -28,6 +28,7 @@ import (
 
 	"math/rand/v2"
 
+	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
@@ -100,84 +101,6 @@ var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
 	wlv1.LicenseEntitlementWSHE:            "6358611af04743f99f42dadcd6e39d52",
 	wlv1.LicenseEntitlementFamilyEdition:   "be8ae84b3dd04d81b90af0d846849182",
 	wlv1.LicenseEntitlementCP4Apps:         "4df52d2cdc374ba09f631a650ad2b5bf",
-}
-
-type LTPAMetadata struct {
-	Kind       string
-	APIVersion string
-	Name       string
-	Path       string
-	PathIndex  string
-}
-
-func (m LTPAMetadata) GetName() string {
-	return m.Name
-}
-func (m LTPAMetadata) GetPath() string {
-	return m.Path
-}
-func (m LTPAMetadata) GetPathIndex() string {
-	return m.PathIndex
-}
-func (m LTPAMetadata) GetKind() string {
-	return m.Kind
-}
-func (m LTPAMetadata) GetAPIVersion() string {
-	return m.APIVersion
-}
-
-type LTPAMetadataList struct {
-	Items []LeaderTrackerMetadata
-}
-
-func (ml LTPAMetadataList) GetItems() []LeaderTrackerMetadata {
-	return ml.Items
-}
-
-type PasswordEncryptionMetadata struct {
-	Kind       string
-	APIVersion string
-	Name       string
-	Path       string
-	PathIndex  string
-}
-
-func (m PasswordEncryptionMetadata) GetName() string {
-	return m.Name
-}
-func (m PasswordEncryptionMetadata) GetPath() string {
-	return m.Path
-}
-func (m PasswordEncryptionMetadata) GetPathIndex() string {
-	return m.PathIndex
-}
-func (m PasswordEncryptionMetadata) GetKind() string {
-	return m.Kind
-}
-func (m PasswordEncryptionMetadata) GetAPIVersion() string {
-	return m.APIVersion
-}
-
-type PasswordEncryptionMetadataList struct {
-	Items []LeaderTrackerMetadata
-}
-
-func (ml PasswordEncryptionMetadataList) GetItems() []LeaderTrackerMetadata {
-	return ml.Items
-}
-
-type LTPAConfig struct {
-	Metadata                    *LTPAMetadata
-	SecretName                  string
-	SecretInstanceName          string
-	ConfigSecretName            string
-	ConfigSecretInstanceName    string
-	ServiceAccountName          string
-	JobRequestConfigMapName     string
-	ConfigMapName               string
-	FileName                    string
-	EncryptionKeySecretName     string
-	EncryptionKeySharingEnabled bool // true or false
 }
 
 // Validate if the WebSphereLibertyApplication is valid
@@ -815,7 +738,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 	return false
 }
 
-func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *PasswordEncryptionMetadata) {
+func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) {
 	// Mount a volume /output/liberty-operator/encryptionKey.xml to store the Liberty Password Encryption Key
 	MountSecretAsVolume(pts, operatorShortName+ManagedEncryptionServerXML+passwordEncryptionMetadata.Name, CreateVolumeMount(SecureMountPath, EncryptionKeyXMLFileName))
 
@@ -935,7 +858,7 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 	return false
 }
 
-func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
+func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *olutils.LTPAConfig, client client.Client) {
 	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
@@ -992,7 +915,7 @@ func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLib
 	})
 }
 
-func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
+func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *olutils.LTPAConfig, client client.Client) {
 	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"

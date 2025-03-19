@@ -1,0 +1,4 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyTrace
+name: "{0}"
+rootName: "" # empty root name is used because pod names are determined by the cluster
