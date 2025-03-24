@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
@@ -16,15 +16,15 @@ func init() {
 	lutils.LeaderTrackerMutexes.Store(TRACE_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
-func (r *ReconcileWebSphereLibertyTrace) reconcileTraceMetadata(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, latestOperandVersion string, assetsFolder *string) (olutils.LeaderTrackerMetadataList, error) {
-	metadataList := &olutils.TraceMetadataList{}
-	metadataList.Items = []olutils.LeaderTrackerMetadata{}
+func (r *ReconcileWebSphereLibertyTrace) reconcileTraceMetadata(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, latestOperandVersion string, assetsFolder *string) (leader.LeaderTrackerMetadataList, error) {
+	metadataList := &leader.TraceMetadataList{}
+	metadataList.Items = []leader.LeaderTrackerMetadata{}
 
 	// During runtime, the WebSphereLibertyApplication instance will decide what Trace related resources to track by populating arrays of pathOptions and pathChoices
 	pathOptionsList, pathChoicesList := r.getTracePathOptionsAndChoices(instance, latestOperandVersion)
 
 	for i := range pathOptionsList {
-		metadata := &olutils.TraceMetadata{}
+		metadata := &leader.TraceMetadata{}
 		pathOptions := pathOptionsList[i]
 		pathChoices := pathChoicesList[i]
 
@@ -45,7 +45,7 @@ func (r *ReconcileWebSphereLibertyTrace) reconcileTraceMetadata(instance *wlv1.W
 		}
 
 		// retrieve the Trace leader tracker to re-use an existing name or to create a new metadata.Name
-		leaderTracker, _, err := olutils.GetLeaderTracker(instance.GetNamespace(), OperatorShortName, TRACE_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+		leaderTracker, _, err := leader.GetLeaderTracker(instance.GetNamespace(), OperatorName, OperatorShortName, TRACE_RESOURCE_SHARING_FILE_NAME, r.GetClient())
 		if err != nil {
 			return metadataList, err
 		}
