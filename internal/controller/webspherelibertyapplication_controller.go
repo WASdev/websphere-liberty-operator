@@ -27,7 +27,7 @@ import (
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/go-logr/logr"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
 	oputils "github.com/application-stacks/runtime-component-operator/utils"
@@ -272,8 +272,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Reconciles the shared LTPA state for the instance namespace
-	var ltpaMetadataList *olutils.LTPAMetadataList
-	var ltpaKeysMetadata, ltpaConfigMetadata *olutils.LTPAMetadata
+	var ltpaMetadataList *leader.LTPAMetadataList
+	var ltpaKeysMetadata, ltpaConfigMetadata *leader.LTPAMetadata
 	var ltpaRSF tree.ResourceSharingFactory
 	if r.isLTPAKeySharingEnabled(instance) {
 		rsf, leaderMetadataList, err := r.reconcileResourceTrackingState(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
@@ -281,16 +281,16 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 		ltpaRSF = rsf
-		ltpaMetadataList = leaderMetadataList.(*olutils.LTPAMetadataList)
+		ltpaMetadataList = leaderMetadataList.(*leader.LTPAMetadataList)
 		if ltpaMetadataList != nil && len(ltpaMetadataList.Items) == 2 {
-			ltpaKeysMetadata = ltpaMetadataList.Items[0].(*olutils.LTPAMetadata)
-			ltpaConfigMetadata = ltpaMetadataList.Items[1].(*olutils.LTPAMetadata)
+			ltpaKeysMetadata = ltpaMetadataList.Items[0].(*leader.LTPAMetadata)
+			ltpaConfigMetadata = ltpaMetadataList.Items[1].(*leader.LTPAMetadata)
 		}
 	}
 
 	// Reconciles the shared password encryption key state for the instance namespace only if the shared key already exists
-	var passwordEncryptionMetadataList *olutils.PasswordEncryptionMetadataList
-	passwordEncryptionMetadata := &olutils.PasswordEncryptionMetadata{}
+	var passwordEncryptionMetadataList *leader.PasswordEncryptionMetadataList
+	passwordEncryptionMetadata := &leader.PasswordEncryptionMetadata{}
 	var passwordEncryptionRSF tree.ResourceSharingFactory
 	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
 		rsf, leaderMetadataList, err := r.reconcileResourceTrackingState(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
@@ -298,9 +298,9 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 		}
 		passwordEncryptionRSF = rsf
-		passwordEncryptionMetadataList = leaderMetadataList.(*olutils.PasswordEncryptionMetadataList)
+		passwordEncryptionMetadataList = leaderMetadataList.(*leader.PasswordEncryptionMetadataList)
 		if passwordEncryptionMetadataList != nil && len(passwordEncryptionMetadataList.Items) == 1 {
-			passwordEncryptionMetadata = passwordEncryptionMetadataList.Items[0].(*olutils.PasswordEncryptionMetadata)
+			passwordEncryptionMetadata = passwordEncryptionMetadataList.Items[0].(*leader.PasswordEncryptionMetadata)
 		}
 	} else if r.isPasswordEncryptionKeySharingEnabled(instance) {
 		// error if the password encryption key sharing is enabled but the Secret is not found
@@ -998,8 +998,8 @@ func getMonitoringEnabledLabelName(ba common.BaseComponent) string {
 }
 
 func (r *ReconcileWebSphereLiberty) finalizeWebSphereLibertyApplication(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, baseRSF tree.ResourceSharingFactoryBase, pvcName string, pvcNamespace string) error {
-	tree.RemoveLeaderTrackerReference(baseRSF, wlapp.GetName(), wlapp.GetNamespace(), OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME)
-	tree.RemoveLeaderTrackerReference(baseRSF, wlapp.GetName(), wlapp.GetNamespace(), OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+	tree.RemoveLeaderTrackerReference(baseRSF, wlapp.GetName(), wlapp.GetNamespace(), OperatorName, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME)
+	tree.RemoveLeaderTrackerReference(baseRSF, wlapp.GetName(), wlapp.GetNamespace(), OperatorName, OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 	r.deletePVC(reqLogger, pvcName, pvcNamespace)
 	return nil
 }

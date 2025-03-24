@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
@@ -40,9 +40,9 @@ func init() {
 	lutils.LeaderTrackerMutexes.Store(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
-func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(rsf tree.ResourceSharingFactory, baseRSF tree.ResourceSharingFactoryBase, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) (string, string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(rsf tree.ResourceSharingFactory, baseRSF tree.ResourceSharingFactoryBase, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) (string, string, string, error) {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorShortName, instance.GetName(), instance.GetNamespace(), passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
+		leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil && !kerrors.IsNotFound(err) {
 			return "", "", "", err
 		}
@@ -77,7 +77,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(rsf tree.Reso
 			return "Failed to get the password encryption key Secret", "", "", err
 		}
 	} else {
-		err := tree.RemoveLeaderTrackerReference(baseRSF, instance.GetName(), instance.GetNamespace(), OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+		err := tree.RemoveLeaderTrackerReference(baseRSF, instance.GetName(), instance.GetNamespace(), OperatorName, OperatorShortName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
 			return "Failed to remove leader tracking reference to the password encryption key", "", "", err
 		}
@@ -85,13 +85,13 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(rsf tree.Reso
 	return "", "", "", nil
 }
 
-func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionMetadata(treeMap map[string]interface{}, latestOperandVersion string) (olutils.LeaderTrackerMetadataList, error) {
-	metadataList := &olutils.PasswordEncryptionMetadataList{}
-	metadataList.Items = []olutils.LeaderTrackerMetadata{}
+func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionMetadata(treeMap map[string]interface{}, latestOperandVersion string) (leader.LeaderTrackerMetadataList, error) {
+	metadataList := &leader.PasswordEncryptionMetadataList{}
+	metadataList.Items = []leader.LeaderTrackerMetadata{}
 
 	pathOptionsList, pathChoicesList := r.getPasswordEncryptionPathOptionsAndChoices(latestOperandVersion)
 	for i := range pathOptionsList {
-		metadata := &olutils.PasswordEncryptionMetadata{}
+		metadata := &leader.PasswordEncryptionMetadata{}
 		pathOptions := pathOptionsList[i]
 		pathChoices := pathChoicesList[i]
 
@@ -161,7 +161,7 @@ func (r *ReconcileWebSphereLiberty) isPasswordEncryptionKeySharingEnabled(instan
 	return instance.GetManagePasswordEncryption() != nil && *instance.GetManagePasswordEncryption()
 }
 
-func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) bool {
+func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) bool {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
 		_, err := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
 		return err == nil
@@ -169,7 +169,7 @@ func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance
 	return false
 }
 
-func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) (string, string, bool, error) {
+func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) (string, string, bool, error) {
 	if !r.isPasswordEncryptionKeySharingEnabled(instance) {
 		return "", "", false, nil
 	}
@@ -190,16 +190,16 @@ func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(instan
 }
 
 // Returns the Secret that contains the password encryption key used internally by the operator
-func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
+func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) (*corev1.Secret, error) {
 	return r.getSecret(instance, lutils.LocalPasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name+"-internal")
 }
 
 // Returns the Secret that contains the password encryption key provided by the user
-func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
+func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) (*corev1.Secret, error) {
 	return r.getSecret(instance, lutils.PasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name)
 }
 
-func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) bool {
+func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) bool {
 	userEncryptionSecret, err := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
@@ -213,7 +213,7 @@ func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(instance *wlv1.W
 	return userPasswordEncryptionKey != "" && internalPasswordEncryptionKey == userPasswordEncryptionKey
 }
 
-func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) error {
+func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) error {
 	userEncryptionSecret, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the userEncryptionSecret
 	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
@@ -256,7 +256,7 @@ func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv
 }
 
 // Deletes the mirrored encryption key secret if the initial encryption key secret no longer exists
-func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) error {
+func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) error {
 	_, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the userEncryptionSecret
 	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
@@ -286,7 +286,7 @@ func (r *ReconcileWebSphereLiberty) getSecret(instance *wlv1.WebSphereLibertyApp
 }
 
 // Creates the Liberty XML to mount the password encryption keys Secret into the application pods
-func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata, encryptionKey string) error {
+func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata, encryptionKey string) error {
 	if len(encryptionKey) == 0 {
 		return fmt.Errorf("a password encryption key was not specified")
 	}
@@ -329,11 +329,11 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 
 // Tracks existing password encryption resources by populating a LeaderTracker array used to initialize the LeaderTracker
 func (r *ReconcileWebSphereLiberty) GetPasswordEncryptionResources(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, assetsFolder *string) (*unstructured.UnstructuredList, string, error) {
-	passwordEncryptionResources, _, err := olutils.CreateUnstructuredResourceListFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
+	passwordEncryptionResources, _, err := leader.CreateUnstructuredResourceListFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
 	if err != nil {
 		return nil, "", err
 	}
-	passwordEncryptionResource, passwordEncryptionResourceName, err := olutils.CreateUnstructuredResourceFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "", "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
+	passwordEncryptionResource, passwordEncryptionResourceName, err := leader.CreateUnstructuredResourceFromSignature(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, assetsFolder, "", "") // TODO: replace prefix "" to specify operator precedence such as with prefix "wlo-"
 	if err != nil {
 		return nil, "", err
 	}
