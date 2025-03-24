@@ -28,7 +28,7 @@ import (
 
 	"math/rand/v2"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
@@ -738,7 +738,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 	return false
 }
 
-func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *olutils.PasswordEncryptionMetadata) {
+func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) {
 	// Mount a volume /output/liberty-operator/encryptionKey.xml to store the Liberty Password Encryption Key
 	MountSecretAsVolume(pts, operatorShortName+ManagedEncryptionServerXML+passwordEncryptionMetadata.Name, CreateVolumeMount(SecureMountPath, EncryptionKeyXMLFileName))
 
@@ -858,7 +858,7 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 	return false
 }
 
-func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *olutils.LTPAConfig, client client.Client) {
+func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *leader.LTPAConfig, client client.Client) {
 	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"
@@ -915,7 +915,7 @@ func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLib
 	})
 }
 
-func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *olutils.LTPAConfig, client client.Client) {
+func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *leader.LTPAConfig, client client.Client) {
 	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
 	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
 	job.Spec.Template.ObjectMeta.Name = "liberty"

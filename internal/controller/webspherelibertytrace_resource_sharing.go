@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
@@ -16,7 +16,7 @@ import (
 )
 
 type WebSphereLibertyTraceResourceSharingFactory struct {
-	resourcesFunc              func() (olutils.LeaderTrackerMetadataList, error)
+	resourcesFunc              func() (leader.LeaderTrackerMetadataList, error)
 	leaderTrackersFunc         func(assetsFolder *string) ([]*unstructured.UnstructuredList, []string, error)
 	createOrUpdateFunc         func(obj client.Object, owner metav1.Object, cb func() error) error
 	deleteResourcesFunc        func(obj client.Object) error
@@ -25,11 +25,11 @@ type WebSphereLibertyTraceResourceSharingFactory struct {
 	clientFunc                 func() client.Client
 }
 
-func (rsf *WebSphereLibertyTraceResourceSharingFactory) Resources() func() (olutils.LeaderTrackerMetadataList, error) {
+func (rsf *WebSphereLibertyTraceResourceSharingFactory) Resources() func() (leader.LeaderTrackerMetadataList, error) {
 	return rsf.resourcesFunc
 }
 
-func (rsf *WebSphereLibertyTraceResourceSharingFactory) SetResources(fn func() (olutils.LeaderTrackerMetadataList, error)) {
+func (rsf *WebSphereLibertyTraceResourceSharingFactory) SetResources(fn func() (leader.LeaderTrackerMetadataList, error)) {
 	rsf.resourcesFunc = fn
 }
 
@@ -109,13 +109,13 @@ func (r *ReconcileWebSphereLibertyTrace) createResourceSharingFactory(instance *
 		nameString, _, err := unstructured.NestedString(obj, "spec", "podName") // the Trace CR will use .spec.podName as the leaderTracker key identifier
 		return nameString, err
 	})
-	rsf.SetResources(func() (olutils.LeaderTrackerMetadataList, error) {
+	rsf.SetResources(func() (leader.LeaderTrackerMetadataList, error) {
 		return r.WebSphereLibertyTraceSharedResourceGenerator(instance, treeMap, latestOperandVersion, leaderTrackerType)
 	})
 	return rsf
 }
 
-func (r *ReconcileWebSphereLibertyTrace) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyTrace, leaderTrackerType string) (tree.ResourceSharingFactory, olutils.LeaderTrackerMetadataList, error) {
+func (r *ReconcileWebSphereLibertyTrace) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyTrace, leaderTrackerType string) (tree.ResourceSharingFactory, leader.LeaderTrackerMetadataList, error) {
 	treeMap, replaceMap, err := tree.ParseDecisionTree(leaderTrackerType, nil)
 	if err != nil {
 		return nil, nil, err
@@ -127,11 +127,11 @@ func (r *ReconcileWebSphereLibertyTrace) reconcileResourceTrackingState(instance
 	}
 
 	rsf := r.createResourceSharingFactory(instance, treeMap, replaceMap, latestOperandVersion, leaderTrackerType)
-	trackerMetadataList, err := tree.ReconcileResourceTrackingState(instance.GetNamespace(), OperatorShortName, leaderTrackerType, rsf, treeMap, replaceMap, latestOperandVersion)
+	trackerMetadataList, err := tree.ReconcileResourceTrackingState(instance.GetNamespace(), OperatorName, OperatorShortName, leaderTrackerType, rsf, treeMap, replaceMap, latestOperandVersion)
 	return rsf, trackerMetadataList, err
 }
 
-func (r *ReconcileWebSphereLibertyTrace) WebSphereLibertyTraceSharedResourceGenerator(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, latestOperandVersion, leaderTrackerType string) (olutils.LeaderTrackerMetadataList, error) {
+func (r *ReconcileWebSphereLibertyTrace) WebSphereLibertyTraceSharedResourceGenerator(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, latestOperandVersion, leaderTrackerType string) (leader.LeaderTrackerMetadataList, error) {
 	// return the metadata specific to the operator version, instance configuration, and shared resource being reconciled
 	if leaderTrackerType == TRACE_RESOURCE_SHARING_FILE_NAME {
 		traceMetadataList, err := r.reconcileTraceMetadata(instance, treeMap, latestOperandVersion, nil)
@@ -162,7 +162,7 @@ func (r *ReconcileWebSphereLibertyTrace) WebSphereLibertyTraceLeaderTrackerGener
 
 // Search the instance's namespace for existing Trace CRs
 func (r *ReconcileWebSphereLibertyTrace) GetTraceResources(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, assetsFolder *string, fileName string) (*unstructured.UnstructuredList, string, error) {
-	traceResourceList, _, err := olutils.CreateUnstructuredResourceListFromSignature(fileName, assetsFolder)
+	traceResourceList, _, err := leader.CreateUnstructuredResourceListFromSignature(fileName, assetsFolder)
 	if err != nil {
 		return nil, "", err
 	}

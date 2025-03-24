@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 
-	olutils "github.com/OpenLiberty/open-liberty-operator/utils"
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +12,7 @@ import (
 )
 
 type WebSphereLibertyApplicationResourceSharingFactory struct {
-	resourcesFunc              func() (olutils.LeaderTrackerMetadataList, error)
+	resourcesFunc              func() (leader.LeaderTrackerMetadataList, error)
 	leaderTrackersFunc         func(assetsFolder *string) ([]*unstructured.UnstructuredList, []string, error)
 	createOrUpdateFunc         func(obj client.Object, owner metav1.Object, cb func() error) error
 	deleteResourcesFunc        func(obj client.Object) error
@@ -21,11 +21,11 @@ type WebSphereLibertyApplicationResourceSharingFactory struct {
 	clientFunc                 func() client.Client
 }
 
-func (rsf *WebSphereLibertyApplicationResourceSharingFactory) Resources() func() (olutils.LeaderTrackerMetadataList, error) {
+func (rsf *WebSphereLibertyApplicationResourceSharingFactory) Resources() func() (leader.LeaderTrackerMetadataList, error) {
 	return rsf.resourcesFunc
 }
 
-func (rsf *WebSphereLibertyApplicationResourceSharingFactory) SetResources(fn func() (olutils.LeaderTrackerMetadataList, error)) {
+func (rsf *WebSphereLibertyApplicationResourceSharingFactory) SetResources(fn func() (leader.LeaderTrackerMetadataList, error)) {
 	rsf.resourcesFunc = fn
 }
 
@@ -105,14 +105,14 @@ func (r *ReconcileWebSphereLiberty) createResourceSharingFactory(instance *wlv1.
 		nameString, _, err := unstructured.NestedString(obj, "metadata", "name") // the LTPA and Password Encryption Secret will both use their .metadata.name as the leaderTracker key identifier
 		return nameString, err
 	})
-	rsf.SetResources(func() (olutils.LeaderTrackerMetadataList, error) {
+	rsf.SetResources(func() (leader.LeaderTrackerMetadataList, error) {
 		return r.WebSphereLibertyApplicationSharedResourceGenerator(instance, treeMap, latestOperandVersion, leaderTrackerType)
 	})
 	return rsf
 
 }
 
-func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (tree.ResourceSharingFactory, olutils.LeaderTrackerMetadataList, error) {
+func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (tree.ResourceSharingFactory, leader.LeaderTrackerMetadataList, error) {
 	treeMap, replaceMap, err := tree.ParseDecisionTree(leaderTrackerType, nil)
 	if err != nil {
 		return nil, nil, err
@@ -122,11 +122,11 @@ func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv
 		return nil, nil, err
 	}
 	rsf := r.createResourceSharingFactory(instance, treeMap, replaceMap, latestOperandVersion, leaderTrackerType)
-	trackerMetadataList, err := tree.ReconcileResourceTrackingState(instance.GetNamespace(), OperatorShortName, leaderTrackerType, rsf, treeMap, replaceMap, latestOperandVersion)
+	trackerMetadataList, err := tree.ReconcileResourceTrackingState(instance.GetNamespace(), OperatorName, OperatorShortName, leaderTrackerType, rsf, treeMap, replaceMap, latestOperandVersion)
 	return rsf, trackerMetadataList, err
 }
 
-func (r *ReconcileWebSphereLiberty) WebSphereLibertyApplicationSharedResourceGenerator(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, latestOperandVersion, leaderTrackerType string) (olutils.LeaderTrackerMetadataList, error) {
+func (r *ReconcileWebSphereLiberty) WebSphereLibertyApplicationSharedResourceGenerator(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, latestOperandVersion, leaderTrackerType string) (leader.LeaderTrackerMetadataList, error) {
 	// return the metadata specific to the operator version, instance configuration, and shared resource being reconciled
 	if leaderTrackerType == LTPA_RESOURCE_SHARING_FILE_NAME {
 		ltpaMetadataList, err := r.reconcileLTPAMetadata(instance, treeMap, latestOperandVersion, nil)
