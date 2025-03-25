@@ -97,10 +97,10 @@ func TestTraceLeaderTrackerComplex(t *testing.T) {
 	expectedLeaderTrackerData[leader.ResourcePathsKey] = []byte("")
 	expectedLeaderTrackerData[leader.ResourcePathIndicesKey] = []byte("")
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -142,10 +142,10 @@ func TestTraceLeaderTrackerComplex(t *testing.T) {
 		leader.ResourcePathIndicesKey: []byte(latestOperandVersion + ".2"),
 	}
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -178,10 +178,10 @@ func TestTraceLeaderTrackerComplex(t *testing.T) {
 		leader.ResourcePathIndicesKey: []byte(fmt.Sprintf("%s.2,%s.1", latestOperandVersion, latestOperandVersion)),
 	}
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-trace", leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-trace", leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -250,12 +250,12 @@ func TestTraceLeaderTrackerManagesOnePod(t *testing.T) {
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers is not nil", true, leaderTrackers != nil},
 		{"get Trace leader trackers matches length", 1, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -319,13 +319,13 @@ func TestTraceLeaderTrackerManagesTwoPods(t *testing.T) {
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers is not nil", leaderTrackers != nil, true},
 		{"get Trace leader trackers matches length", 2, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -375,12 +375,12 @@ func TestTraceLeaderTrackerManagesOnePodWithUpgrade(t *testing.T) {
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers is not nil", true, leaderTrackers != nil},
 		{"get Trace leader trackers matches length", 1, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -445,12 +445,12 @@ func TestReconcileLeaderTrackerComplexWhenTraceExists(t *testing.T) {
 
 	tests = []Test{
 		{"get Trace leader tracker error", nil, err},
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers matches length", 2, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 	}
 	if err := verifyTests(tests); err != nil {
 		t.Fatalf("%v", err)
@@ -505,12 +505,12 @@ func TestReconcileLeaderTrackerWhenTraceExistWithUpgrade(t *testing.T) {
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers matches length", 2, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -580,14 +580,14 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithMultipleUpgradesAndDowngrades(
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers is not nil", leaderTrackers != nil, true},
 		{"get Trace leader trackers matches length", 3, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
 		{"get Trace leader trackers contains leader3", true, leader.LeaderTrackersContains(leaderTrackers, leader3)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -630,13 +630,13 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithMultipleUpgradesAndDowngrades(
 
 	tests = []Test{
 		{"get Trace leader tracker error", nil, err},
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers matches length", 3, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
 		{"get Trace leader trackers contains leader3", true, leader.LeaderTrackersContains(leaderTrackers, leader3)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 	}
 	if err := verifyTests(tests); err != nil {
 		t.Fatalf("%v", err)
@@ -698,12 +698,12 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithWildcardUpgrade(t *testing.T) 
 		PathIndex: "v10_4_3.1",
 	}
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader tracker name", 2, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -773,14 +773,14 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithMultipleWildcardUpgradesAndDow
 	}
 
 	tests = []Test{
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers is not nil", leaderTrackers != nil, true},
 		{"get Trace leader trackers matches length", 3, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
 		{"get Trace leader trackers contains leader3", true, leader.LeaderTrackersContains(leaderTrackers, leader3)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 		{"get Trace leader tracker error", nil, err},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -823,13 +823,13 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithMultipleWildcardUpgradesAndDow
 
 	tests = []Test{
 		{"get Trace leader tracker error", nil, err},
-		{"get Trace leader tracker name", "olo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
+		{"get Trace leader tracker name", "wlo-managed-leader-tracking-" + TRACE_RESOURCE_SHARING_FILE_NAME, leaderTracker.Name},
 		{"get Trace leader tracker namespace", namespace, leaderTracker.Namespace},
 		{"get Trace leader trackers matches length", 3, len(*leaderTrackers)},
 		{"get Trace leader trackers contains leader1", true, leader.LeaderTrackersContains(leaderTrackers, leader1)},
 		{"get Trace leader trackers contains leader2", true, leader.LeaderTrackersContains(leaderTrackers, leader2)},
 		{"get Trace leader trackers contains leader3", true, leader.LeaderTrackersContains(leaderTrackers, leader3)},
-		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
+		{"get Trace leader tracker label", latestOperandVersion, leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)]},
 	}
 	if err := verifyTests(tests); err != nil {
 		t.Fatalf("%v", err)
@@ -837,14 +837,14 @@ func TestReconcileLeaderTrackerWhenTraceExistsWithMultipleWildcardUpgradesAndDow
 }
 
 func createEmptyLeaderTrackerSecret(resourceSharingFileName string) *corev1.Secret {
-	leaderTrackerName := "olo-managed-leader-tracking-" + resourceSharingFileName
+	leaderTrackerName := "wlo-managed-leader-tracking-" + resourceSharingFileName
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      leaderTrackerName,
 			Namespace: namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/instance":   leaderTrackerName,
-				"app.kubernetes.io/managed-by": "open-liberty-operator",
+				"app.kubernetes.io/managed-by": OperatorName,
 				"app.kubernetes.io/name":       leaderTrackerName,
 			},
 		},
@@ -858,8 +858,8 @@ func createTraceCR(traceName, tracePodName, resourcePathIndex string, prevPod *s
 				Name:      traceName,
 				Namespace: namespace,
 				Labels: map[string]string{
-					lutils.ResourcePathIndexLabel: resourcePathIndex,
-					"app.kubernetes.io/name":      traceName,
+					leader.GetResourcePathIndexLabel(lutils.LibertyURI): resourcePathIndex,
+					"app.kubernetes.io/name":                            traceName,
 				},
 			},
 			Spec: webspherelibertyv1.WebSphereLibertyTraceSpec{
@@ -879,8 +879,8 @@ func createTraceCR(traceName, tracePodName, resourcePathIndex string, prevPod *s
 			Name:      traceName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				lutils.ResourcePathIndexLabel: resourcePathIndex,
-				"app.kubernetes.io/name":      traceName,
+				leader.GetResourcePathIndexLabel(lutils.LibertyURI): resourcePathIndex,
+				"app.kubernetes.io/name":                            traceName,
 			},
 		},
 		Spec: webspherelibertyv1.WebSphereLibertyTraceSpec{

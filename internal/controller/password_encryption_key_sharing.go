@@ -37,7 +37,7 @@ import (
 const PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME = "password-encryption"
 
 func init() {
-	lutils.LeaderTrackerMutexes.Store(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
+	leader.LeaderTrackerMutexes.Store(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
 func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(rsf tree.ResourceSharingFactory, baseRSF tree.ResourceSharingFactoryBase, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) (string, string, string, error) {
@@ -118,7 +118,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionMetadata(treeMap 
 		// 	return metadataList, err
 		// }
 		// // if the leaderTracker is on a mismatched version, wait for a subsequent reconcile loop to re-create the leader tracker
-		// if leaderTracker.Labels[lutils.LeaderVersionLabel] != latestOperandVersion {
+		// if leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)] != latestOperandVersion {
 		// 	return metadataList, fmt.Errorf("waiting for the Leader Tracker to be updated")
 		// }
 
