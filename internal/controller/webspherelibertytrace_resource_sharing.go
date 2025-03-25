@@ -23,6 +23,7 @@ type WebSphereLibertyTraceResourceSharingFactory struct {
 	leaderTrackerNameFunc      func(map[string]interface{}) (string, error)
 	cleanupUnusedResourcesFunc func() bool
 	clientFunc                 func() client.Client
+	libertyURI                 string
 }
 
 func (rsf *WebSphereLibertyTraceResourceSharingFactory) Resources() func() (leader.LeaderTrackerMetadataList, error) {
@@ -81,6 +82,14 @@ func (rsf *WebSphereLibertyTraceResourceSharingFactory) SetClient(fn func() clie
 	rsf.clientFunc = fn
 }
 
+func (rsf *WebSphereLibertyTraceResourceSharingFactory) LibertyURI() string {
+	return rsf.libertyURI
+}
+
+func (rsf *WebSphereLibertyTraceResourceSharingFactory) SetLibertyURI(uri string) {
+	rsf.libertyURI = uri
+}
+
 func (r *ReconcileWebSphereLibertyTrace) createResourceSharingFactoryBase() tree.ResourceSharingFactoryBase {
 	rsf := &WebSphereLibertyTraceResourceSharingFactory{}
 	rsf.SetCreateOrUpdate(func(obj client.Object, owner metav1.Object, cb func() error) error {
@@ -95,6 +104,7 @@ func (r *ReconcileWebSphereLibertyTrace) createResourceSharingFactoryBase() tree
 	rsf.SetClient(func() client.Client {
 		return r.GetClient()
 	})
+	rsf.SetLibertyURI(lutils.LibertyURI)
 	return rsf
 }
 
@@ -174,7 +184,7 @@ func (r *ReconcileWebSphereLibertyTrace) GetTraceResources(instance *wlv1.WebSph
 	for i := range len(traceResourceList.Items) {
 		labelsMap, _, _ := unstructured.NestedMap(traceResourceList.Items[i].Object, "metadata", "labels")
 		if labelsMap != nil {
-			if _, found := labelsMap[lutils.ResourcePathIndexLabel]; found {
+			if _, found := labelsMap[leader.GetResourcePathIndexLabel(lutils.LibertyURI)]; found {
 				continue // skip if resource tracking label exists
 			}
 		}
@@ -191,7 +201,7 @@ func (r *ReconcileWebSphereLibertyTrace) GetTraceResources(instance *wlv1.WebSph
 				if labelsMap == nil {
 					labelsMap = make(map[string]interface{})
 				}
-				labelsMap[lutils.ResourcePathIndexLabel] = defaultUpdatedPathIndex
+				labelsMap[leader.GetResourcePathIndexLabel(lutils.LibertyURI)] = defaultUpdatedPathIndex
 				if err := unstructured.SetNestedMap(traceResourceList.Items[i].Object, labelsMap, "metadata", "labels"); err != nil {
 					return err
 				}

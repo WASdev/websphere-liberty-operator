@@ -55,6 +55,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.4.2"
+const LibertyURI = "webspherelibertyapplications.liberty.websphere.ibm.com"
 
 // LTPA constants
 const managedLTPAMountPath = "/config/managedLTPA"
@@ -214,7 +215,7 @@ func GetSecretLastRotationLabel(la *wlv1.WebSphereLibertyApplication, client cli
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
-	labelKey := GetLastRotationLabelKey(sharedResourceName)
+	labelKey := leader.GetLastRotationLabelKey(sharedResourceName, LibertyURI)
 	lastRotationLabel, found := secret.Labels[labelKey]
 	if !found {
 		return nil, fmt.Errorf("Secret %q does not have label key %q", secretName, labelKey)
@@ -231,7 +232,7 @@ func GetSecretLastRotationAsLabelMap(la *wlv1.WebSphereLibertyApplication, clien
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
 	return map[string]string{
-		GetLastRotationLabelKey(sharedResourceName): string(secret.Data["lastRotation"]),
+		leader.GetLastRotationLabelKey(sharedResourceName, LibertyURI): string(secret.Data["lastRotation"]),
 	}, nil
 }
 
@@ -871,7 +872,7 @@ func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLib
 			SecurityContext: rcoutils.GetSecurityContext(la),
 			Command:         []string{"/bin/bash", "-c"},
 			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
-			Args: []string{managedLTPAMountPath + "/bin/" + LTPAKeysCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
+			Args: []string{managedLTPAMountPath + "/bin/" + LTPAKeysCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + leader.GetResourcePathIndexLabel(LibertyURI) + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      ltpaVolumeMountName,
@@ -927,7 +928,7 @@ func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereL
 			ImagePullPolicy: *la.GetPullPolicy(),
 			SecurityContext: rcoutils.GetSecurityContext(la),
 			Command:         []string{"/bin/bash", "-c"},
-			Args:            []string{managedLTPAMountPath + "/bin/" + LTPAConfigCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.ConfigSecretName + " " + ltpaConfig.ConfigSecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
+			Args:            []string{managedLTPAMountPath + "/bin/" + LTPAConfigCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.ConfigSecretName + " " + ltpaConfig.ConfigSecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + leader.GetResourcePathIndexLabel(LibertyURI) + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      ltpaVolumeMountName,
