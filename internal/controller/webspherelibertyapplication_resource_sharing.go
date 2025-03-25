@@ -6,6 +6,7 @@ import (
 	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
+	lutils "github.com/WASdev/websphere-liberty-operator/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,6 +20,7 @@ type WebSphereLibertyApplicationResourceSharingFactory struct {
 	leaderTrackerNameFunc      func(map[string]interface{}) (string, error)
 	cleanupUnusedResourcesFunc func() bool
 	clientFunc                 func() client.Client
+	libertyURI                 string
 }
 
 func (rsf *WebSphereLibertyApplicationResourceSharingFactory) Resources() func() (leader.LeaderTrackerMetadataList, error) {
@@ -77,6 +79,14 @@ func (rsf *WebSphereLibertyApplicationResourceSharingFactory) SetClient(fn func(
 	rsf.clientFunc = fn
 }
 
+func (rsf *WebSphereLibertyApplicationResourceSharingFactory) LibertyURI() string {
+	return rsf.libertyURI
+}
+
+func (rsf *WebSphereLibertyApplicationResourceSharingFactory) SetLibertyURI(uri string) {
+	rsf.libertyURI = uri
+}
+
 func (r *ReconcileWebSphereLiberty) createResourceSharingFactoryBase() tree.ResourceSharingFactoryBase {
 	rsf := &WebSphereLibertyApplicationResourceSharingFactory{}
 	rsf.SetCreateOrUpdate(func(obj client.Object, owner metav1.Object, cb func() error) error {
@@ -91,6 +101,7 @@ func (r *ReconcileWebSphereLiberty) createResourceSharingFactoryBase() tree.Reso
 	rsf.SetClient(func() client.Client {
 		return r.GetClient()
 	})
+	rsf.SetLibertyURI(lutils.LibertyURI)
 	return rsf
 }
 

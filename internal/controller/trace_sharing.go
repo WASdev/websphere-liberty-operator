@@ -13,7 +13,7 @@ import (
 const TRACE_RESOURCE_SHARING_FILE_NAME = "trace"
 
 func init() {
-	lutils.LeaderTrackerMutexes.Store(TRACE_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
+	leader.LeaderTrackerMutexes.Store(TRACE_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
 func (r *ReconcileWebSphereLibertyTrace) reconcileTraceMetadata(instance *wlv1.WebSphereLibertyTrace, treeMap map[string]interface{}, latestOperandVersion string, assetsFolder *string) (leader.LeaderTrackerMetadataList, error) {
@@ -51,7 +51,7 @@ func (r *ReconcileWebSphereLibertyTrace) reconcileTraceMetadata(instance *wlv1.W
 		}
 
 		// if the leaderTracker is on a mismatched version, wait for a subsequent reconcile loop to re-create the leader tracker
-		if leaderTracker.Labels[lutils.LeaderVersionLabel] != latestOperandVersion {
+		if leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)] != latestOperandVersion {
 			return metadataList, fmt.Errorf("waiting for the Leader Tracker to be updated")
 		}
 
