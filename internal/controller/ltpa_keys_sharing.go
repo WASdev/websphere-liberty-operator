@@ -457,7 +457,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			ltpaConfigSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaConfigMetadata.PathIndex
 			ltpaConfigSecret.Data = make(map[string][]byte)
 			if passwordEncryptionKey != "" && encryptionSecretLastRotation != "" {
-				ltpaConfigSecret.Data["encryptionSecretLastRotation"] = []byte(encryptionSecretLastRotation)
+				ltpaConfigSecret.Data["encryptionKeyLastRotation"] = []byte(encryptionSecretLastRotation)
 			}
 			ltpaConfigSecret.Data["lastRotation"] = []byte(ltpaSecret.Data["lastRotation"])
 			ltpaConfigSecret.Data["password"] = encodedPassword
