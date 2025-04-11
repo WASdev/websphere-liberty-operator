@@ -62,8 +62,6 @@ const LTPAServerXMLMountSuffix = "-managed-ltpa-mount-server-xml"
 const LTPAKeysFileName = "ltpa.keys"
 const LTPAKeysXMLFileName = "managedLTPA.xml"
 const LTPAKeysMountXMLFileName = "managedLTPAMount.xml"
-const LTPAKeysCreationScriptFileName = "create_ltpa_keys.sh"
-const LTPAConfigCreationScriptFileName = "create_ltpa_config.sh"
 
 // Mount constants
 const SecureMountPath = "/output/liberty-operator"
@@ -935,119 +933,6 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 		return true
 	}
 	return false
-}
-
-func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
-	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
-	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
-	job.Spec.Template.ObjectMeta.Name = "liberty"
-	job.Spec.Template.ObjectMeta.Labels = GetRequiredLabels(jobRootName, job.Name)
-	job.Spec.Template.Spec.Containers = []corev1.Container{
-		{
-			Name:            job.Spec.Template.ObjectMeta.Name,
-			Image:           la.GetStatus().GetImageReference(),
-			ImagePullPolicy: *la.GetPullPolicy(),
-			SecurityContext: rcoutils.GetSecurityContext(la),
-			Command:         []string{"/bin/bash", "-c"},
-			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
-			Args: []string{managedLTPAMountPath + "/bin/" + LTPAKeysCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      ltpaVolumeMountName,
-					MountPath: managedLTPAMountPath + "/bin",
-				},
-			},
-		},
-	}
-	if la.GetPullSecret() != nil && *la.GetPullSecret() != "" {
-		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-			Name: *la.GetPullSecret(),
-		})
-	}
-	job.Spec.Template.Spec.ServiceAccountName = ltpaConfig.ServiceAccountName
-	// If there is a custom ServiceAccount, include it's pull secrets into the LTPA Job
-	if leaderSAName := rcoutils.GetServiceAccountName(la); len(leaderSAName) > 0 {
-		customServiceAccount := &corev1.ServiceAccount{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: leaderSAName, Namespace: la.GetNamespace()}, customServiceAccount); err == nil {
-			// For each of the custom SA's pull secret's, if it is not found within the Job, append it to the Job
-			for _, customSAObjectReference := range customServiceAccount.ImagePullSecrets {
-				if !LocalObjectReferenceContainsName(job.Spec.Template.Spec.ImagePullSecrets, customSAObjectReference.Name) {
-					job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-						Name: customSAObjectReference.Name,
-					})
-				}
-			}
-		}
-	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
-	number := int32(0777)
-	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: ltpaVolumeMountName,
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ltpaConfig.ConfigMapName,
-				},
-				DefaultMode: &number,
-			},
-		},
-	})
-}
-
-func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
-	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
-	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
-	job.Spec.Template.ObjectMeta.Name = "liberty"
-	job.Spec.Template.ObjectMeta.Labels = GetRequiredLabels(jobRootName, job.Name)
-	job.Spec.Template.Spec.Containers = []corev1.Container{
-		{
-			Name:            job.Spec.Template.ObjectMeta.Name,
-			Image:           la.GetStatus().GetImageReference(),
-			ImagePullPolicy: *la.GetPullPolicy(),
-			SecurityContext: rcoutils.GetSecurityContext(la),
-			Command:         []string{"/bin/bash", "-c"},
-			Args:            []string{managedLTPAMountPath + "/bin/" + LTPAConfigCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.ConfigSecretName + " " + ltpaConfig.ConfigSecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      ltpaVolumeMountName,
-					MountPath: managedLTPAMountPath + "/bin",
-				},
-			},
-		},
-	}
-	if la.GetPullSecret() != nil && *la.GetPullSecret() != "" {
-		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-			Name: *la.GetPullSecret(),
-		})
-	}
-	job.Spec.Template.Spec.ServiceAccountName = ltpaConfig.ServiceAccountName
-	// If there is a custom ServiceAccount, include it's pull secrets into the LTPA Job
-	if leaderSAName := rcoutils.GetServiceAccountName(la); len(leaderSAName) > 0 {
-		customServiceAccount := &corev1.ServiceAccount{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: leaderSAName, Namespace: la.GetNamespace()}, customServiceAccount); err == nil {
-			// For each of the custom SA's pull secret's, if it is not found within the Job, append it to the Job
-			for _, customSAObjectReference := range customServiceAccount.ImagePullSecrets {
-				if !LocalObjectReferenceContainsName(job.Spec.Template.Spec.ImagePullSecrets, customSAObjectReference.Name) {
-					job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-						Name: customSAObjectReference.Name,
-					})
-				}
-			}
-		}
-	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
-	number := int32(0777)
-	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: ltpaVolumeMountName,
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ltpaConfig.ConfigMapName,
-				},
-				DefaultMode: &number,
-			},
-		},
-	})
 }
 
 // Converts a file name into a lowercase word separated string
