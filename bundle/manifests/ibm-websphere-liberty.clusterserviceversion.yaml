@@ -577,6 +577,11 @@ spec:
         path: semeruCloudCompiler.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: The health port for the Semeru Cloud Compiler. Defaults to 38600.
+        displayName: Port
+        path: semeruCloudCompiler.port
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: 'Product edition. Defaults to IBM WebSphere Application Server.
           Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere
           Application Server Network Deployment'
