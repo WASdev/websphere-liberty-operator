@@ -520,8 +520,14 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// Resource requests and limits for the Semeru Cloud Compiler. The CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi, with a limit of 1200Mi.
 	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	// The health settings for the Semeru Cloud Compiler.
+	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Health"
+	Health *WebSphereLibertyApplicationSemeruCloudCompilerHealth `json:"health,omitempty"`
+}
+
+type WebSphereLibertyApplicationSemeruCloudCompilerHealth struct {
 	// The health port for the Semeru Cloud Compiler. Defaults to 38600.
-	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
+	// +operator-sdk:csv:customresourcedefinitions:order=60,type=spec,displayName="Port",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	Port *int32 `json:"port,omitempty"`
 }
 
@@ -1290,9 +1296,14 @@ func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetReplicas() *int32 
 	return &one
 }
 
-func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetPort() *int32 {
-	if scc.Port != nil {
-		return scc.Port
+// GetHealth returns the Semeru Cloud Compiler Health configuration
+func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetHealth() *WebSphereLibertyApplicationSemeruCloudCompilerHealth {
+	return scc.Health
+}
+
+func (scch *WebSphereLibertyApplicationSemeruCloudCompilerHealth) GetPort() *int32 {
+	if scch.Port != nil {
+		return scch.Port
 	}
 	defaultPort := int32(38600)
 	return &defaultPort

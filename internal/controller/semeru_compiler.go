@@ -256,6 +256,7 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
 	var port int32 = 38400
+	var healthPort int32 = 38600
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 
@@ -277,9 +278,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
 	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "2000m")
 
-	portNumber := *semeruCloudCompiler.GetPort()
+	if semeruCloudCompiler.GetHealth() != nil {
+		healthPort = *semeruCloudCompiler.GetHealth().GetPort()
+	}
 	var portIntOrStr intstr.IntOrString
-	if portNumber == port {
+	if healthPort == port {
 		portIntOrStr = intstr.FromInt32(port)
 	} else {
 		portIntOrStr = intstr.FromString(fmt.Sprintf("%d-tcp", port))
@@ -316,12 +319,12 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	})
 
 	healthProbesFlag := ""
-	if portNumber != port {
-		healthProbesFlag = " -XX:+JITServerHealthProbes" + fmt.Sprintf(" -XX:JITServerHealthProbePort=%d", portNumber)
+	if healthPort != port {
+		healthProbesFlag = " -XX:+JITServerHealthProbes" + fmt.Sprintf(" -XX:JITServerHealthProbePort=%d", healthPort)
 		containerPorts[0].Name = fmt.Sprintf("%d-tcp", port)
 		containerPorts = append(containerPorts, corev1.ContainerPort{
-			Name:          fmt.Sprintf("%d-tcp", portNumber),
-			ContainerPort: portNumber,
+			Name:          fmt.Sprintf("%d-tcp", healthPort),
+			ContainerPort: healthPort,
 			Protocol:      corev1.ProtocolTCP,
 		})
 	}
@@ -433,6 +436,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
 	var port int32 = 38400
+	var healthPort int32 = 38600
 	var timeout int32 = 86400
 	svc.Labels = getLabels(wlva)
 	svc.Spec.Selector = getSelectors(wlva)
@@ -441,21 +445,24 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 	if numPorts == 0 {
 		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
 	}
+
 	svc.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 	svc.Spec.Ports[0].Port = port
 	svc.Spec.Ports[0].TargetPort = intstr.FromInt(int(port))
-	portNumber := *wlva.GetSemeruCloudCompiler().GetPort()
-	if portNumber != port {
+	if wlva.GetSemeruCloudCompiler().GetHealth() != nil {
+		healthPort = *wlva.GetSemeruCloudCompiler().GetHealth().GetPort()
+	}
+	if healthPort != port {
 		numPorts = len(svc.Spec.Ports)
 		if numPorts == 1 {
 			svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
 		}
 		svc.Spec.Ports[0].Name = fmt.Sprintf("%d-tcp", port)
 		svc.Spec.Ports[0].TargetPort = intstr.FromString(fmt.Sprintf("%d-tcp", port))
-		svc.Spec.Ports[1].Name = fmt.Sprintf("%d-tcp", portNumber)
+		svc.Spec.Ports[1].Name = fmt.Sprintf("%d-tcp", healthPort)
 		svc.Spec.Ports[1].Protocol = corev1.ProtocolTCP
-		svc.Spec.Ports[1].Port = portNumber
-		svc.Spec.Ports[1].TargetPort = intstr.FromString(fmt.Sprintf("%d-tcp", portNumber))
+		svc.Spec.Ports[1].Port = healthPort
+		svc.Spec.Ports[1].TargetPort = intstr.FromString(fmt.Sprintf("%d-tcp", healthPort))
 	}
 	svc.Spec.SessionAffinity = corev1.ServiceAffinityClientIP
 	svc.Spec.SessionAffinityConfig = &corev1.SessionAffinityConfig{
