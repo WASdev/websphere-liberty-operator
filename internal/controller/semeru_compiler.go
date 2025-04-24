@@ -48,11 +48,50 @@ const (
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
 )
 
-// Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
-func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
-	compilerMeta := metav1.ObjectMeta{
+func getCompilerMeta(wlva *wlv1.WebSphereLibertyApplication) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
 		Name:      getSemeruCompilerNameWithGeneration(wlva),
 		Namespace: wlva.GetNamespace(),
+	}
+}
+
+// Returns true if the semeru health port configuration has changed otherwise false
+func (r *ReconcileWebSphereLiberty) upgradeSemeruHealthPorts(inputMeta metav1.ObjectMeta, wlva *wlv1.WebSphereLibertyApplication) bool {
+	var healthPort int32 = 38600
+	if wlva.GetSemeruCloudCompiler().GetHealth() != nil {
+		healthPort = *wlva.GetSemeruCloudCompiler().GetHealth().GetPort()
+	}
+	semeruDeployment := &appsv1.Deployment{ObjectMeta: inputMeta}
+	if r.GetClient().Get(context.TODO(), types.NamespacedName{Name: semeruDeployment.Name, Namespace: semeruDeployment.Namespace}, semeruDeployment) == nil {
+		containsHealthPort := false
+		for _, container := range semeruDeployment.Spec.Template.Spec.Containers {
+			for _, port := range container.Ports {
+				if port.ContainerPort == healthPort {
+					containsHealthPort = true
+				}
+			}
+			if containsHealthPort {
+				break
+			}
+		}
+		if !containsHealthPort {
+			return true
+		}
+	}
+	return false
+}
+
+// Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
+func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
+	compilerMeta := getCompilerMeta(wlva)
+
+	// check for any diffs that require generation changes
+	if r.isSemeruEnabled(wlva) {
+		upgradeRequired := r.upgradeSemeruHealthPorts(compilerMeta, wlva)
+		if upgradeRequired {
+			createNewSemeruGeneration(wlva)      // update generation
+			compilerMeta = getCompilerMeta(wlva) // adjust compilerMeta to reference the new generation
+		}
 	}
 
 	currentGeneration := getGeneration(wlva)
