@@ -8,7 +8,7 @@ metadata:
     createdAt: "2021-11-25T14:00:00Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
-    olm.skipRange: '>=1.0.0 <1.4.2'
+    olm.skipRange: '>=1.0.0 <1.4.3'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
