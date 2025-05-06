@@ -87,16 +87,17 @@ def gitCloneAndStash() {
       sh "git checkout ${RELEASE_TARGET}"
   }
   dir('operators') {
-      git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
+      git branch: "main", url: "git@github.ibm.com:websphere-operators-sps/websphere-liberty-operator-sps-config.git"
       sh "git checkout ${COMMON_OPERATORS_BRANCH}"
   }
-  sh "cp -rf operators websphere-liberty-operator/"
+  sh "cp -rf websphere-liberty-operator-sps-config/scripts websphere-liberty-operator/operators/scripts"
   
   dir('websphere-liberty-operator') {
       stash(name: 'websphere-liberty-operator')
    }
    sh "ls -l"
 }
+
   
 // Job Specific Functions
 def void doWork(){
