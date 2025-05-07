@@ -12,6 +12,7 @@ properties([
       string(name: 'PIPELINE_OPERATOR_IMAGE', defaultValue: "cp/websphere-liberty-operator", description: 'namespace to push image to in registry'),
       string(name: 'RELEASE_TARGET', defaultValue: "main", description: 'release branch to use'),
       string(name: 'PIPELINE_PRODUCTION_IMAGE', defaultValue: "icr.io/cpopen/websphere-liberty-operator", description: 'namespace in prod registry'),
+      string(name: 'PIPELINE_TYPE', defaultValue: "1pipeline", description: 'Type of pipeline running'),
       string(name: 'REDHAT_BASE_IMAGE', defaultValue: "registry.redhat.io/openshift4/ose-operator-registry", description: 'base image for operator'),
       string(name: 'REDHAT_REGISTRY', defaultValue: "registry.redhat.io", description: 'RH registry used for docker login'),
       string(name: 'PIPELINE_REGISTRY', defaultValue: "cp.stg.icr.io", description: 'staging registry to push images to'),
@@ -66,13 +67,13 @@ timestamps {
                ebcCleanup();
                // Clean up the workspace
                cleanWs(cleanWhenAborted: true,
-                    cleanWhenFailure: true,
-                    cleanWhenNotBuilt: false,
-                    cleanWhenSuccess: true,
-                    cleanWhenUnstable: true,
-                    deleteDirs: true,
-                    disableDeferredWipeout: false,
-                    notFailBuild: true)
+                  cleanWhenFailure: true,
+                  cleanWhenNotBuilt: false,
+                  cleanWhenSuccess: true,
+                  cleanWhenUnstable: true,
+                  deleteDirs: true,
+                  disableDeferredWipeout: false,
+                  notFailBuild: true)
             }
          }
       }
@@ -82,17 +83,25 @@ timestamps {
 
 // Clone the git repo and stash it, so that the jenkins agent machine can grab it later
 def gitCloneAndStash() {
-  dir('websphere-liberty-operator') {
+   dir('websphere-liberty-operator') {
       git branch: "main", url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
       sh "git checkout ${RELEASE_TARGET}"
-  }
-  dir('operators') {
-      git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
-      sh "git checkout ${COMMON_OPERATORS_BRANCH}"
-  }
-  sh "cp -rf operators websphere-liberty-operator/"
-  
-  dir('websphere-liberty-operator') {
+   }
+   if (${PIPELINE_TYPE} == "SPS") {
+      dir('websphere-liberty-operator-sps-config') {
+         git branch: "main", url: "git@github.ibm.com:websphere-operators-sps/websphere-liberty-operator-sps-config.git"
+         sh "git checkout ${COMMON_OPERATORS_BRANCH}"
+      }
+      sh "cp -rf websphere-liberty-operator-sps-config/scripts websphere-liberty-operator/operators/scripts"
+   }
+   else {
+      dir('operators') {
+         git branch: "main", url: "git@github.ibm.com:websphere/operators.git"
+         sh "git checkout ${COMMON_OPERATORS_BRANCH}"
+      }
+      sh "cp -rf operators websphere-liberty-operator/"
+   }
+   dir('websphere-liberty-operator') {
       stash(name: 'websphere-liberty-operator')
    }
    sh "ls -l"
