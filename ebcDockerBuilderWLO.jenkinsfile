@@ -87,7 +87,7 @@ def gitCloneAndStash() {
       git branch: "main", url: "git@github.com:${scriptOrg}/websphere-liberty-operator.git"
       sh "git checkout ${RELEASE_TARGET}"
    }
-   if (${params.PIPELINE_TYPE} == "SPS") {
+   if (params.PIPELINE_TYPE == "SPS") {
       dir('websphere-liberty-operator-sps-config') {
          git branch: "main", url: "git@github.ibm.com:websphere-operators-sps/websphere-liberty-operator-sps-config.git"
          sh "git checkout ${COMMON_OPERATORS_BRANCH}"
