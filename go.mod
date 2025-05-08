@@ -3,15 +3,14 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.24
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250417153026-02cfbf34f67c
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20250417152956-6554621c89ab
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250505185151-9968c73cb7cc
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20250502192232-9e8e8d1ebd27
 	github.com/cert-manager/cert-manager v1.14.7
 	github.com/go-logr/logr v1.4.1
 	github.com/openshift/api v0.0.0-20230928134114-673ed0cfc7f1
 	github.com/openshift/library-go v0.0.0-20231002074440-3f69f773d102
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.74.0
-	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.5
 	k8s.io/apimachinery v0.29.5
 	k8s.io/client-go v0.29.5
@@ -69,6 +68,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.29.5 // indirect
 	k8s.io/component-base v0.29.5 // indirect
