@@ -176,17 +176,10 @@ func (r *ReconcileWebSphereLibertyTrace) Reconcile(ctx context.Context, request 
 	if !thisInstanceIsLeader {
 		err := fmt.Errorf("Trace could not be applied. Pod '%s' is already configured by WebSphereLibertyTrace instance '%s'.", podName, leaderName)
 		reqLogger.Error(err, "Trace was denied for instance '%s'; Trace instance '%s' is already managing pod '%s' in namespace '%s'", instance.GetName(), leaderName, podName, podNamespace)
-		// Corner case: possible race condition where two WebSphereLibertyTraces can swap pointing to each other's Pod and one of them doesn't get the leader tracker update in time.
-		// The solution is to requeue to resolve the leader tracker references.
-		wltLeader := &webspherelibertyv1.WebSphereLibertyTrace{}
-		wltLeader.Name = leaderName
-		wltLeader.Namespace = instance.GetNamespace()
-		if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: wltLeader.Name, Namespace: wltLeader.Namespace}, wltLeader); err == nil {
-			if wltLeader.Spec.PodName != podName { // the Trace CR will use .spec.podName as the leaderTracker key identifier, as implemented in createResourceSharingFactory()
-				return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Second}, fmt.Errorf("The trace leader is out of sync. Requeuing to recalibrate leader tracker references.")
-			}
-		}
-		return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, false)
+		// Possible race condition where two WebSphereLibertyTraces can swap pointing to each other's Pod and one of them doesn't get the leader tracker update in time.
+		// Requeue to dynamically resolve the leader tracker references over time.
+		r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged)
+		return reconcile.Result{Requeue: true, RequeueAfter: time.Second}, fmt.Errorf("The trace leader is out of sync. Requeuing to recalibrate leader tracker references.")
 	}
 
 	// run day-2 operation
