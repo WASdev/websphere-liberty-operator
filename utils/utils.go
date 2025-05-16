@@ -28,6 +28,7 @@ import (
 
 	"math/rand/v2"
 
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
@@ -54,6 +55,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.4.3"
+const LibertyURI = "webspherelibertyapplications.liberty.websphere.ibm.com"
 
 // LTPA constants
 const managedLTPAMountPath = "/config/managedLTPA"
@@ -98,84 +100,6 @@ var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
 	wlv1.LicenseEntitlementWSHE:            "6358611af04743f99f42dadcd6e39d52",
 	wlv1.LicenseEntitlementFamilyEdition:   "be8ae84b3dd04d81b90af0d846849182",
 	wlv1.LicenseEntitlementCP4Apps:         "4df52d2cdc374ba09f631a650ad2b5bf",
-}
-
-type LTPAMetadata struct {
-	Kind       string
-	APIVersion string
-	Name       string
-	Path       string
-	PathIndex  string
-}
-
-func (m LTPAMetadata) GetName() string {
-	return m.Name
-}
-func (m LTPAMetadata) GetPath() string {
-	return m.Path
-}
-func (m LTPAMetadata) GetPathIndex() string {
-	return m.PathIndex
-}
-func (m LTPAMetadata) GetKind() string {
-	return m.Kind
-}
-func (m LTPAMetadata) GetAPIVersion() string {
-	return m.APIVersion
-}
-
-type LTPAMetadataList struct {
-	Items []LeaderTrackerMetadata
-}
-
-func (ml LTPAMetadataList) GetItems() []LeaderTrackerMetadata {
-	return ml.Items
-}
-
-type PasswordEncryptionMetadata struct {
-	Kind       string
-	APIVersion string
-	Name       string
-	Path       string
-	PathIndex  string
-}
-
-func (m PasswordEncryptionMetadata) GetName() string {
-	return m.Name
-}
-func (m PasswordEncryptionMetadata) GetPath() string {
-	return m.Path
-}
-func (m PasswordEncryptionMetadata) GetPathIndex() string {
-	return m.PathIndex
-}
-func (m PasswordEncryptionMetadata) GetKind() string {
-	return m.Kind
-}
-func (m PasswordEncryptionMetadata) GetAPIVersion() string {
-	return m.APIVersion
-}
-
-type PasswordEncryptionMetadataList struct {
-	Items []LeaderTrackerMetadata
-}
-
-func (ml PasswordEncryptionMetadataList) GetItems() []LeaderTrackerMetadata {
-	return ml.Items
-}
-
-type LTPAConfig struct {
-	Metadata                    *LTPAMetadata
-	SecretName                  string
-	SecretInstanceName          string
-	ConfigSecretName            string
-	ConfigSecretInstanceName    string
-	ServiceAccountName          string
-	JobRequestConfigMapName     string
-	ConfigMapName               string
-	FileName                    string
-	EncryptionKeySecretName     string
-	EncryptionKeySharingEnabled bool // true or false
 }
 
 // Validate if the WebSphereLibertyApplication is valid
@@ -289,7 +213,7 @@ func GetSecretLastRotationLabel(la *wlv1.WebSphereLibertyApplication, client cli
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
-	labelKey := GetLastRotationLabelKey(sharedResourceName)
+	labelKey := leader.GetLastRotationLabelKey(sharedResourceName, LibertyURI)
 	lastRotationLabel, found := secret.Labels[labelKey]
 	if !found {
 		return nil, fmt.Errorf("Secret %q does not have label key %q", secretName, labelKey)
@@ -306,7 +230,7 @@ func GetSecretLastRotationAsLabelMap(la *wlv1.WebSphereLibertyApplication, clien
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
 	return map[string]string{
-		GetLastRotationLabelKey(sharedResourceName): string(secret.Data["lastRotation"]),
+		leader.GetLastRotationLabelKey(sharedResourceName, LibertyURI): string(secret.Data["lastRotation"]),
 	}, nil
 }
 
@@ -813,7 +737,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 	return false
 }
 
-func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *PasswordEncryptionMetadata) {
+func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata) {
 	// Mount a volume /output/liberty-operator/encryptionKey.xml to store the Liberty Password Encryption Key
 	MountSecretAsVolume(pts, operatorShortName+ManagedEncryptionServerXML+passwordEncryptionMetadata.Name, CreateVolumeMount(SecureMountPath, EncryptionKeyXMLFileName))
 

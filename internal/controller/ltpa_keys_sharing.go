@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OpenLiberty/open-liberty-operator/utils/leader"
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
@@ -49,18 +50,18 @@ const (
 )
 
 func init() {
-	lutils.LeaderTrackerMutexes.Store(LTPA_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
+	leader.LeaderTrackerMutexes.Store(LTPA_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
-func (r *ReconcileWebSphereLiberty) reconcileLTPAMetadata(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, latestOperandVersion string, assetsFolder *string) (lutils.LeaderTrackerMetadataList, error) {
-	metadataList := &lutils.LTPAMetadataList{}
-	metadataList.Items = []lutils.LeaderTrackerMetadata{}
+func (r *ReconcileWebSphereLiberty) reconcileLTPAMetadata(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, latestOperandVersion string, assetsFolder *string) (leader.LeaderTrackerMetadataList, error) {
+	metadataList := &leader.LTPAMetadataList{}
+	metadataList.Items = []leader.LeaderTrackerMetadata{}
 
 	// During runtime, the WebSphereLibertyApplication instance will decide what LTPA related resources to track by populating arrays of pathOptions and pathChoices
 	pathOptionsList, pathChoicesList := r.getLTPAPathOptionsAndChoices(instance, latestOperandVersion)
 
 	for i := range pathOptionsList {
-		metadata := &lutils.LTPAMetadata{}
+		metadata := &leader.LTPAMetadata{}
 		pathOptions := pathOptionsList[i]
 		pathChoices := pathChoicesList[i]
 
@@ -78,12 +79,12 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAMetadata(instance *wlv1.WebSphe
 			return metadataList, err
 		}
 		// retrieve the LTPA leader tracker to re-use an existing name or to create a new metadata.Name
-		leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+		leaderTracker, _, err := leader.GetLeaderTracker(instance.GetNamespace(), OperatorName, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
 		if err != nil {
 			return metadataList, err
 		}
 		// if the leaderTracker is on a mismatched version, wait for a subsequent reconcile loop to re-create the leader tracker
-		if leaderTracker.Labels[lutils.LeaderVersionLabel] != latestOperandVersion {
+		if leaderTracker.Labels[leader.GetLeaderVersionLabel(lutils.LibertyURI)] != latestOperandVersion {
 			return metadataList, fmt.Errorf("waiting for the Leader Tracker to be updated")
 		}
 
@@ -113,7 +114,7 @@ func (r *ReconcileWebSphereLiberty) getLTPAPathOptionsAndChoices(instance *wlv1.
 			// 2. Generate a path option/choice for a leader to manage the Liberty config
 			pathOptions = []string{"config"}
 			configChoice := "default"
-			if r.isUsingPasswordEncryptionKeySharing(instance, &lutils.PasswordEncryptionMetadata{Name: ""}) {
+			if r.isUsingPasswordEncryptionKeySharing(instance, &leader.PasswordEncryptionMetadata{Name: ""}) {
 				configChoice = "passwordencryption"
 			}
 			pathChoices = []string{configChoice} // fix LTPA to use the default password encryption key (no suffix)
@@ -134,15 +135,15 @@ func (r *ReconcileWebSphereLiberty) getLTPAPathOptionsAndChoices(instance *wlv1.
 
 func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphereLibertyApplication, leaderTracker *corev1.Secret, validSubPath string, assetsFolder *string, ltpaResourceType LTPAResource) string {
 	// if an existing resource name (suffix) for this key combination already exists, use it
-	loc := lutils.CommaSeparatedStringContains(string(leaderTracker.Data[lutils.ResourcePathsKey]), validSubPath)
+	loc := lutils.CommaSeparatedStringContains(string(leaderTracker.Data[leader.ResourcePathsKey]), validSubPath)
 	if loc != -1 {
-		suffix, _ := lutils.GetCommaSeparatedString(string(leaderTracker.Data[lutils.ResourcesKey]), loc)
+		suffix, _ := lutils.GetCommaSeparatedString(string(leaderTracker.Data[leader.ResourcesKey]), loc)
 		return suffix
 	}
 
 	if ltpaResourceType == LTPAKey {
 		// For example, if the env variable LTPA_KEY_RESOURCE_SUFFIXES is set,
-		// it can provide a comma separated string of length lutils.ResourceSuffixLength suffixes to exhaust
+		// it can provide a comma separated string of length leader.ResourceSuffixLength suffixes to exhaust
 		//
 		// spec:
 		//   env:
@@ -151,14 +152,14 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 		if predeterminedSuffixes, hasEnv := hasLTPAKeyResourceSuffixesEnv(instance); hasEnv {
 			predeterminedSuffixesArray := lutils.GetCommaSeparatedArray(predeterminedSuffixes)
 			for _, suffix := range predeterminedSuffixesArray {
-				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), suffix) {
+				if len(suffix) == leader.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[leader.ResourcesKey]), suffix) {
 					return "-" + suffix
 				}
 			}
 		}
 	} else if ltpaResourceType == LTPAConfig {
 		// For example, if the env variable LTPA_CONFIG_RESOURCE_SUFFIXES is set,
-		// it can provide a comma separated string of length lutils.ResourceSuffixLength suffixes to exhaust
+		// it can provide a comma separated string of length leader.ResourceSuffixLength suffixes to exhaust
 		//
 		// spec:
 		//   env:
@@ -167,20 +168,20 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 		if predeterminedSuffixes, hasEnv := hasLTPAConfigResourceSuffixesEnv(instance); hasEnv {
 			predeterminedSuffixesArray := lutils.GetCommaSeparatedArray(predeterminedSuffixes)
 			for _, suffix := range predeterminedSuffixesArray {
-				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), suffix) {
+				if len(suffix) == leader.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[leader.ResourcesKey]), suffix) {
 					return "-" + suffix
 				}
 			}
 		}
 	}
 
-	// otherwise, generate a random suffix of length lutils.ResourceSuffixLength
-	randomSuffix := lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
+	// otherwise, generate a random suffix of length leader.ResourceSuffixLength
+	randomSuffix := lutils.GetRandomLowerAlphanumericSuffix(leader.ResourceSuffixLength)
 	suffixFoundInCluster := true // MUST check that the operator is not overriding another instance's untracked shared resource
-	for strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), randomSuffix) || suffixFoundInCluster {
-		randomSuffix = lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
+	for strings.Contains(string(leaderTracker.Data[leader.ResourcesKey]), randomSuffix) || suffixFoundInCluster {
+		randomSuffix = lutils.GetRandomLowerAlphanumericSuffix(leader.ResourceSuffixLength)
 		// create the unstructured object; parse and obtain the sharedResourceName via the internal/controller/assets/ltpa-signature.yaml
-		if sharedResource, sharedResourceName, err := lutils.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, randomSuffix); err == nil {
+		if sharedResource, sharedResourceName, err := leader.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, randomSuffix); err == nil {
 			err := r.GetClient().Get(context.TODO(), types.NamespacedName{Namespace: instance.GetNamespace(), Name: sharedResourceName}, sharedResource)
 			if err != nil && kerrors.IsNotFound(err) {
 				suffixFoundInCluster = false
@@ -190,27 +191,19 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 	return randomSuffix
 }
 
-func hasLTPAKeyResourceSuffixesEnv(instance *wlv1.WebSphereLibertyApplication) (string, bool) {
-	return hasResourceSuffixesEnv(instance, "LTPA_KEY_RESOURCE_SUFFIXES")
-}
-
-func hasLTPAConfigResourceSuffixesEnv(instance *wlv1.WebSphereLibertyApplication) (string, bool) {
-	return hasResourceSuffixesEnv(instance, "LTPA_CONFIG_RESOURCE_SUFFIXES")
-}
-
 // Create or use an existing LTPA Secret identified by LTPA metadata for the WebSphereLibertyApplication instance
-func (r *ReconcileWebSphereLiberty) reconcileLTPAKeys(instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata) (string, string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcileLTPAKeys(rsf tree.ResourceSharingFactory, baseRSF tree.ResourceSharingFactoryBase, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *leader.LTPAMetadata) (string, string, string, error) {
 	ltpaSecretName := ""
 	ltpaKeysLastRotation := ""
 	if r.isLTPAKeySharingEnabled(instance) {
-		ltpaSecretNameTemp, ltpaKeysLastRotationTemp, _, err := r.generateLTPAKeys(instance, ltpaKeysMetadata)
+		ltpaSecretNameTemp, ltpaKeysLastRotationTemp, _, err := r.generateLTPAKeys(rsf, instance, ltpaKeysMetadata)
 		ltpaKeysLastRotation = ltpaKeysLastRotationTemp
 		ltpaSecretName = ltpaSecretNameTemp
 		if err != nil {
 			return "Failed to generate the shared LTPA keys Secret", ltpaSecretName, ltpaKeysLastRotation, err
 		}
 	} else {
-		err := r.RemoveLeaderTrackerReference(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
+		err := tree.RemoveLeaderTrackerReference(baseRSF, instance.GetName(), instance.GetNamespace(), OperatorName, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
 			return "Failed to remove leader tracking reference to the LTPA keys", ltpaSecretName, ltpaKeysLastRotation, err
 		}
@@ -219,16 +212,16 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAKeys(instance *wlv1.WebSphereLi
 }
 
 // Create or use an existing LTPA Secret identified by LTPA metadata for the WebSphereLibertyApplication instance
-func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(rsf tree.ResourceSharingFactory, baseRSF tree.ResourceSharingFactoryBase, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *leader.LTPAMetadata, ltpaConfigMetadata *leader.LTPAMetadata, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, string, error) {
 	var err error
 	var ltpaXMLSecretName string
 	if r.isLTPAKeySharingEnabled(instance) {
-		ltpaXMLSecretName, err = r.generateLTPAConfig(instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
+		ltpaXMLSecretName, err = r.generateLTPAConfig(rsf, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 		if err != nil {
 			return "Failed to generate the shared LTPA config Secret", ltpaXMLSecretName, err
 		}
 	} else {
-		err := r.RemoveLeaderTrackerReference(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
+		err := tree.RemoveLeaderTrackerReference(baseRSF, instance.GetName(), instance.GetNamespace(), OperatorName, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
 			return "Failed to remove leader tracking reference to the LTPA config", "", err
 		}
@@ -237,9 +230,9 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(instance *wlv1.WebSphere
 }
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
-func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLibertyApplication, ltpaMetadata *lutils.LTPAMetadata) (string, string, string, error) {
+func (r *ReconcileWebSphereLiberty) generateLTPAKeys(rsf tree.ResourceSharingFactory, instance *wlv1.WebSphereLibertyApplication, ltpaMetadata *leader.LTPAMetadata) (string, string, string, error) {
 	// Initialize LTPA resources
-	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{Name: ""}
+	passwordEncryptionMetadata := &leader.PasswordEncryptionMetadata{Name: ""}
 
 	ltpaXMLSecret := &corev1.Secret{}
 	ltpaXMLSecretRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
@@ -261,7 +254,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
-		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
+		leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
 			return "", "", leaderName, err
 		}
@@ -292,7 +285,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			return "", "", "", err
 		}
 
-		ltpaSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaMetadata.PathIndex
+		ltpaSecret.Labels[leader.GetResourcePathIndexLabel(lutils.LibertyURI)] = ltpaMetadata.PathIndex
 		ltpaSecret.Data = make(map[string][]byte)
 		if passwordEncryptionKey != "" && encryptionSecretLastRotation != "" {
 			ltpaSecret.Data["encryptionSecretLastRotation"] = []byte(encryptionSecretLastRotation)
@@ -311,16 +304,16 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	} else if err != nil {
 		return "", "", "", err
 	}
-	leaderName, _, _, err := r.reconcileLeader(instance, ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
+	leaderName, _, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 	if err != nil {
-		return "", "", leaderName, err
+		return "", "", "", err
 	}
 	lastRotation := string(ltpaSecret.Data["lastRotation"])
 	return ltpaSecret.Name, lastRotation, leaderName, nil
 }
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
-func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, error) {
+func (r *ReconcileWebSphereLiberty) generateLTPAConfig(rsf tree.ResourceSharingFactory, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *leader.LTPAMetadata, ltpaConfigMetadata *leader.LTPAMetadata, passwordEncryptionMetadata *leader.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, error) {
 	ltpaXMLSecret := &corev1.Secret{}
 	ltpaXMLSecretRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
 	ltpaXMLSecret.Name = ltpaXMLSecretRootName + ltpaConfigMetadata.Name
@@ -343,7 +336,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		if !kerrors.IsNotFound(err) {
 			return ltpaXMLSecret.Name, err
 		}
-		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaKeysMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, false) // false, since this function should not elect leader for LTPA keys generation
+		leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, false) // false, since this function should not elect leader for LTPA keys generation
 		if err != nil {
 			return ltpaXMLSecret.Name, err
 		}
@@ -355,7 +348,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	}
 
 	// LTPA config leader starts here
-	leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
+	leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 	if err != nil {
 		return ltpaXMLSecret.Name, err
 	}
@@ -368,7 +361,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			return ltpaXMLSecret.Name, err
 		}
 		// check that the last rotation label has been set
-		lastRotationLabel, found := ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)]
+		lastRotationLabel, found := ltpaXMLSecret.Labels[leader.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME, lutils.LibertyURI)]
 		if !found {
 			// the label was not found, but the LTPA config leader is responsible for updating this label
 			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
@@ -399,7 +392,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	// If the LTPA password Secret does not exist, run the Kubernetes Job to generate the LTPA password Secret
 	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaConfigSecret.Name, Namespace: ltpaConfigSecret.Namespace}, ltpaConfigSecret)
 	if err != nil && kerrors.IsNotFound(err) {
-		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
+		leaderName, thisInstanceIsLeader, _, err := tree.ReconcileLeader(rsf, OperatorName, OperatorShortName, instance.GetName(), instance.GetNamespace(), ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
 			return ltpaXMLSecret.Name, err
 		}
@@ -426,7 +419,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 					ltpaConfigSecret.Data["password"] = []byte(defaultLTPASecretPassword)
 					ltpaConfigSecret.Data["lastRotation"] = []byte(defaultLTPASecretLastRotation)
 					ltpaConfigSecret.Labels = lutils.GetRequiredLabels(ltpaConfigSecretRootName, ltpaConfigSecret.Name)
-					ltpaConfigSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaConfigMetadata.PathIndex
+					ltpaConfigSecret.Labels[leader.GetResourcePathIndexLabel(lutils.LibertyURI)] = ltpaConfigMetadata.PathIndex
 					if err := r.CreateOrUpdate(ltpaConfigSecret, nil, func() error { return nil }); err != nil {
 						return ltpaXMLSecret.Name, err
 					}
@@ -454,7 +447,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 				return "", err
 			}
 
-			ltpaConfigSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaConfigMetadata.PathIndex
+			ltpaConfigSecret.Labels[leader.GetResourcePathIndexLabel(lutils.LibertyURI)] = ltpaConfigMetadata.PathIndex
 			ltpaConfigSecret.Data = make(map[string][]byte)
 			if passwordEncryptionKey != "" && encryptionSecretLastRotation != "" {
 				ltpaConfigSecret.Data["encryptionKeyLastRotation"] = []byte(encryptionSecretLastRotation)
@@ -549,7 +542,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 				latestRotationTime = encryptionKeyLastRotationTime
 			}
 		}
-		ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
+		ltpaXMLSecret.Labels[leader.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME, lutils.LibertyURI)] = strconv.Itoa(latestRotationTime)
 		return lutils.CustomizeLTPAServerXML(ltpaXMLSecret, instance, string(ltpaConfigSecret.Data["password"]))
 	}); err != nil {
 		return ltpaXMLSecret.Name, err
@@ -566,7 +559,7 @@ func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *wlv1.WebSp
 
 // Search the cluster namespace for existing LTPA keys
 func (r *ReconcileWebSphereLiberty) GetLTPAKeyResources(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, assetsFolder *string) (*unstructured.UnstructuredList, string, error) {
-	ltpaResourceList, ltpaResourceRootName, err := lutils.CreateUnstructuredResourceListFromSignature(LTPA_KEY_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName)
+	ltpaResourceList, ltpaResourceRootName, err := leader.CreateUnstructuredResourceListFromSignature(LTPA_KEY_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName)
 	if err != nil {
 		return nil, "", err
 	}
@@ -577,7 +570,7 @@ func (r *ReconcileWebSphereLiberty) GetLTPAKeyResources(instance *wlv1.WebSphere
 	}
 	// check once for an unlabeled default LTPA key to append
 	if defaultLTPAKeyIndex := defaultLTPAKeyExists(ltpaResourceList, ltpaResourceRootName); defaultLTPAKeyIndex == -1 {
-		defaultLTPAKeySecret, _, err := lutils.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, "")
+		defaultLTPAKeySecret, _, err := leader.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, "")
 		defaultLTPAKeySecret.SetName(ltpaResourceRootName)
 		defaultLTPAKeySecret.SetNamespace(instance.GetNamespace())
 		if err != nil {
@@ -610,7 +603,7 @@ func (r *ReconcileWebSphereLiberty) GetLTPAKeyResources(instance *wlv1.WebSphere
 					if labelsMap == nil {
 						labelsMap = make(map[string]interface{})
 					}
-					labelsMap[lutils.ResourcePathIndexLabel] = defaultUpdatedPathIndex
+					labelsMap[leader.GetResourcePathIndexLabel(lutils.LibertyURI)] = defaultUpdatedPathIndex
 					if err := unstructured.SetNestedMap(ltpaResourceList.Items[defaultLTPAKeyIndex].Object, labelsMap, "metadata", "labels"); err != nil {
 						return err
 					}
@@ -631,7 +624,7 @@ func (r *ReconcileWebSphereLiberty) HasDefaultLTPAKeyCollision(ltpaResourceList 
 			if err != nil {
 				return false, err
 			}
-			if pathIndexInterface, found := labelsMap[lutils.ResourcePathIndexLabel]; found {
+			if pathIndexInterface, found := labelsMap[leader.GetResourcePathIndexLabel(lutils.LibertyURI)]; found {
 				pathIndex := pathIndexInterface.(string)
 				// Skip this resource if path index does not contain a period separating delimeter
 				if !strings.Contains(pathIndex, ".") {
@@ -668,7 +661,7 @@ func (r *ReconcileWebSphereLiberty) HasDefaultLTPAKeyCollision(ltpaResourceList 
 
 // Search the cluster namespace for existing LTPA password Secrets
 func (r *ReconcileWebSphereLiberty) GetLTPAConfigResources(instance *wlv1.WebSphereLibertyApplication, treeMap map[string]interface{}, replaceMap map[string]map[string]string, latestOperandVersion string, assetsFolder *string, fileName string) (*unstructured.UnstructuredList, string, error) {
-	ltpaResourceList, ltpaResourceRootName, err := lutils.CreateUnstructuredResourceListFromSignature(fileName, assetsFolder, OperatorShortName)
+	ltpaResourceList, ltpaResourceRootName, err := leader.CreateUnstructuredResourceListFromSignature(fileName, assetsFolder, OperatorShortName)
 	if err != nil {
 		return nil, "", err
 	}
