@@ -1,4 +1,4 @@
-= Installing the Open Liberty Operator using kustomize with Argo CD
+= Installing the WebSphere Liberty Operator using kustomize with Argo CD
 
 The WebSphere Liberty Operator can be installed using kustomize with Argo CD to:
 
