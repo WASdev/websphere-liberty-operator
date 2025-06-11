@@ -1256,7 +1256,7 @@ func (np *WebSphereLibertyApplicationNetworkPolicy) GetFromNamespaceLabels() map
 	if np.FromNamespaceLabels != nil {
 		return *np.FromNamespaceLabels
 	}
-	// fallback to deprecated flag np.NamespaceLabels for when we only supported one type of network policy (ingress)
+	// fallback to deprecated flag np.NamespaceLabels if configured
 	if np.NamespaceLabels != nil {
 		return *np.NamespaceLabels
 	}
@@ -1286,6 +1286,7 @@ func (np *WebSphereLibertyApplicationNetworkPolicy) IsEgressDisabled() bool {
 	return np.DisableEgress != nil && *np.DisableEgress
 }
 
+// IsBypassingDenyAllEgress returns whether the application Pods should ignore a deny-all Egress
 func (np *WebSphereLibertyApplicationNetworkPolicy) IsBypassingDenyAllEgress() bool {
 	return np.BypassDenyAllEgress != nil && *np.BypassDenyAllEgress
 }
