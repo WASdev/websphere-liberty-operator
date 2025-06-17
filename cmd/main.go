@@ -72,7 +72,8 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metrics endpoint binds to. "+
+		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
@@ -98,11 +99,13 @@ func main() {
 			"the manager will watch and manage resources in all Namespaces")
 	}
 
+	metricsServerOptions := metricsserver.Options{
+		BindAddress: metricsAddr,
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme,
-		Metrics: metricsserver.Options{
-			BindAddress: metricsAddr,
-		},
+		Scheme:  scheme,
+		Metrics: metricsServerOptions,
 		WebhookServer: &webhook.DefaultServer{
 			Options: webhook.Options{
 				Port: 9443,
