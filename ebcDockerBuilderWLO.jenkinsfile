@@ -114,7 +114,7 @@ def gitCloneAndStash() {
 def void doWork(){
    // Unstash the git repo
    unstash(name: 'websphere-liberty-operator')
-   sh "./operators/scripts/build/build-initialize.sh"
+   sh "./operators/scripts/build/build-initialize.sh --path ./operators"
    sh "${command}"
 }
 
