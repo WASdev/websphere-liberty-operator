@@ -112,13 +112,8 @@ def gitCloneAndStash() {
   
 // Job Specific Functions
 def void doWork(){
-   // Setup global variables
-   
    // Unstash the git repo
    unstash(name: 'websphere-liberty-operator')
-   withEnv([
-      "COMMON_DIR=${COMMON_DIR}"
-   ]){
    sh "./operators/scripts/build/build-initialize.sh"
    sh "${command}"
 }
