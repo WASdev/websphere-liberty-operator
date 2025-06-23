@@ -385,13 +385,20 @@ type WebSphereLibertyApplicationService struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Bindable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Bindable *bool `json:"bindable,omitempty"`
 
+	// Configure service session affinity.
+	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec
+	SessionAffinity *WebSphereLibertyApplicationServiceSessionAffinity `json:"sessionAffinity,omitempty"`
+}
+
+// Configure service session affinity
+type WebSphereLibertyApplicationServiceSessionAffinity struct {
 	// Setting to maintain session affinity. Must be ClientIP or None. Defaults to None.
-	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec,displayName="Session Affinity",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
-	SessionAffinity *v1.ServiceAffinity `json:"sessionAffinity,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Session Affinity Type",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	Type v1.ServiceAffinity `json:"type,omitempty"`
 
 	// Configurations of session affinity.
-	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec
-	SessionAffinityConfig *corev1.SessionAffinityConfig `json:"sessionAffinityConfig,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec
+	Config *corev1.SessionAffinityConfig `json:"config,omitempty"`
 }
 
 // Configure service certificate.
@@ -1186,14 +1193,22 @@ func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
 }
 
-// GetSessionAffinity returns the session affinity setting for the service
-func (s *WebSphereLibertyApplicationService) GetSessionAffinity() *v1.ServiceAffinity {
+// GetSessionAffinity returns the session affinity settings for the service
+func (s *WebSphereLibertyApplicationService) GetSessionAffinity() common.BaseComponentServiceSessionAffinity {
+	if s.SessionAffinity == nil {
+		return nil
+	}
 	return s.SessionAffinity
 }
 
-// GetSessionAffinityConfig returns the session affinity configuration for the service
-func (s *WebSphereLibertyApplicationService) GetSessionAffinityConfig() *corev1.SessionAffinityConfig {
-	return s.SessionAffinityConfig
+// GetType returns the session affinity type for the service
+func (ssa *WebSphereLibertyApplicationServiceSessionAffinity) GetType() v1.ServiceAffinity {
+	return ssa.Type
+}
+
+// GetConfig returns the session affinity configuration for the service
+func (ssa *WebSphereLibertyApplicationServiceSessionAffinity) GetConfig() *corev1.SessionAffinityConfig {
+	return ssa.Config
 }
 
 // GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
