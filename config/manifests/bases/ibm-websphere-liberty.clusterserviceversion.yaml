@@ -8,7 +8,7 @@ metadata:
     createdAt: "2021-11-25T14:00:00Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
-    olm.skipRange: '>=1.0.0 <1.4.1'
+    olm.skipRange: '>=1.0.0 <1.4.4'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -303,10 +303,19 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - displayName: Route
         path: route
+      - description: Configure service session affinity.
+        displayName: Session Affinity
+        path: service.sessionAffinity
       - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT)
           compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
+      - description: Setting to maintain session affinity. Must be ClientIP or None.
+          Defaults to None.
+        displayName: Session Affinity Type
+        path: service.sessionAffinity.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Specifies the strategy to replace old deployment pods with new
           pods.
         displayName: Deployment Update Strategy
@@ -315,6 +324,9 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
       - displayName: Network Policy
         path: networkPolicy
+      - description: Configurations of session affinity.
+        displayName: Config
+        path: service.sessionAffinity.config
       - displayName: Serviceability
         path: serviceability
       - displayName: Single Sign-On
@@ -525,10 +537,11 @@ spec:
         displayName: Edition
         path: license.edition
       - description: 'Entitlement source for the product. Defaults to Standalone.
-          Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for
-          Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application
-          Server Family Edition. Option IBM Cloud Pak for Applications is deprecated.
-          Use option IBM Cloud Pak for Applications Standard instead.'
+          Other options: IBM Enterprise Application Runtimes, IBM Cloud Pak for Applications
+          Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid
+          Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud
+          Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications
+          Standard instead.'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
       - description: Deprecated. Charge metric code is now automatically determined
@@ -537,11 +550,9 @@ spec:
         path: license.metric
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: I represent that the software in the above-referenced application
-          container includes the IBM Program referenced below and I accept the terms
-          of the license agreement corresponding to the version of IBM Program in
-          the application container by setting this value to true. See https://ibm.biz/was-license
-          for the license agreements applicable to this IBM Program
+      - description: |-
+          I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
+          to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:

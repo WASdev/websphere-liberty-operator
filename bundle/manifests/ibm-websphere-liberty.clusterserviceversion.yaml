@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:3999aa86f788e601d305896e48a043a91861cdbf71951a1959887151390b3650",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:f55b852d939f7ac3234c08e23c0d1ab183b68079d5b93b87b0945c937043f523",
             "expose": true,
             "license": {
               "accept": false,
@@ -61,12 +61,12 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2024-11-22T15:43:30Z"
+    createdAt: "2025-06-23T20:03:24Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
-    olm.skipRange: '>=1.0.0 <1.4.1'
+    olm.skipRange: '>=1.0.0 <1.4.4'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
-    operators.operatorframework.io/builder: operator-sdk-v1.35.0
+    operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -75,7 +75,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
     operatorframework.io/os.linux: supported
-  name: ibm-websphere-liberty.v1.4.1
+  name: ibm-websphere-liberty.v1.4.4
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -361,10 +361,19 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - displayName: Route
         path: route
+      - description: Configure service session affinity.
+        displayName: Session Affinity
+        path: service.sessionAffinity
       - description: Configures the Semeru Cloud Compiler to handle Just-In-Time (JIT)
           compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
+      - description: Setting to maintain session affinity. Must be ClientIP or None.
+          Defaults to None.
+        displayName: Session Affinity Type
+        path: service.sessionAffinity.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Specifies the strategy to replace old deployment pods with new
           pods.
         displayName: Deployment Update Strategy
@@ -373,6 +382,9 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:updateStrategy
       - displayName: Network Policy
         path: networkPolicy
+      - description: Configurations of session affinity.
+        displayName: Config
+        path: service.sessionAffinity.config
       - displayName: Serviceability
         path: serviceability
       - displayName: Single Sign-On
@@ -583,10 +595,11 @@ spec:
         displayName: Edition
         path: license.edition
       - description: 'Entitlement source for the product. Defaults to Standalone.
-          Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for
-          Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application
-          Server Family Edition. Option IBM Cloud Pak for Applications is deprecated.
-          Use option IBM Cloud Pak for Applications Standard instead.'
+          Other options: IBM Enterprise Application Runtimes, IBM Cloud Pak for Applications
+          Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid
+          Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud
+          Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications
+          Standard instead.'
         displayName: Product Entitlement Source
         path: license.productEntitlementSource
       - description: Deprecated. Charge metric code is now automatically determined
@@ -595,11 +608,9 @@ spec:
         path: license.metric
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      - description: I represent that the software in the above-referenced application
-          container includes the IBM Program referenced below and I accept the terms
-          of the license agreement corresponding to the version of IBM Program in
-          the application container by setting this value to true. See https://ibm.biz/was-license
-          for the license agreements applicable to this IBM Program
+      - description: |-
+          I represent that the software in the above-referenced application container includes the IBM Program referenced below and I accept the terms of the license agreement corresponding
+          to the version of IBM Program in the application container by setting this value to true. See https://ibm.biz/was-license for the license agreements applicable to this IBM Program
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -928,7 +939,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3999aa86f788e601d305896e48a043a91861cdbf71951a1959887151390b3650
+                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:f55b852d939f7ac3234c08e23c0d1ab183b68079d5b93b87b0945c937043f523
                 - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
                   value: icr.io/cpopen/websphere-liberty-operator:daily
                 image: icr.io/cpopen/websphere-liberty-operator:daily
@@ -970,12 +981,19 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
+                volumeMounts:
+                - mountPath: /liberty/output
+                  name: scratch
+                  subPath: create-ltpa-keys
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
               serviceAccountName: wlo-controller-manager
               terminationGracePeriodSeconds: 10
+              volumes:
+              - emptyDir: {}
+                name: scratch
       permissions:
       - rules:
         - apiGroups:
@@ -1230,8 +1248,8 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:3999aa86f788e601d305896e48a043a91861cdbf71951a1959887151390b3650
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:f55b852d939f7ac3234c08e23c0d1ab183b68079d5b93b87b0945c937043f523
     name: liberty-sample-app
   - image: icr.io/cpopen/websphere-liberty-operator:daily
     name: websphere-liberty-operator
-  version: 1.4.1
+  version: 1.4.4

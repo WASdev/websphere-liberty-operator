@@ -1,11 +1,22 @@
 overrides:
-  - reason: "This operator uses 1 to 1 and not fan out"
-    rule: CRDDefinesVersionProperty
-    severity: WARNING
-    message: '(openAPIV3Schema.properties.spec.required|openAPIV3Schema.properties.spec.properties.version)'
-    filenames:
-      - bundle/manifests/liberty.websphere.ibm.com_webspherelibertyapplications.yaml
-      - bundle/manifests/liberty.websphere.ibm.com_webspherelibertydumps.yaml
-      - bundle/manifests/liberty.websphere.ibm.com_webspherelibertytraces.yaml
-  - reason: "This is only needed for products storing their container images in IBM Entitled Registry, which the WebSphere Liberty Operator does not"
-    rule: ServiceAccountHasPullSecret
+    - reason: "No sensitive information. Auth fields under Monitoring properties are descriptions"
+      rule: OLMOperatorBundleNoSensitiveInfo
+      message: '(monitoring.properties.endpoints.items.properties.authorization|monitoring.properties.endpoints.items.properties.basicAuth|monitoring.properties.endpoints.items.properties.oauth2)'
+      severity: REVIEW
+      filenames:
+        - webspherelibertyapplications.liberty.websphere.ibm.com.CustomResourceDefinition.yaml
+    - reason: "No sensitive information. Certificate fields under Route and Service properties are descriptions"
+      rule: OLMOperatorBundleNoSensitiveInfo
+      message: '(service.properties.certificate|route.properties.certificate)'
+      severity: REVIEW
+      filenames:
+        - webspherelibertyapplications.liberty.websphere.ibm.com.CustomResourceDefinition.yaml
+    - reason: "No sensitive information. Auth fields under sso properties are descriptions"
+      rule: OLMOperatorBundleNoSensitiveInfo
+      message: '(sso.properties.oauth2.items.properties.tokenEndpoint|sso.properties.oidc.items.properties.tokenEndpointAuthMethod|sso.properties.oauth2.items.properties.authorizationEndpoint)'
+      severity: REVIEW
+      filenames:
+        - webspherelibertyapplications.liberty.websphere.ibm.com.CustomResourceDefinition.yaml
+    - reason: "HorizontalPodAutoscaler is enabled through instances' CustomResource"
+      severity: INFO
+      rule: UsesHorizontalPodAutoscaler

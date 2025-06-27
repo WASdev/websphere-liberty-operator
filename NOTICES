@@ -1,10 +1,7 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.4.0
-Copyright 2023 - 2024 IBM Corporation and others
-
-
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.4.3
+Copyright 2023 - 2025 IBM Corporation and others
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 TABLE OF CONTENTS
 
 THIS IBM NOTICES FILE CONSISTS OF THE FOLLOWING SECTIONS:
@@ -16,8 +13,6 @@ EPL V2
 ISC
 MPL-2.0
 MIT
-
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 APACHE SOFTWARE LICENSE 2.0
@@ -340,11 +335,13 @@ github.com/google/go-cmp | Copyright (c) 2017 The Go Authors. All rights reserve
 github.com/google/uuid | Copyright (c) 2009,2014 Google Inc. All rights reserved.
 github.com/googleapis/gax-go/v2 | Copyright 2016 And Google Inc.
 github.com/grpc-ecosystem/grpc-gateway | Copyright (c) 2015 And Gengo And Inc.
+github.com/grpc-ecosystem/grpc-gateway/v2 | Copyright (c) 2015 And Gengo And Inc.
 github.com/ianlancetaylor/demangle | Copyright (c) 2015 The Go Authors. All rights reserved.
 github.com/imdario/mergo | Copyright (c) 2013 Dario Castañé. All rights reserved.Copyright (c) 2012 The Go Authors. All rights reserved.
 github.com/jessevdk/go-flags | Copyright (c) 2012 Jesse van den Kieboom. All rights reserved.
 github.com/julienschmidt/httprouter | Copyright (c) 2013 And Julien Schmidt
 github.com/munnerz/goautoneg | Copyright (c) 2011 And Open Knowledge Foundation Ltd.
+github.com/mxk/go-flowrate | Copyright (c) 2014 The Go-FlowRate Authors. All rights reserved.
 github.com/pmezard/go-difflib | Copyright (c) 2013 And Patrick Mezard
 github.com/rogpeppe/fastuuid | Copyright © 2014 And Roger Peppe
 github.com/rogpeppe/go-internal | Copyright (c) 2018 The Go Authors. All rights reserved.
@@ -450,7 +447,6 @@ github.com/hashicorp/golang-lru | https://proxy.golang.org/github.com/hashicorp/
 
 END OF MOZILLA PUBLIC LICENSE, VERSION 2.0 NOTICES AND INFORMATION
 
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 MIT LICENSE
@@ -461,7 +457,7 @@ under the MIT License:
 github.com/BurntSushi/toml | Copyright (c) 2013 TOML authors
 github.com/alecthomas/units | Copyright (c) 2022 Alex Beimler
 github.com/antihax/optional | Copyright (c) 2016 Adam Hintz
-github.com/armon/go-socks5 | No copyright statement
+github.com/armon/go-socks5 | (Copyright not found)
 github.com/benbjohnson/clock | Copyright (c) 2014 Ben Johnson
 github.com/beorn7/perks | Copyright (C) 2013 Blake Mizerany
 github.com/blang/semver | Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
@@ -504,8 +500,8 @@ go.uber.org/goleak | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/multierr | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/zap | Copyright (c) 2016 Uber Technologies And Inc.
 gopkg.in/alecthomas/kingpin.v2 | Copyright (C) 2014 Alec Thomas
-gopkg.in/yaml.v2 | No copyright statement
-gopkg.in/yaml.v3 | No copyright statement
+gopkg.in/yaml.v2 | (Copyright not found)
+gopkg.in/yaml.v3 | (Copyright not found)
 honnef.co/go/tools | Copyright © 2018 And Michael Stapelberg and contributors
 sigs.k8s.io/yaml | Copyright (c) 2014 Sam Ghods
 
@@ -529,13 +525,9 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
 
 END OF MIT LICENSE NOTICES AND INFORMATION
-
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.4.0 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.4.3 NOTICES FILE CONSISTS OF THE FOLLOWING 
 SECTIONS:
 
 TABLE OF CONTENTS
@@ -559,8 +551,7 @@ PHP_MAN.HTML https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-201908061623
 (https://proxy.golang.org/github.com/performancecopilot/speed/@v/v3.0.0+incompatible.zip),
 DOCUMENTATION [opencontainers/runc] https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip
 (/runc-0/runc-0.1.1.zip/runc-0.1.1/libcontainer/README.md), ABOUT THE
-MANUAL https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip, DIR.TMPL (No Copyright statement
-found)
+MANUAL https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip, DIR.TMPL (Copyright not found)
 (https://proxy.golang.org/golang.org/x/tools/@v/v0.0.0-20200916195026-c9a70fc28ce3.zip),
 RUNC-DOCUMENTATION [opencontainers/runc] https://proxy.golang.org/golang.org/x/mobile/@v/v0.0.0-20190806162312-597adff16ade.zip
 (https://github.com/opencontainers/runc/tree/v0.1.1)
@@ -576,7 +567,7 @@ The url to the license is https://creativecommons.org/licenses/by/4.0/legalcode
 
 github.com/opencontainers/go-digest (Copyright © 2019, 2020 OCI Contributors Copyright © 2016 Docker, Inc. All rights reserved)
 (https://github.com/opencontainers/go-digest)
-SWAGGER SAMPLE API [go-openapi/loads] (No copyright found)
+SWAGGER SAMPLE API [go-openapi/loads] (Copyright not found)
 (https://github.com/go-openapi/loads/archive/0.19.5.zip),
 GITHUB.COM/AJSTARKS/SVGO (Adapted Material means material subject to
 Copyright and Similar Rights)
@@ -586,9 +577,9 @@ DOCS/* [containerd/containerd] https://proxy.golang.org/golang.org/x/mobile/@v/v
 (https://github.com/containerd/containerd/tree/v1.2.7),
 TEKTONCD-PIPELINE-DOCS [tektoncd/pipeline] (Copyright 2019 The Tekton
 Authors) (github.com/tektoncd/pipeline/archive/44f22a067b75.zip),
-SWAGGER PETSTORE [go-openapi/loads] (No Copyright found)
+SWAGGER PETSTORE [go-openapi/loads] (Copyright not found)
 (https://github.com/go-openapi/loads/archive/0.19.5.zip),
-EXPANDER_TEST.GO [go-openapi/spec] (No Copyright found)
+EXPANDER_TEST.GO [go-openapi/spec] (Copyright not found)
 (https://github.com/go-openapi/spec/tree/v0.19.9), MAN PAGE (No
 Copyright Statement found)
 (https://proxy.golang.org/github.com/influxdata/influxdb/@v/v1.8.0.zip),

@@ -6,45 +6,43 @@ resources:
 namePrefix: wlo-watched-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app.kubernetes.io/instance: websphere-liberty-operator
-  app.kubernetes.io/name: websphere-liberty-operator
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/instance: websphere-liberty-operator
+    app.kubernetes.io/name: websphere-liberty-operator
 
 patches:
 - path: patches/delete-service-account.yaml
   target:
     kind: ServiceAccount
-
-patchesJson6902:
-  - target:
-      name: .*
-    patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
-  - target:
-      kind: RoleBinding
-      name: .*
-    patch: |-
-      - op: replace
-        path: /subjects/0/namespace
-        value: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
-      - op: replace
-        path: /subjects/0/name
-        value: wlo-controller-manager
-  - target:
-      kind: RoleBinding
-      name: wlo-watched-leader-election-rolebinding
-    patch: |-
-      - op: replace
-        path: /roleRef/name
-        value: wlo-watched-leader-election-role
-  - target:
-      kind: RoleBinding
-      name: wlo-watched-manager-rolebinding
-    patch: |-
-      - op: replace
-        path: /roleRef/name
-        value: wlo-watched-manager-role
-
-        
+- target:
+    name: .*
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
+- target:
+    kind: RoleBinding
+    name: .*
+  patch: |-
+    - op: replace
+      path: /subjects/0/namespace
+      value: WEBSPHERE_LIBERTY_OPERATOR_NAMESPACE
+    - op: replace
+      path: /subjects/0/name
+      value: wlo-controller-manager
+- target:
+    kind: RoleBinding
+    name: wlo-watched-leader-election-rolebinding
+  patch: |-
+    - op: replace
+      path: /roleRef/name
+      value: wlo-watched-leader-election-role
+- target:
+    kind: RoleBinding
+    name: wlo-watched-manager-rolebinding
+  patch: |-
+    - op: replace
+      path: /roleRef/name
+      value: wlo-watched-manager-role

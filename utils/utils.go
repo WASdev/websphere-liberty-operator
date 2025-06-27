@@ -53,7 +53,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.4.1"
+const OperandVersion = "1.4.4"
 
 // LTPA constants
 const managedLTPAMountPath = "/config/managedLTPA"
@@ -62,11 +62,9 @@ const LTPAServerXMLMountSuffix = "-managed-ltpa-mount-server-xml"
 const LTPAKeysFileName = "ltpa.keys"
 const LTPAKeysXMLFileName = "managedLTPA.xml"
 const LTPAKeysMountXMLFileName = "managedLTPAMount.xml"
-const LTPAKeysCreationScriptFileName = "create_ltpa_keys.sh"
-const LTPAConfigCreationScriptFileName = "create_ltpa_config.sh"
 
 // Mount constants
-const SecureMountPath = "/output/resources/liberty-operator"
+const SecureMountPath = "/output/liberty-operator"
 const overridesMountPath = "/config/configDropins/overrides"
 
 // Password encryption constants
@@ -94,6 +92,7 @@ var editionProductID = map[wlv1.LicenseEdition]string{
 }
 
 var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
+	wlv1.LicenseEntitlementEAR:             "19d99ffa01714d6bb12d82505fea3ee1",
 	wlv1.LicenseEntitlementCP4AppsAdvanced: "217562c7767641d982cc6df6bcb5cb87",
 	wlv1.LicenseEntitlementCP4AppsStandard: "4df52d2cdc374ba09f631a650ad2b5bf",
 	wlv1.LicenseEntitlementWSHE:            "6358611af04743f99f42dadcd6e39d52",
@@ -389,7 +388,7 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	entitlement := la.Spec.License.ProductEntitlementSource
 
 	metricValue := "PROCESSOR_VALUE_UNIT"
-	if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced || entitlement == wlv1.LicenseEntitlementCP4AppsStandard || entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
+	if entitlement == wlv1.LicenseEntitlementEAR || entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced || entitlement == wlv1.LicenseEntitlementCP4AppsStandard || entitlement == wlv1.LicenseEntitlementWSHE || entitlement == wlv1.LicenseEntitlementCP4Apps {
 		metricValue = "VIRTUAL_PROCESSOR_CORE"
 	}
 	pts.Annotations[productMetricKey] = metricValue
@@ -397,13 +396,13 @@ func CustomizeLicenseAnnotations(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 	ratio := ""
 	switch la.Spec.License.Edition {
 	case wlv1.LicenseEditionBase:
-		if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
+		if entitlement == wlv1.LicenseEntitlementEAR || entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
 			ratio = "11:2"
 		} else {
 			ratio = "4:1"
 		}
 	case wlv1.LicenseEditionCore:
-		if entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
+		if entitlement == wlv1.LicenseEntitlementEAR || entitlement == wlv1.LicenseEntitlementCP4AppsAdvanced {
 			ratio = "11:1"
 		} else {
 			ratio = "8:1"
@@ -455,7 +454,7 @@ func CreateServiceabilityPVC(instance *wlv1.WebSphereLibertyApplication) *corev1
 			Annotations: instance.GetAnnotations(),
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: resource.MustParse(instance.GetServiceability().GetSize()),
 				},
@@ -679,7 +678,7 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 			clientId, clientSecret, err = RegisterWithOidcProvider(regData)
 			if err != nil {
 				writeSSOSecretIfNeeded(client, ssoSecret, ssoSecretUpdates) // preserve any registrations that succeeded
-				return errors.Wrapf(err, "Error occured during registration with OIDC for provider "+clientName)
+				return errors.Wrapf(err, "Error occured during registration with OIDC for provider %s", clientName)
 			}
 			logf.Log.WithName("utils").Info("OIDC registration for id: " + clientName + " successful, obtained clientId: " + clientId)
 			ssoSecretUpdates[clientName+autoregFragment+"RegisteredOidcClientId"] = []byte(clientId)
@@ -815,7 +814,7 @@ func isVolumeFound(pts *corev1.PodTemplateSpec, name string) bool {
 }
 
 func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, passwordEncryptionMetadata *PasswordEncryptionMetadata) {
-	// Mount a volume /output/resources/liberty-operator/encryptionKey.xml to store the Liberty Password Encryption Key
+	// Mount a volume /output/liberty-operator/encryptionKey.xml to store the Liberty Password Encryption Key
 	MountSecretAsVolume(pts, operatorShortName+ManagedEncryptionServerXML+passwordEncryptionMetadata.Name, CreateVolumeMount(SecureMountPath, EncryptionKeyXMLFileName))
 
 	// Mount a volume /config/configDropins/overrides/encryptionKeyMount.xml to import the Liberty Password Encryption Key
@@ -824,10 +823,10 @@ func ConfigurePasswordEncryption(pts *corev1.PodTemplateSpec, la *wlv1.WebSphere
 
 // ConfigureLTPA setups the shared-storage for LTPA keys file generation
 func ConfigureLTPAConfig(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, operatorShortName string, ltpaSecretName string, ltpaSuffixName string) {
-	// Mount a volume /output/resources/liberty-operator/ltpa.keys to store the ltpa.keys file
+	// Mount a volume /output/liberty-operator/ltpa.keys to store the ltpa.keys file
 	MountSecretAsVolume(pts, ltpaSecretName, CreateVolumeMount(SecureMountPath, LTPAKeysFileName))
 
-	// Mount a volume /output/resources/liberty-operator/managedLTPA.xml to store the Liberty Server XML
+	// Mount a volume /output/liberty-operator/managedLTPA.xml to store the Liberty Server XML
 	MountSecretAsVolume(pts, operatorShortName+LTPAServerXMLSuffix+ltpaSuffixName, CreateVolumeMount(SecureMountPath, LTPAKeysXMLFileName))
 
 	// Mount a volume /config/configDropins/overrides/managedLTPAMount.xml to import the managedLTPA.xml file
@@ -932,119 +931,6 @@ func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphe
 		return true
 	}
 	return false
-}
-
-func CustomizeLTPAKeysJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
-	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
-	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
-	job.Spec.Template.ObjectMeta.Name = "liberty"
-	job.Spec.Template.ObjectMeta.Labels = GetRequiredLabels(jobRootName, job.Name)
-	job.Spec.Template.Spec.Containers = []corev1.Container{
-		{
-			Name:            job.Spec.Template.ObjectMeta.Name,
-			Image:           la.GetStatus().GetImageReference(),
-			ImagePullPolicy: *la.GetPullPolicy(),
-			SecurityContext: rcoutils.GetSecurityContext(la),
-			Command:         []string{"/bin/bash", "-c"},
-			// Usage: /bin/create_ltpa_keys.sh <namespace> <ltpa-secret-name> <securityUtility-encoding>
-			Args: []string{managedLTPAMountPath + "/bin/" + LTPAKeysCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      ltpaVolumeMountName,
-					MountPath: managedLTPAMountPath + "/bin",
-				},
-			},
-		},
-	}
-	if la.GetPullSecret() != nil && *la.GetPullSecret() != "" {
-		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-			Name: *la.GetPullSecret(),
-		})
-	}
-	job.Spec.Template.Spec.ServiceAccountName = ltpaConfig.ServiceAccountName
-	// If there is a custom ServiceAccount, include it's pull secrets into the LTPA Job
-	if leaderSAName := rcoutils.GetServiceAccountName(la); len(leaderSAName) > 0 {
-		customServiceAccount := &corev1.ServiceAccount{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: leaderSAName, Namespace: la.GetNamespace()}, customServiceAccount); err == nil {
-			// For each of the custom SA's pull secret's, if it is not found within the Job, append it to the Job
-			for _, customSAObjectReference := range customServiceAccount.ImagePullSecrets {
-				if !LocalObjectReferenceContainsName(job.Spec.Template.Spec.ImagePullSecrets, customSAObjectReference.Name) {
-					job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-						Name: customSAObjectReference.Name,
-					})
-				}
-			}
-		}
-	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
-	number := int32(0777)
-	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: ltpaVolumeMountName,
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ltpaConfig.ConfigMapName,
-				},
-				DefaultMode: &number,
-			},
-		},
-	})
-}
-
-func CustomizeLTPAConfigJob(job *v1.Job, jobRootName string, la *wlv1.WebSphereLibertyApplication, ltpaConfig *LTPAConfig, client client.Client) {
-	ltpaVolumeMountName := parseMountName(ltpaConfig.FileName)
-	encodingType := "aes" // the password encoding type for securityUtility (one of "xor", "aes", or "hash")
-	job.Spec.Template.ObjectMeta.Name = "liberty"
-	job.Spec.Template.ObjectMeta.Labels = GetRequiredLabels(jobRootName, job.Name)
-	job.Spec.Template.Spec.Containers = []corev1.Container{
-		{
-			Name:            job.Spec.Template.ObjectMeta.Name,
-			Image:           la.GetStatus().GetImageReference(),
-			ImagePullPolicy: *la.GetPullPolicy(),
-			SecurityContext: rcoutils.GetSecurityContext(la),
-			Command:         []string{"/bin/bash", "-c"},
-			Args:            []string{managedLTPAMountPath + "/bin/" + LTPAConfigCreationScriptFileName + " " + la.GetNamespace() + " " + ltpaConfig.SecretName + " " + ltpaConfig.SecretInstanceName + " " + ltpaConfig.ConfigSecretName + " " + ltpaConfig.ConfigSecretInstanceName + " " + ltpaConfig.FileName + " " + encodingType + " " + ltpaConfig.EncryptionKeySecretName + " " + strconv.FormatBool(ltpaConfig.EncryptionKeySharingEnabled) + " " + ResourcePathIndexLabel + " " + ltpaConfig.Metadata.PathIndex + " " + ltpaConfig.JobRequestConfigMapName},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      ltpaVolumeMountName,
-					MountPath: managedLTPAMountPath + "/bin",
-				},
-			},
-		},
-	}
-	if la.GetPullSecret() != nil && *la.GetPullSecret() != "" {
-		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-			Name: *la.GetPullSecret(),
-		})
-	}
-	job.Spec.Template.Spec.ServiceAccountName = ltpaConfig.ServiceAccountName
-	// If there is a custom ServiceAccount, include it's pull secrets into the LTPA Job
-	if leaderSAName := rcoutils.GetServiceAccountName(la); len(leaderSAName) > 0 {
-		customServiceAccount := &corev1.ServiceAccount{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: leaderSAName, Namespace: la.GetNamespace()}, customServiceAccount); err == nil {
-			// For each of the custom SA's pull secret's, if it is not found within the Job, append it to the Job
-			for _, customSAObjectReference := range customServiceAccount.ImagePullSecrets {
-				if !LocalObjectReferenceContainsName(job.Spec.Template.Spec.ImagePullSecrets, customSAObjectReference.Name) {
-					job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{
-						Name: customSAObjectReference.Name,
-					})
-				}
-			}
-		}
-	}
-	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure
-	number := int32(0777)
-	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
-		Name: ltpaVolumeMountName,
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: ltpaConfig.ConfigMapName,
-				},
-				DefaultMode: &number,
-			},
-		},
-	})
 }
 
 // Converts a file name into a lowercase word separated string
@@ -1172,6 +1058,16 @@ func GetCommaSeparatedArray(stringList string) []string {
 }
 
 var letterNums = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+
+var letterNums2 = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+
+func GetRandomAlphanumeric(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letterNums2[rand.IntN(len(letterNums2))]
+	}
+	return string(b)
+}
 
 func GetRandomLowerAlphanumericSuffix(length int) string {
 	b := make([]rune, length)

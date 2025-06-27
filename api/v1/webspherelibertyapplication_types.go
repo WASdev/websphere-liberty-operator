@@ -24,6 +24,7 @@ import (
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -201,7 +202,7 @@ type License struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=100,type=spec,displayName="Edition"
 	Edition LicenseEdition `json:"edition,omitempty"`
 
-	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications Standard instead.
+	// Entitlement source for the product. Defaults to Standalone. Other options: IBM Enterprise Application Runtimes, IBM Cloud Pak for Applications Advanced, IBM Cloud Pak for Applications Standard, IBM WebSphere Hybrid Edition, IBM WebSphere Application Server Family Edition. Option IBM Cloud Pak for Applications is deprecated. Use option IBM Cloud Pak for Applications Standard instead.
 	// +operator-sdk:csv:customresourcedefinitions:order=101,type=spec,displayName="Product Entitlement Source"
 	ProductEntitlementSource LicenseEntitlement `json:"productEntitlementSource,omitempty"`
 
@@ -241,12 +242,14 @@ const (
 )
 
 // Defines the possible values for product entitlement source
-// +kubebuilder:validation:Enum=Standalone;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
+// +kubebuilder:validation:Enum=Standalone;IBM Enterprise Application Runtimes;IBM Cloud Pak for Applications Advanced;IBM Cloud Pak for Applications Standard;IBM WebSphere Hybrid Edition;IBM WebSphere Application Server Family Edition;IBM Cloud Pak for Applications
 type LicenseEntitlement string
 
 const (
 	// Entitlement source Standalone
 	LicenseEntitlementStandalone LicenseEntitlement = "Standalone"
+	// Entitlement source IBM Enterprise Application Runtimes
+	LicenseEntitlementEAR LicenseEntitlement = "IBM Enterprise Application Runtimes"
 	// Entitlement source IBM Cloud Pak for Applications Advanced
 	LicenseEntitlementCP4AppsAdvanced LicenseEntitlement = "IBM Cloud Pak for Applications Advanced"
 	// Entitlement source IBM Cloud Pak for Applications Standard
@@ -381,6 +384,21 @@ type WebSphereLibertyApplicationService struct {
 	// Expose the application as a bindable service. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=18,type=spec,displayName="Bindable",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	Bindable *bool `json:"bindable,omitempty"`
+
+	// Configure service session affinity.
+	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec
+	SessionAffinity *WebSphereLibertyApplicationServiceSessionAffinity `json:"sessionAffinity,omitempty"`
+}
+
+// Configure service session affinity
+type WebSphereLibertyApplicationServiceSessionAffinity struct {
+	// Setting to maintain session affinity. Must be ClientIP or None. Defaults to None.
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Session Affinity Type",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	Type v1.ServiceAffinity `json:"type,omitempty"`
+
+	// Configurations of session affinity.
+	// +operator-sdk:csv:customresourcedefinitions:order=21,type=spec
+	Config *corev1.SessionAffinityConfig `json:"config,omitempty"`
 }
 
 // Configure service certificate.
@@ -557,9 +575,6 @@ type StatusCondition struct {
 	Message            string                 `json:"message,omitempty"`
 	Status             corev1.ConditionStatus `json:"status,omitempty"`
 	Type               StatusConditionType    `json:"type,omitempty"`
-
-	// The count of the number of reconciles the condition status type has not changed.
-	UnchangedConditionCount *int32 `json:"unchangedConditionCount,omitempty"`
 }
 
 // Defines the type of status condition.
@@ -1060,6 +1075,10 @@ func (s *WebSphereLibertyApplicationStatus) SetReconcileInterval(interval *int32
 	s.ReconcileInterval = interval
 }
 
+func (s *WebSphereLibertyApplicationStatus) UnsetReconcileInterval() {
+	s.ReconcileInterval = nil
+}
+
 // GetMinReplicas returns minimum replicas
 func (a *WebSphereLibertyApplicationAutoScaling) GetMinReplicas() *int32 {
 	return a.MinReplicas
@@ -1172,6 +1191,24 @@ func (c *WebSphereLibertyApplicationCertificate) GetAnnotations() map[string]str
 // GetBindable returns whether the application should be exposable as a service
 func (s *WebSphereLibertyApplicationService) GetBindable() *bool {
 	return s.Bindable
+}
+
+// GetSessionAffinity returns the session affinity settings for the service
+func (s *WebSphereLibertyApplicationService) GetSessionAffinity() common.BaseComponentServiceSessionAffinity {
+	if s.SessionAffinity == nil {
+		return nil
+	}
+	return s.SessionAffinity
+}
+
+// GetType returns the session affinity type for the service
+func (ssa *WebSphereLibertyApplicationServiceSessionAffinity) GetType() v1.ServiceAffinity {
+	return ssa.Type
+}
+
+// GetConfig returns the session affinity configuration for the service
+func (ssa *WebSphereLibertyApplicationServiceSessionAffinity) GetConfig() *corev1.SessionAffinityConfig {
+	return ssa.Config
 }
 
 // GetNamespaceLabels returns the namespace selector labels that should be used for the ingress rule
@@ -1436,6 +1473,19 @@ func (c *StatusCondition) GetLastTransitionTime() *metav1.Time {
 	return c.LastTransitionTime
 }
 
+// GetLatestTransitionTime returns latest time of status change
+func (s *WebSphereLibertyApplicationStatus) GetLatestTransitionTime() *metav1.Time {
+	var latestTime *metav1.Time
+	for i := range s.Conditions {
+		t := s.Conditions[i].GetLastTransitionTime()
+		// If latestTime is not set or condition's time is before latestTime
+		if latestTime == nil || latestTime.Before(t) {
+			latestTime = t
+		}
+	}
+	return latestTime
+}
+
 // SetLastTransitionTime sets time of last status change
 func (c *StatusCondition) SetLastTransitionTime(t *metav1.Time) {
 	c.LastTransitionTime = t
@@ -1517,7 +1567,7 @@ func (s *WebSphereLibertyApplicationStatus) SetCondition(c common.StatusConditio
 		}
 	}
 
-	if condition.GetStatus() != c.GetStatus() || condition.GetMessage() != c.GetMessage() {
+	if condition.GetStatus() != c.GetStatus() || condition.GetMessage() != c.GetMessage() || condition.GetReason() != c.GetReason() {
 		condition.SetLastTransitionTime(&metav1.Time{Time: time.Now()})
 	}
 
@@ -1525,7 +1575,6 @@ func (s *WebSphereLibertyApplicationStatus) SetCondition(c common.StatusConditio
 	condition.SetMessage(c.GetMessage())
 	condition.SetStatus(c.GetStatus())
 	condition.SetType(c.GetType())
-	condition.SetUnchangedConditionCount(c.GetUnchangedConditionCount())
 	if !found {
 		s.Conditions = append(s.Conditions, *condition)
 	}
@@ -1543,24 +1592,6 @@ func (s *WebSphereLibertyApplicationStatus) UnsetCondition(c common.StatusCondit
 				s.Conditions = append(s.Conditions[:i], s.Conditions[i+1])
 			}
 			return
-		}
-	}
-}
-
-func (sc *StatusCondition) GetUnchangedConditionCount() *int32 {
-	return sc.UnchangedConditionCount
-}
-
-func (sc *StatusCondition) SetUnchangedConditionCount(count *int32) {
-	sc.UnchangedConditionCount = count
-}
-
-func (s *WebSphereLibertyApplicationStatus) UnsetUnchangedConditionCount(conditionType common.StatusConditionType) {
-	// Reset unchanged count for other status conditions
-	var emptyCount *int32
-	for i := range s.Conditions {
-		if s.Conditions[i].GetType() != conditionType && s.Conditions[i].GetUnchangedConditionCount() != nil {
-			s.Conditions[i].SetUnchangedConditionCount(emptyCount)
 		}
 	}
 }

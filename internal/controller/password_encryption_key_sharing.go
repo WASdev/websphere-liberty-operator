@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
@@ -34,13 +35,16 @@ import (
 
 const PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME = "password-encryption"
 
+func init() {
+	lutils.LeaderTrackerMutexes.Store(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
+}
+
 func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, string, error) {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
 		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil && !kerrors.IsNotFound(err) {
 			return "", "", "", err
 		}
-		// non-leaders should still be able to pass this process to return the encryption secret name
 		if thisInstanceIsLeader {
 			// Is there a password encryption key to duplicate for internal use?
 			if err := r.mirrorEncryptionKeySecretState(instance, passwordEncryptionMetadata); err != nil {
@@ -63,7 +67,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 				} else {
 					// non-leaders should yield for the password encryption leader to mirror the encryption key's state
 					if !r.encryptionKeySecretMirrored(instance, passwordEncryptionMetadata) {
-						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '" + leaderName + "' to mirror the shared Password Encryption Key Secret for the namespace '" + instance.Namespace + "'.")
+						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key Secret for the namespace '%s'.", leaderName, instance.Namespace)
 					}
 				}
 				return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
@@ -162,6 +166,26 @@ func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance
 		return err == nil
 	}
 	return false
+}
+
+func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, bool, error) {
+	if !r.isPasswordEncryptionKeySharingEnabled(instance) {
+		return "", "", false, nil
+	}
+	secret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	if err != nil {
+		return "", "", true, err
+	}
+	passwordEncryptionKey := ""
+	encryptionSecretLastRotation := ""
+	if key, found := secret.Data["passwordEncryptionKey"]; found {
+		passwordEncryptionKey = string(key)
+	}
+	if lastRotation, found := secret.Data["lastRotation"]; found {
+		encryptionSecretLastRotation = string(lastRotation)
+	}
+	// TODO: cover when secret does not contain data key-value pairs
+	return passwordEncryptionKey, encryptionSecretLastRotation, true, nil
 }
 
 // Returns the Secret that contains the password encryption key used internally by the operator
@@ -267,7 +291,7 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 	}
 
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
-	// This server.xml will be mounted in /output/resources/liberty-operator/encryptionKey.xml
+	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
 	encryptionXMLSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
