@@ -543,9 +543,9 @@ type WebSphereLibertyApplicationSemeruCloudCompiler struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=54,type=spec,displayName="Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// Removes default annotations added to the Semeru Cloud Compiler service. Defaults to false.
-	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Disable Annotations",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
-	DisableAnnotations *bool `json:"disableAnnotations,omitempty"`
+	// Removes default service annotations added to the Semeru Cloud Compiler. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=55,type=spec,displayName="Disable Service Annotations",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	DisableServiceAnnotations *bool `json:"disableServiceAnnotations,omitempty"`
 }
 
 // Defines SemeruCompiler status
@@ -1339,12 +1339,12 @@ func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetReplicas() *int32 
 	return &one
 }
 
-// GetDisableAnnotations returns true if default annotations should be removed from the Semeru Cloud Compiler service
-func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetDisableAnnotations() bool {
-	if scc.DisableAnnotations == nil {
+// GetDisableServiceAnnotations returns true if default service annotations should be removed from the Semeru Cloud Compiler
+func (scc *WebSphereLibertyApplicationSemeruCloudCompiler) GetDisableServiceAnnotations() bool {
+	if scc.DisableServiceAnnotations == nil {
 		return false
 	}
-	return *scc.DisableAnnotations
+	return *scc.DisableServiceAnnotations
 }
 
 // GetTopologySpreadConstraints returns the pod topology spread constraints configuration

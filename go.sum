@@ -6,6 +6,10 @@ github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250626162458-04f829ff569
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250626162458-04f829ff569b/go.mod h1:zw8uHEkx2mccGxDppDiAB/KLIkdc+VrlQvof7BVNO/0=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704153543-4985de6e12ce h1:Q0VjmzdEnx3ypRrW994Z5n18QSItF7FQ4fveZdNndl8=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704153543-4985de6e12ce/go.mod h1:23mU8/HfpM/gkFBxLjcRXvZqWVzTJzj5SaxPjuB/6/w=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704154743-e90a024247ec h1:JdZXHfdq19EhYefpWvXJiGqnc4TCreGu8qYhjS3PYgU=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704154743-e90a024247ec/go.mod h1:23mU8/HfpM/gkFBxLjcRXvZqWVzTJzj5SaxPjuB/6/w=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704155137-b18331384adf h1:voJrR9PoNqbAasMDH98W9stDbfDWLag2iPxF+7cKINM=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20250704155137-b18331384adf/go.mod h1:23mU8/HfpM/gkFBxLjcRXvZqWVzTJzj5SaxPjuB/6/w=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20250624180127-8ac4006cbab3 h1:rcx6XOy5geMntHne4mi/S+KQUEsN8liuEg7N80108+w=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20250624180127-8ac4006cbab3/go.mod h1:IWb2bp8hVEbKNUDRkfa5Pty3bSdOalGRDds/VMckYCA=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20250704151801-4f1bd83ce7a8 h1:C8T7D82hGdA6ZI2ndj+/pTgIYgFJtXbJHZvbrBq/ze4=

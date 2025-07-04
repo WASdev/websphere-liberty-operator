@@ -643,8 +643,8 @@ func (in *WebSphereLibertyApplicationSemeruCloudCompiler) DeepCopyInto(out *WebS
 		*out = new(corev1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.DisableAnnotations != nil {
-		in, out := &in.DisableAnnotations, &out.DisableAnnotations
+	if in.DisableServiceAnnotations != nil {
+		in, out := &in.DisableServiceAnnotations, &out.DisableServiceAnnotations
 		*out = new(bool)
 		**out = **in
 	}
