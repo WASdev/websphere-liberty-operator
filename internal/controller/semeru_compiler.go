@@ -411,12 +411,13 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	wlutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, wlva, r.GetClient(), wlva.Status.SemeruCompiler.TLSSecretName, "TLS")
 }
 
+// Precondition: .spec.semeruCloudCompiler is not nil
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
 	var port int32 = 38400
 	var timeout int32 = 86400
 	svc.Labels = getLabels(wlva)
 	svc.Spec.Selector = getSelectors(wlva)
-	utils.CustomizeServiceAnnotations(svc)
+	utils.CustomizeServiceAnnotations(svc, wlva.GetSemeruCloudCompiler().GetDisableAnnotations())
 	if len(svc.Spec.Ports) == 0 {
 		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
 	}
