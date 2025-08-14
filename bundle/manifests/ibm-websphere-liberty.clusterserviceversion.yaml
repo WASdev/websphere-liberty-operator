@@ -61,7 +61,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-07-11T19:01:58Z"
+    createdAt: "2025-08-14T16:56:15Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.4.4'
@@ -198,6 +198,12 @@ spec:
           membership.
         displayName: Group Name Attribute
         path: sso.oidc[0].groupNameAttribute
+      - description: Target average Memory utilization, represented as a percentage
+          of requested memory, over all the pods.
+        displayName: Target Memory Utilization Percentage
+        path: autoscaling.targetMemoryUtilizationPercentage
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: Policy for pulling container images. Defaults to IfNotPresent.
         displayName: Pull Policy
         path: pullPolicy
