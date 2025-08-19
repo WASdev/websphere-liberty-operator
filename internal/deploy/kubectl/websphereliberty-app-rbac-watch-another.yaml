@@ -39,6 +39,34 @@ metadata:
   namespace: WEBSPHERE_LIBERTY_WATCH_NAMESPACE
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - persistentvolumeclaims
+  - secrets
+  - serviceaccounts
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - apps
   resources:
   - deployments
@@ -54,7 +82,6 @@ rules:
   - apps
   resources:
   - deployments/finalizers
-  - statefulsets
   verbs:
   - update
 - apiGroups:
@@ -92,34 +119,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - persistentvolumeclaims
-  - secrets
-  - serviceaccounts
-  - services
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - image.openshift.io
   resources:
   - imagestreams
@@ -134,45 +133,12 @@ rules:
   - webspherelibertyapplications
   - webspherelibertyapplications/finalizers
   - webspherelibertyapplications/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - liberty.websphere.ibm.com
-  resources:
   - webspherelibertydumps
   - webspherelibertydumps/finalizers
   - webspherelibertydumps/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - liberty.websphere.ibm.com
-  resources:
   - webspherelibertyperformancedata
   - webspherelibertyperformancedata/finalizers
   - webspherelibertyperformancedata/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - liberty.websphere.ibm.com
-  resources:
   - webspherelibertytraces
   - webspherelibertytraces/finalizers
   - webspherelibertytraces/status

@@ -11,7 +11,7 @@ metadata:
             "name": "websphereliberty-app-sample"
           },
           "spec": {
-            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:494f54bd1476465a4226cb62f0d97cd59cd85b55ff955073e176bda4bd2afbd3",
+            "applicationImage": "icr.io/appcafe/open-liberty/samples/getting-started@sha256:29220c85330a584ab1a22de6771d8b10a36796dd666f2b5b8c4dd92a8f8e76e0",
             "expose": true,
             "license": {
               "accept": false,
@@ -73,12 +73,12 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-08-19T16:53:11Z"
+    createdAt: "2025-08-19T20:46:30Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.0'
     operators.openshift.io/infrastructure-features: '["disconnected"]'
-    operators.operatorframework.io/builder: operator-sdk-v1.38.0
+    operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/WASdev/websphere-liberty-operator
     support: IBM
@@ -974,7 +974,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_LIBERTY_SAMPLE_APP
-                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:494f54bd1476465a4226cb62f0d97cd59cd85b55ff955073e176bda4bd2afbd3
+                  value: icr.io/appcafe/open-liberty/samples/getting-started@sha256:29220c85330a584ab1a22de6771d8b10a36796dd666f2b5b8c4dd92a8f8e76e0
                 - name: RELATED_IMAGE_WEBSPHERE_LIBERTY_OPERATOR
                   value: icr.io/cpopen/websphere-liberty-operator:daily
                 image: icr.io/cpopen/websphere-liberty-operator:daily
@@ -1058,6 +1058,34 @@ spec:
           - create
           - patch
         - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - persistentvolumeclaims
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - pods/exec
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - apps
           resources:
           - deployments
@@ -1073,7 +1101,6 @@ spec:
           - apps
           resources:
           - deployments/finalizers
-          - statefulsets
           verbs:
           - update
         - apiGroups:
@@ -1111,34 +1138,6 @@ spec:
           - update
           - watch
         - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          - persistentvolumeclaims
-          - secrets
-          - serviceaccounts
-          - services
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - update
-          - watch
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - pods/exec
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
           - image.openshift.io
           resources:
           - imagestreams
@@ -1153,45 +1152,12 @@ spec:
           - webspherelibertyapplications
           - webspherelibertyapplications/finalizers
           - webspherelibertyapplications/status
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - liberty.websphere.ibm.com
-          resources:
           - webspherelibertydumps
           - webspherelibertydumps/finalizers
           - webspherelibertydumps/status
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - liberty.websphere.ibm.com
-          resources:
           - webspherelibertyperformancedata
           - webspherelibertyperformancedata/finalizers
           - webspherelibertyperformancedata/status
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
-        - apiGroups:
-          - liberty.websphere.ibm.com
-          resources:
           - webspherelibertytraces
           - webspherelibertytraces/finalizers
           - webspherelibertytraces/status
@@ -1302,7 +1268,7 @@ spec:
   provider:
     name: IBM
   relatedImages:
-  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:494f54bd1476465a4226cb62f0d97cd59cd85b55ff955073e176bda4bd2afbd3
+  - image: icr.io/appcafe/open-liberty/samples/getting-started@sha256:29220c85330a584ab1a22de6771d8b10a36796dd666f2b5b8c4dd92a8f8e76e0
     name: liberty-sample-app
   - image: icr.io/cpopen/websphere-liberty-operator:daily
     name: websphere-liberty-operator
