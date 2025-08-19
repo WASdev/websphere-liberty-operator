@@ -1661,7 +1661,7 @@ func (s *WebSphereLibertyApplicationStatus) sanitizeConditions() {
 			return 100
 		}
 	}
-	sort SliceStable(s.Conditions, func(i, j int) bool {
+	sort.SliceStable(s.Conditions, func(i, j int) bool {
 		return priority(s.Conditions[i].GetType()) < priority(s.Conditions[j].GetType())
 	})
 	seen := map[common.StatusConditionType]bool{}
