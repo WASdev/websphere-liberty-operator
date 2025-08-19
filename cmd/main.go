@@ -148,7 +148,7 @@ func main() {
 		Log:               ctrl.Log.WithName("controller").WithName("WebSphereLibertyPerformanceData"),
 		PodInjectorClient: socket.GetPodInjectorClient(ctrl.Log.WithName("controller").WithName("PodInjectorClient").V(common.LogLevelDebug)),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OpenLibertyPerformanceData")
+		setupLog.Error(err, "unable to create controller", "controller", "WebSphereLibertyPerformanceData")
 		os.Exit(1)
 	}
 	if err = (&controller.ReconcileWebSphereLibertyTrace{
