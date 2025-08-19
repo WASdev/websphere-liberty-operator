@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const performanceDataFinalizer = "finalizer.webspherelibertyperformancedata.liberty.websphere.ibm.com"
+const performanceDataFinalizer = "finalizer.webspherelibertyperfdata.liberty.websphere.ibm.com"
 
 // ReconcileWebSphereLibertyPerformanceData reconciles an WebSphereLibertyPerformanceData object
 type ReconcileWebSphereLibertyPerformanceData struct {
