@@ -17,6 +17,7 @@
 package v1
 
 import (
+	"sort"
 	"time"
 
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -1416,6 +1417,13 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 		}
 	}
 
+	// Ensure Ready conditions exists and starts False
+	if cr.Status.GetCondition(common.StatusConditionTypeReady) == nil {
+		c := cr.Status.NewCondition(common.StatusConditionTypeReady)
+		c.SetConditionFields("Not ready", "NotReady", corev1.ConditionFalse)
+		cr.Status.SetCondition(c)
+	}
+
 	if cr.Spec.License.Edition == "" {
 		cr.Spec.License.Edition = LicenseEditionBase
 	}
@@ -1578,6 +1586,8 @@ func (s *WebSphereLibertyApplicationStatus) SetCondition(c common.StatusConditio
 	if !found {
 		s.Conditions = append(s.Conditions, *condition)
 	}
+
+	s.sanitizeConditions()
 }
 
 func (s *WebSphereLibertyApplicationStatus) UnsetCondition(c common.StatusCondition) {
@@ -1594,6 +1604,41 @@ func (s *WebSphereLibertyApplicationStatus) UnsetCondition(c common.StatusCondit
 			return
 		}
 	}
+
+	s.sanitizeConditions()
+}
+
+func (s *WebSphereLibertyApplicationStatus) sanitizeConditions() {
+	if len(s.Conditions) <= 1 {
+		return
+	}
+	priority := func(t common.StatusConditionType) int {
+		switch t {
+		case common.StatusConditionTypeReady:
+			return 0
+		case common.StatusConditionTypeReconciled:
+			return 1
+		case common.StatusConditionTypeResourcesReady:
+			return 2
+		case common.StatusConditionTypeWarning:
+			return 3
+		default:
+			return 100
+		}
+	}
+	sort SliceStable(s.Conditions, func(i, j int) bool {
+		return priority(s.Conditions[i].GetType()) < priority(s.Conditions[j].GetType())
+	})
+	seen := map[common.StatusConditionType]bool{}
+	dst := s.Conditions[:0]
+	for _, c := range s.Conditions {
+		t := c.GetType()
+		if !seen[t] {
+			dst = append(dst, c)
+			seen[t] = true
+		}
+	}
+	s.Conditions = dst
 }
 
 func convertToCommonStatusConditionType(c StatusConditionType) common.StatusConditionType {
