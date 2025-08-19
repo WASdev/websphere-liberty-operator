@@ -25,6 +25,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -334,6 +335,23 @@ func (in *WebSphereLibertyApplicationAutoScaling) DeepCopyInto(out *WebSphereLib
 		in, out := &in.TargetCPUUtilizationPercentage, &out.TargetCPUUtilizationPercentage
 		*out = new(int32)
 		**out = **in
+	}
+	if in.TargetMemoryUtilizationPercentage != nil {
+		in, out := &in.TargetMemoryUtilizationPercentage, &out.TargetMemoryUtilizationPercentage
+		*out = new(int32)
+		**out = **in
+	}
+	if in.Metrics != nil {
+		in, out := &in.Metrics, &out.Metrics
+		*out = make([]v2.MetricSpec, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.Behavior != nil {
+		in, out := &in.Behavior, &out.Behavior
+		*out = new(v2.HorizontalPodAutoscalerBehavior)
+		(*in).DeepCopyInto(*out)
 	}
 }
 
@@ -730,6 +748,11 @@ func (in *WebSphereLibertyApplicationServiceAccount) DeepCopyInto(out *WebSphere
 	if in.Name != nil {
 		in, out := &in.Name, &out.Name
 		*out = new(string)
+		**out = **in
+	}
+	if in.SkipPullSecretValidation != nil {
+		in, out := &in.SkipPullSecretValidation, &out.SkipPullSecretValidation
+		*out = new(bool)
 		**out = **in
 	}
 }

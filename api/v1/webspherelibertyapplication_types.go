@@ -24,6 +24,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -283,6 +284,10 @@ type WebSphereLibertyApplicationServiceAccount struct {
 	// Name of the service account to use for deploying the application. A service account is automatically created if this is not specified.
 	// +operator-sdk:csv:customresourcedefinitions:order=2,type=spec,displayName="Service Account Name",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	Name *string `json:"name,omitempty"`
+
+	// Skip verifying that the service account has a valid pull secret. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=3,type=spec,displayName="Skip service account pull secret validation",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	SkipPullSecretValidation *bool `json:"skipPullSecretValidation,omitempty"`
 }
 
 // Define health checks on application container to determine whether it is alive or ready to receive traffic
@@ -337,6 +342,16 @@ type WebSphereLibertyApplicationAutoScaling struct {
 	// Target average CPU utilization, represented as a percentage of requested CPU, over all the pods.
 	// +operator-sdk:csv:customresourcedefinitions:order=3,type=spec,displayName="Target CPU Utilization Percentage",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
 	TargetCPUUtilizationPercentage *int32 `json:"targetCPUUtilizationPercentage,omitempty"`
+
+	// Target average Memory utilization, represented as a percentage of requested memory, over all the pods.
+	// +operator-sdk:csv:customresourcedefinitions:order=4,type=spec,displayName="Target Memory Utilization Percentage",xDescriptors="urn:alm:descriptor:com.tectonic.ui:number"
+	TargetMemoryUtilizationPercentage *int32 `json:"targetMemoryUtilizationPercentage,omitempty"`
+
+	// Specifications used for replica count calculation
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
+
+	// Scaling behavior of the target. If not set, the default HPAScalingRules for scale up and scale down are used.
+	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
 }
 
 // Configures parameters for the network service of pods.
@@ -816,6 +831,11 @@ func (sa *WebSphereLibertyApplicationServiceAccount) GetName() *string {
 	return sa.Name
 }
 
+// GetSkipPullSecretValidation returns whether pull secrets should be validated
+func (sa *WebSphereLibertyApplicationServiceAccount) GetSkipPullSecretValidation() *bool {
+	return sa.SkipPullSecretValidation
+}
+
 // GetReplicas returns number of replicas
 func (cr *WebSphereLibertyApplication) GetReplicas() *int32 {
 	return cr.Spec.Replicas
@@ -1093,6 +1113,21 @@ func (a *WebSphereLibertyApplicationAutoScaling) GetMaxReplicas() int32 {
 // GetTargetCPUUtilizationPercentage returns target cpu usage
 func (a *WebSphereLibertyApplicationAutoScaling) GetTargetCPUUtilizationPercentage() *int32 {
 	return a.TargetCPUUtilizationPercentage
+}
+
+// GetTargetMemoryUtilizationPercentage returns target memory usage
+func (a *WebSphereLibertyApplicationAutoScaling) GetTargetMemoryUtilizationPercentage() *int32 {
+	return a.TargetMemoryUtilizationPercentage
+}
+
+// GetMetrics returns metrics for resource utilization
+func (a *WebSphereLibertyApplicationAutoScaling) GetMetrics() []autoscalingv2.MetricSpec {
+	return a.Metrics
+}
+
+// GetHorizontalPodAutoscalerBehavior returns behavior configures the scaling behavior of the target
+func (a *WebSphereLibertyApplicationAutoScaling) GetHorizontalPodAutoscalerBehavior() *autoscalingv2.HorizontalPodAutoscalerBehavior {
+	return a.Behavior
 }
 
 // GetSize returns pesistent volume size
