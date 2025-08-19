@@ -102,6 +102,7 @@ rules:
   resources:
   - webspherelibertyapplications
   - webspherelibertydumps
+  - webspherelibertyperformancedata
   - webspherelibertytraces
   verbs:
   - get

@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/OpenLiberty/open-liberty-operator/utils/socket"
 	"github.com/application-stacks/runtime-component-operator/common"
 	"github.com/application-stacks/runtime-component-operator/utils"
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -142,6 +143,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "WebSphereLibertyDump")
 		os.Exit(1)
 	}
+	if err = (&controller.ReconcileWebSphereLibertyPerformanceData{
+		ReconcilerBase:    utils.NewReconcilerBase(mgr.GetAPIReader(), mgr.GetClient(), mgr.GetScheme(), mgr.GetConfig(), mgr.GetEventRecorderFor("websphere-liberty-operator")),
+		Log:               ctrl.Log.WithName("controller").WithName("WebSphereLibertyPerformanceData"),
+		PodInjectorClient: socket.GetPodInjectorClient(ctrl.Log.WithName("controller").WithName("PodInjectorClient").V(common.LogLevelDebug)),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "OpenLibertyPerformanceData")
+		os.Exit(1)
+	}
 	if err = (&controller.ReconcileWebSphereLibertyTrace{
 		Log:        ctrl.Log.WithName("controller").WithName("WebSphereLibertyTrace"),
 		Client:     mgr.GetClient(),
@@ -162,6 +171,14 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	setupLog.Info("creating socket for operator pod injector")
+	listener, err := socket.ServePodInjector(mgr, ctrl.Log.WithName("controller").WithName("PodInjectorServer").V(common.LogLevelDebug))
+	if err != nil {
+		setupLog.Error(err, "problem running operator pod injector")
+		os.Exit(1)
+	}
+	defer listener.Close()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
