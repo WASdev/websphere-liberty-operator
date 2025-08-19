@@ -1,0 +1,8 @@
+apiVersion: liberty.websphere.ibm.com/v1
+kind: WebSphereLibertyPerformanceData
+metadata:
+  name: websphereliberty-performance-data-sample
+spec:
+  podName: Specify_Pod_Name_Here
+  timespan: 240
+  interval: 30

@@ -629,6 +629,17 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
+    - description: Day-2 operation for generating server performance data
+      displayName: WebSphereLibertyPerformanceData
+      kind: WebSphereLibertyPerformanceData
+      name: webspherelibertyperformancedata.liberty.websphere.ibm.com
+      statusDescriptors:
+      - description: Location of the generated performance data file
+        displayName: Performance Data File Path
+        path: performanceDataFile
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      version: v1
     - description: 'Day-2 operation for gathering server traces. Documentation: For
         more information about installation parameters, see https://ibm.biz/wlo-crs.
         License: By installing this product, you accept the license terms at https://ibm.biz/was-license.'

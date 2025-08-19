@@ -126,6 +126,20 @@ rules:
 - apiGroups:
   - liberty.websphere.ibm.com
   resources:
+  - webspherelibertyperformancedata
+  - webspherelibertyperformancedata/finalizers
+  - webspherelibertyperformancedata/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - liberty.websphere.ibm.com
+  resources:
   - webspherelibertytraces
   - webspherelibertytraces/finalizers
   - webspherelibertytraces/status

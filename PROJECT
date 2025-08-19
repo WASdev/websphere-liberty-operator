@@ -14,6 +14,9 @@ resources:
   kind: WebSphereLibertyDump
   version: v1
 - group: liberty.websphere.ibm.com
+  kind: WebSphereLibertyPerformanceData
+  version: v1
+- group: liberty.websphere.ibm.com
   kind: WebSphereLibertyTrace
   version: v1
 version: "3"
