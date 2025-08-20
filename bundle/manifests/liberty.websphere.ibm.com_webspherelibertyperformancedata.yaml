@@ -16,7 +16,7 @@ spec:
     listKind: WebSphereLibertyPerformanceDataList
     plural: webspherelibertyperformancedata
     shortNames:
-    - olperfdata
+    - wlperfdata
     singular: webspherelibertyperformancedata
   scope: Namespaced
   versions:
