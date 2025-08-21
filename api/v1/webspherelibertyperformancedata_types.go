@@ -8,6 +8,11 @@ import (
 
 // WebSphereLibertyPerformanceDataSpec defines the desired state of WebSphereLibertyPerformanceData
 type WebSphereLibertyPerformanceDataSpec struct {
+
+	// License information is required.
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	License LicenseSimple `json:"license"`
+
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyPerformanceData CR.
 	PodName string `json:"podName"`
 
@@ -40,7 +45,7 @@ type PerformanceDataStatusVersions struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
-// +kubebuilder:resource:path=webspherelibertyperformancedata,scope=Namespaced,shortName=olperfdata
+// +kubebuilder:resource:path=webspherelibertyperformancedata,scope=Namespaced,shortName=wlperfdata
 // +kubebuilder:printcolumn:name="Started",type="string",JSONPath=".status.conditions[?(@.type=='Started')].status",priority=0,description="Indicates if performance data operation has started"
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Started')].reason",priority=1,description="Reason for performance data operation failing to start"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.conditions[?(@.type=='Started')].message",priority=1,description="Message for performance data operation failing to start"
