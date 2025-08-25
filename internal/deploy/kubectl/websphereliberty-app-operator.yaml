@@ -165,6 +165,20 @@ rules:
 - apiGroups:
   - liberty.websphere.ibm.com
   resources:
+  - webspherelibertyperformancedata
+  - webspherelibertyperformancedata/finalizers
+  - webspherelibertyperformancedata/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - liberty.websphere.ibm.com
+  resources:
   - webspherelibertytraces
   - webspherelibertytraces/finalizers
   - webspherelibertytraces/status
@@ -373,6 +387,9 @@ spec:
         - mountPath: /liberty/output
           name: scratch
           subPath: create-ltpa-keys
+        - mountPath: /tmp
+          name: socket
+          subPath: operator.sock
       hostIPC: false
       hostNetwork: false
       hostPID: false
@@ -385,3 +402,5 @@ spec:
       volumes:
       - emptyDir: {}
         name: scratch
+      - emptyDir: {}
+        name: socket

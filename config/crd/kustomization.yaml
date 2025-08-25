@@ -4,6 +4,7 @@
 resources:
 - bases/liberty.websphere.ibm.com_webspherelibertyapplications.yaml
 - bases/liberty.websphere.ibm.com_webspherelibertydumps.yaml
+- bases/liberty.websphere.ibm.com_webspherelibertyperformancedata.yaml
 - bases/liberty.websphere.ibm.com_webspherelibertytraces.yaml
 
 # +kubebuilder:scaffold:crdkustomizeresource
@@ -23,6 +24,7 @@ patches:
 
 - path: patches/preserveUnknownFields_webspherelibertyapplications.yaml
 - path: patches/preserveUnknownFields_webspherelibertydumps.yaml
+- path: patches/preserveUnknownFields_webspherelibertyperformancedata.yaml
 - path: patches/preserveUnknownFields_webspherelibertytraces.yaml
 # +kubebuilder:scaffold:preserveunknownfieldspatch
 

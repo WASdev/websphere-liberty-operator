@@ -2,5 +2,6 @@
 resources:
 - liberty.websphere.ibm.com_v1_webspherelibertyapplications.yaml
 - liberty.websphere.ibm.com_v1_webspherelibertydumps.yaml
+- liberty.websphere.ibm.com_v1_webspherelibertyperformancedata.yaml
 - liberty.websphere.ibm.com_v1_webspherelibertytraces.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
