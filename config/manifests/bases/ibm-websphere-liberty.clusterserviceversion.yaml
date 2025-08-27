@@ -610,18 +610,6 @@ spec:
       displayName: WebSphereLibertyDump
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
-      specDescriptors:
-      - description: License information is required.
-        displayName: License
-        path: license
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
-        displayName: Accept License
-        path: license.accept
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
       - description: Location of the generated dump file
         displayName: Dump File Path
@@ -633,18 +621,6 @@ spec:
       displayName: WebSphereLibertyPerformanceData
       kind: WebSphereLibertyPerformanceData
       name: webspherelibertyperformancedata.liberty.websphere.ibm.com
-      specDescriptors:
-      - description: License information is required.
-        displayName: License
-        path: license
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
-        displayName: Accept License
-        path: license.accept
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:checkbox
       statusDescriptors:
       - description: Location of the generated performance data file
         displayName: Performance Data File Path
@@ -658,18 +634,6 @@ spec:
       displayName: WebSphereLibertyTrace
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
-      specDescriptors:
-      - description: License information is required.
-        displayName: License
-        path: license
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
-        displayName: Accept License
-        path: license.accept
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:checkbox
       version: v1
   displayName: IBM WebSphere Liberty
   icon:

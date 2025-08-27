@@ -25,11 +25,6 @@ import (
 
 // Defines the desired state of WebSphereLibertyTrace
 type WebSphereLibertyTraceSpec struct {
-
-	// License information is required.
-	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
-	License LicenseSimple `json:"license"`
-
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyTrace CR.
 	PodName string `json:"podName"`
 
@@ -44,14 +39,6 @@ type WebSphereLibertyTraceSpec struct {
 
 	// Set to true to stop tracing.
 	Disable *bool `json:"disable,omitempty"`
-}
-
-// License information is required.
-type LicenseSimple struct {
-	// The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
-	// +kubebuilder:validation:Enum:=true
-	Accept bool `json:"accept"`
 }
 
 // Defines the observed state of WebSphereLibertyTrace operation
