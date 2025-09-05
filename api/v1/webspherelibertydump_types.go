@@ -24,6 +24,11 @@ import (
 
 // WebSphereLibertyDumpSpec defines the desired state of WebSphereLibertyDump
 type WebSphereLibertyDumpSpec struct {
+
+	// License information is required.
+	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	License LicenseSimple `json:"license"`
+
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyDump CR.
 	PodName string `json:"podName"`
 	// Optional. List of memory dump types to request: thread, heap, system.

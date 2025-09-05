@@ -637,8 +637,8 @@ func ConfigureServiceability(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibe
 			pts.Spec.Volumes = append(pts.Spec.Volumes, vol)
 		}
 
-	        pts.Spec.Containers[0].Env = append(pts.Spec.Containers[0].Env, corev1.EnvVar{Name: "SERVICEABILITY_NAMESPACE", Value: la.GetNamespace()})
-        }
+		pts.Spec.Containers[0].Env = append(pts.Spec.Containers[0].Env, corev1.EnvVar{Name: "SERVICEABILITY_NAMESPACE", Value: la.GetNamespace()})
+	}
 }
 
 func normalizeEnvVariableName(name string) string {

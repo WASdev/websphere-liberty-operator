@@ -70,6 +70,18 @@ spec:
               disable:
                 description: Set to true to stop tracing.
                 type: boolean
+              license:
+                description: License information is required.
+                properties:
+                  accept:
+                    description: The license must be accepted before day-2 operations
+                      can be deployed. License information is available at https://ibm.biz/was-license
+                    enum:
+                    - true
+                    type: boolean
+                required:
+                - accept
+                type: object
               maxFileSize:
                 description: The maximum size (in MB) that a log file can reach before
                   it is rolled. To disable this attribute, set the value to 0.
@@ -89,6 +101,7 @@ spec:
                   The default is *=info.
                 type: string
             required:
+            - license
             - podName
             - traceSpecification
             type: object
