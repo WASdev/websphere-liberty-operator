@@ -51,6 +51,7 @@ type WebSphereLibertyTraceSpec struct {
 type LicenseSimple struct {
 	// Optional. License information is no longer required for day-2 operations.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
+	// +kubebuilder:validation:Optional
 	Accept bool `json:"accept"`
 }
 

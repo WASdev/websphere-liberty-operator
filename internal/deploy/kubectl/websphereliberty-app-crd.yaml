@@ -9763,8 +9763,6 @@ spec:
                     description: Optional. License information is no longer required
                       for day-2 operations.
                     type: boolean
-                required:
-                - accept
                 type: object
               podName:
                 description: The name of the Pod, which must be in the same namespace
@@ -10041,8 +10039,6 @@ spec:
                     description: Optional. License information is no longer required
                       for day-2 operations.
                     type: boolean
-                required:
-                - accept
                 type: object
               maxFileSize:
                 description: The maximum size (in MB) that a log file can reach before
