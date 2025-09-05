@@ -35,9 +35,6 @@ metadata:
             "include": [
               "thread"
             ],
-            "license": {
-              "accept": false
-            },
             "podName": "Specify_Pod_Name_Here"
           }
         },
@@ -60,9 +57,6 @@ metadata:
             "name": "websphereliberty-trace-sample"
           },
           "spec": {
-            "license": {
-              "accept": false
-            },
             "maxFileSize": 20,
             "maxFiles": 5,
             "podName": "Specify_Pod_Name_Here",
@@ -73,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-08-19T20:46:30Z"
+    createdAt: "2025-09-05T20:20:25Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.0'
@@ -757,13 +751,14 @@ spec:
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
       specDescriptors:
-      - description: License information is required.
+      - description: Optional. License information is no longer required for the dump
+          operation.
         displayName: License
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
+      - description: Optional. License information is no longer required for day-2
+          operations.
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -793,13 +788,14 @@ spec:
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       specDescriptors:
-      - description: License information is required.
+      - description: Optional. License information is no longer required for the trace
+          operation.
         displayName: License
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
+      - description: Optional. License information is no longer required for day-2
+          operations.
         displayName: Accept License
         path: license.accept
         x-descriptors:
