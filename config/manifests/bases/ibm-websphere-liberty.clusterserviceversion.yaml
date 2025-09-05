@@ -616,8 +616,8 @@ spec:
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
+      - description: Optional. License information is no longer required for day-2
+          operations.
         displayName: Accept License
         path: license.accept
         x-descriptors:
@@ -647,13 +647,14 @@ spec:
       kind: WebSphereLibertyTrace
       name: webspherelibertytraces.liberty.websphere.ibm.com
       specDescriptors:
-      - description: License information is required.
+      - description: Optional. License information is no longer required for the trace
+          operation.
         displayName: License
         path: license
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: The license must be accepted before day-2 operations can be deployed.
-          License information is available at https://ibm.biz/was-license
+      - description: Optional. License information is no longer required for day-2
+          operations.
         displayName: Accept License
         path: license.accept
         x-descriptors:

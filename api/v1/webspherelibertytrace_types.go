@@ -26,7 +26,7 @@ import (
 // Defines the desired state of WebSphereLibertyTrace
 type WebSphereLibertyTraceSpec struct {
 
-	// License information is required.
+	// Optional. License information is no longer required for the trace operation.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	License LicenseSimple `json:"license"`
 
@@ -48,7 +48,7 @@ type WebSphereLibertyTraceSpec struct {
 
 // License information is required.
 type LicenseSimple struct {
-	// The license must be accepted before day-2 operations can be deployed. License information is available at https://ibm.biz/was-license
+	// Optional. License information is no longer required for day-2 operations.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}
 	Accept bool `json:"accept"`
 }

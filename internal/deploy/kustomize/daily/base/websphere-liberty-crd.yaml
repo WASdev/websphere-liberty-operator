@@ -9759,10 +9759,8 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before day-2 operations
-                      can be deployed. License information is available at https://ibm.biz/was-license
-                    enum:
-                    - true
+                    description: Optional. License information is no longer required
+                      for day-2 operations.
                     type: boolean
                 required:
                 - accept
@@ -10036,13 +10034,12 @@ spec:
                 description: Set to true to stop tracing.
                 type: boolean
               license:
-                description: License information is required.
+                description: Optional. License information is no longer required for
+                  the trace operation.
                 properties:
                   accept:
-                    description: The license must be accepted before day-2 operations
-                      can be deployed. License information is available at https://ibm.biz/was-license
-                    enum:
-                    - true
+                    description: Optional. License information is no longer required
+                      for day-2 operations.
                     type: boolean
                 required:
                 - accept

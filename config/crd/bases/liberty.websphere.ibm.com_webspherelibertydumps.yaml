@@ -93,10 +93,8 @@ spec:
                 description: License information is required.
                 properties:
                   accept:
-                    description: The license must be accepted before day-2 operations
-                      can be deployed. License information is available at https://ibm.biz/was-license
-                    enum:
-                    - true
+                    description: Optional. License information is no longer required
+                      for day-2 operations.
                     type: boolean
                 required:
                 - accept
