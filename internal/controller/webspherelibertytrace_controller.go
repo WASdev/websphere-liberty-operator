@@ -134,7 +134,7 @@ func (r *ReconcileWebSphereLibertyTrace) Reconcile(ctx context.Context, request 
 	if err != nil && errors.IsNotFound(err) {
 		//Pod is not found. Return and don't requeue
 		reqLogger.Error(err, "Pod "+podName+" was not found in namespace "+podNamespace)
-		return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged)
+		return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged, "")
 	}
 
 	if instance.Spec.Disable != nil && *instance.Spec.Disable {
@@ -143,13 +143,13 @@ func (r *ReconcileWebSphereLibertyTrace) Reconcile(ctx context.Context, request 
 			_, err = lutils.ExecuteCommandInContainer(r.RestConfig, podName, podNamespace, "app", []string{"/bin/sh", "-c", "rm -f " + traceConfigFile})
 			if err != nil {
 				reqLogger.Error(err, "Encountered error while disabling trace for pod "+podName+" in namespace "+podNamespace)
-				return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionTrue, podName, podChanged)
+				return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionTrue, podName, podChanged, "")
 			}
 			reqLogger.Info("Disabled trace for pod " + podName + " in namespace " + podNamespace)
 		}
-		r.UpdateStatus(nil, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged)
+		r.UpdateStatus(nil, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged, "")
 	} else {
-		traceOutputDir := serviceabilityDir + "/" + podNamespace + "/" + podName
+		traceOutputDir := serviceabilityDir + "/" + podNamespace + "/" + podName + "/logs"
 		traceConfig := "<server><logging traceSpecification=\"" + instance.Spec.TraceSpecification + "\" logDirectory=\"" + traceOutputDir + "\""
 		if instance.Spec.MaxFileSize != nil {
 			traceConfig += " maxFileSize=\"" + strconv.Itoa(int(*instance.Spec.MaxFileSize)) + "\""
@@ -162,7 +162,7 @@ func (r *ReconcileWebSphereLibertyTrace) Reconcile(ctx context.Context, request 
 		_, err = lutils.ExecuteCommandInContainer(r.RestConfig, podName, podNamespace, "app", []string{"/bin/sh", "-c", "mkdir -p " + traceOutputDir + " && echo '" + traceConfig + "' > " + traceConfigFile})
 		if err != nil {
 			reqLogger.Error(err, "Encountered error while setting up trace for pod "+podName+" in namespace "+podNamespace)
-			return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged)
+			return r.UpdateStatus(err, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionFalse, podName, podChanged, traceOutputDir)
 		}
 
 		if podChanged || prevTraceEnabled == corev1.ConditionFalse {
@@ -170,14 +170,14 @@ func (r *ReconcileWebSphereLibertyTrace) Reconcile(ctx context.Context, request 
 		} else {
 			reqLogger.Info("Updated trace for pod " + podName + " in namespace " + podNamespace)
 		}
-		r.UpdateStatus(nil, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionTrue, podName, podChanged)
+		r.UpdateStatus(nil, webspherelibertyv1.OperationStatusConditionTypeEnabled, *instance, corev1.ConditionTrue, podName, podChanged, traceOutputDir)
 	}
 
 	return reconcile.Result{}, nil
 }
 
 // UpdateStatus updates the status
-func (r *ReconcileWebSphereLibertyTrace) UpdateStatus(issue error, conditionType webspherelibertyv1.OperationStatusConditionType, instance webspherelibertyv1.WebSphereLibertyTrace, newStatus corev1.ConditionStatus, podName string, podChanged bool) (reconcile.Result, error) {
+func (r *ReconcileWebSphereLibertyTrace) UpdateStatus(issue error, conditionType webspherelibertyv1.OperationStatusConditionType, instance webspherelibertyv1.WebSphereLibertyTrace, newStatus corev1.ConditionStatus, podName string, podChanged bool, traceOutputDir string) (reconcile.Result, error) {
 	s := instance.GetStatus()
 
 	s.SetOperatedResource(webspherelibertyv1.OperatedResource{ResourceName: podName, ResourceType: "pod"})
@@ -208,6 +208,9 @@ func (r *ReconcileWebSphereLibertyTrace) UpdateStatus(issue error, conditionType
 
 	s.SetCondition(statusCondition)
 
+	if traceOutputDir != "" {
+		instance.Status.LogDirectory = traceOutputDir
+	}
 	instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 
