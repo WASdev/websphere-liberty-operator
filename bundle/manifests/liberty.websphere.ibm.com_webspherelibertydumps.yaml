@@ -109,7 +109,6 @@ spec:
                   as the WebSphereLibertyDump CR.
                 type: string
             required:
-            - license
             - podName
             type: object
           status:

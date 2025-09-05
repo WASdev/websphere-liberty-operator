@@ -96,7 +96,6 @@ spec:
                   The default is *=info.
                 type: string
             required:
-            - license
             - podName
             - traceSpecification
             type: object

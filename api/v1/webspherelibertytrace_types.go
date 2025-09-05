@@ -28,6 +28,7 @@ type WebSphereLibertyTraceSpec struct {
 
 	// Optional. License information is no longer required for the trace operation.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
+	// +kubebuilder:validation:Optional
 	License LicenseSimple `json:"license"`
 
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyTrace CR.
