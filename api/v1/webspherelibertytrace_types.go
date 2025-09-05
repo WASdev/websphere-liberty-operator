@@ -29,7 +29,7 @@ type WebSphereLibertyTraceSpec struct {
 	// Optional. License information is no longer required for the trace operation.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	// +kubebuilder:validation:Optional
-	License LicenseSimple `json:"license"`
+	License LicenseSimple `json:"license,omitempty"`
 
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyTrace CR.
 	PodName string `json:"podName"`
@@ -47,7 +47,7 @@ type WebSphereLibertyTraceSpec struct {
 	Disable *bool `json:"disable,omitempty"`
 }
 
-// License information is required.
+// Optional. License information is no longer required for day-2 operations.
 type LicenseSimple struct {
 	// Optional. License information is no longer required for day-2 operations.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Accept License",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:checkbox"}

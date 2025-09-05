@@ -28,7 +28,7 @@ type WebSphereLibertyDumpSpec struct {
 	// Optional. License information is no longer required for the dump operation.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	// +kubebuilder:validation:Optional
-	License LicenseSimple `json:"license"`
+	License LicenseSimple `json:"license,omitempty"`
 
 	// The name of the Pod, which must be in the same namespace as the WebSphereLibertyDump CR.
 	PodName string `json:"podName"`
