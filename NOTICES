@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.4.4
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.5.0
 Copyright 2023 - 2025 IBM Corporation and others
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 TABLE OF CONTENTS
@@ -294,6 +294,7 @@ obtained under the BSD-2-Clause License:
 
 github.com/gorilla/websocket | Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 github.com/pkg/errors | Copyright (c) 2015 And Dave Cheney <dave@cheney.net>
+github.com/russross/blackfriday/v2
 gopkg.in/check.v1 | Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>
 
 
@@ -334,6 +335,7 @@ obtained under the BSD-3-Clause License:
 
 dmitri.shuralyov.com/gpu/mtl | Copyright (c) 2009 The Go Authors. All rights reserved.
 github.com/BurntSushi/xgb | Copyright (c) 2009 The Go Authors. All rights reserved.
+github.com/chai2010/gettext-go | Copyright 2013 ChaiShushan <chaishushan{AT}gmail.com>. All rights reserved.
 github.com/elazarl/goproxy | Copyright (c) 2012 Elazar Leibovich. All rights reserved.
 github.com/evanphx/json-patch | Copyright (c) 2014 And Evan Phoenix
 github.com/evanphx/json-patch/v5 | Copyright (c) 2014 And Evan Phoenix
@@ -353,6 +355,7 @@ github.com/ianlancetaylor/demangle | Copyright (c) 2015 The Go Authors. All righ
 github.com/imdario/mergo | Copyright (c) 2013 Dario Castañé. All rights reserved.Copyright (c) 2012 The Go Authors. All rights reserved.
 github.com/jessevdk/go-flags | Copyright (c) 2012 Jesse van den Kieboom. All rights reserved.
 github.com/julienschmidt/httprouter | Copyright (c) 2013 And Julien Schmidt
+github.com/liggitt/tabwriter | Copyright (c) 2009 The Go Authors. All rights reserved.
 github.com/munnerz/goautoneg | Copyright (c) 2011 And Open Knowledge Foundation Ltd.
 github.com/mxk/go-flowrate | Copyright (c) 2014 The Go-FlowRate Authors. All rights reserved.
 github.com/pmezard/go-difflib | Copyright (c) 2013 And Patrick Mezard
@@ -360,6 +363,7 @@ github.com/rogpeppe/fastuuid | Copyright © 2014 And Roger Peppe
 github.com/rogpeppe/go-internal | Copyright (c) 2018 The Go Authors. All rights reserved.
 github.com/spaolacci/murmur3 | Copyright 2013 And Sébastien Paolacci.
 github.com/spf13/pflag | Copyright (c) 2012 Alex Ogier. All rights reserved.Copyright (c) 2012 The Go Authors. All rights reserved.
+go.starlark.net/| Copyright (c) 2017 The Bazel Authors.  All rights reserved.
 golang.org/x/crypto | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/exp | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/image | Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -377,6 +381,7 @@ golang.org/x/tools | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/xerrors | Copyright (c) 2009 The Go Authors. All rights reserved.
 google.golang.org/api | Copyright (c) 2009 The Go Authors. All rights reserved.
 google.golang.org/protobuf | Copyright (c) 2009 The Go Authors. All rights reserved.
+gopkg.in/evanphx/json-patch.v4 | Copyright (c) 2014, Evan Phoenix. All rights reserved.
 gopkg.in/errgo.v2 | Copyright © 2013 And Roger Peppe
 gopkg.in/inf.v0 | Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go
 gopkg.in/tomb.v1 | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>
@@ -480,6 +485,7 @@ MIT LICENSE
 The Program includes some or all of the following that IBM obtained
 under the MIT License:
 
+github.com/Azure/go-ansiterm | Copyright (c) 2015 Microsoft Corporation
 github.com/BurntSushi/toml | Copyright (c) 2013 TOML authors
 github.com/alecthomas/units | Copyright (c) 2022 Alex Beimler
 github.com/antihax/optional | Copyright (c) 2016 Adam Hintz
@@ -488,6 +494,7 @@ github.com/benbjohnson/clock | Copyright (c) 2014 Ben Johnson
 github.com/beorn7/perks | Copyright (C) 2013 Blake Mizerany
 github.com/blang/semver | Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
 github.com/buger/jsonparser | Copyright (c) 2016 Leonid Bugaev
+github.com/creack/pty  | Copyright (c) 2011 Keith Rarick
 github.com/cespare/xxhash | Copyright (c) 2016 Caleb Spare
 github.com/cespare/xxhash/v2 | Copyright (c) 2016 Caleb Spare
 github.com/chzyer/logex | Copyright (c) 2015 Chzyer
@@ -496,15 +503,22 @@ github.com/chzyer/test | Copyright (c) 2015 Chzyer
 github.com/client9/misspell | Copyright (c) 2015-2017 Nick Galbreath
 github.com/docopt/docopt-go | Copyright (c) 2013 Keith Batten Copyright (c) 2016 David Irvine
 github.com/emicklei/go-restful/v3 | Copyright (c) 2012,2013 Ernest Micklei
+github.com/exponent-io/jsonpath | Copyright (c) 2015 Exponent Labs LLC
+github.com/fatih/camelCase | Copyright (c) 2015 Fatih Arslan
 github.com/flowstack/go-jsonschema | Copyright (c) 2018 Alexander Staubo
+github.com/fvbommel/sortorder | Copyright (c) 2015 Frits van Bommel
+github.com/fxamacker/cbor/v2 | Copyright (c) 2019-present Faye Amacker
+github.com/go-errors/errors | Copyright (c) 2015 Conrad Irwin <conrad@bugsnag.com>
 github.com/go-kit/log | Copyright (c) 2021 Go kit
 github.com/go-logfmt/logfmt | Copyright (c) 2015 go-logfmt
 github.com/go-stack/stack | Copyright (c) 2014 Chris Hines
 github.com/go-task/slim-sprig | Copyright (C) 2013-2020 Masterminds
+github.com/gregjones/httpcache | Copyright © 2012 Greg Jones (greg.jones@gmail.com)
 github.com/josharian/intern | Copyright (c) 2019 Josh Bleecher Snyder
 github.com/jpillora/backoff | Copyright (c) 2017 Jaime Pillora
 github.com/json-iterator/go | Copyright (c) 2016 json-iterator
 github.com/jstemmer/go-junit-report | Copyright (c) 2012 Joel Stemmer
+github.com/klauspost/compress | Copyright (c) 2019 Klaus Post. All rights reserved.
 github.com/kisielk/errcheck | Copyright (c) 2013 Kamil Kisiel
 github.com/kisielk/gotool | Copyright (c) 2013 Kamil Kisiel
 github.com/konsorten/go-windows-terminal-sequences | Copyright (c) 2017 marvin + konsorten GmbH (open-source@konsorten.de)
@@ -512,14 +526,21 @@ github.com/kr/pretty | Copyright 2012 Keith Rarick
 github.com/kr/pty | Copyright 2012 Keith Rarick
 github.com/kr/text | Copyright 2012 Keith Rarick
 github.com/mailru/easyjson | Copyright (c) 2016 Mail.Ru Group
+github.com/MakeNowJust/heredoc | Copyright (c) 2014-2019 TSUYUSATO Kitsune.
+github.com/mitchellh/go-wordwrap | Copyright (c) 2014 Mitchell Hashimoto
+github.com/monochromegane/go-gitignore  | Copyright (c) [2015] [go-gitignore]
 github.com/nxadm/tail | Copyright 2015 Hewlett Packard Enterprise Development LP
 github.com/onsi/ginkgo | Copyright (c) 2013-2014 Onsi Fakhouri
 github.com/onsi/ginkgo/v2 | Copyright (c) 2013-2014 Onsi Fakhouri
 github.com/onsi/gomega | Copyright (c) 2013-2014 Onsi Fakhouri
+github.com/peterbourgon/diskv | Copyright (c) 2011-2012 Peter Bourgon
+github.com/sergi/go-diff | Copyright (c) 2012-2016 The go-diff Authors. All rights reserved.
 github.com/sirupsen/logrus | Copyright (c) 2014 Simon Eskildsen
 github.com/stoewer/go-strcase | Copyright (c) 2017 And Adrian Stoewer <adrian.stoewer@rz.ifi.lmu.de>
 github.com/stretchr/objx | Copyright (c) 2014 Stretchr And Inc.Copyright (c) 2017-2018 objx contributors
 github.com/stretchr/testify | Copyright (c) 2012-2020 Mat Ryer And Tyler Bunnell and contributors.
+github.com/x448/float16  | Copyright (c) 2019 Montgomery Edwards⁴⁴⁸ and Faye Amacker.
+github.com/xlab/treeprint | Copyright © 2016 Maxim Kupriianov <max@kc.vc>.
 github.com/yuin/goldmark | Copyright (c) 2019 Yusuke Inuzuka
 go.uber.org/atomic | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/goleak | Copyright (c) 2016 Uber Technologies And Inc.
@@ -557,7 +578,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 END OF MIT LICENSE NOTICES AND INFORMATION
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.4.4 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.5.0 NOTICES FILE CONSISTS OF THE FOLLOWING 
 
 SECTIONS:
 
