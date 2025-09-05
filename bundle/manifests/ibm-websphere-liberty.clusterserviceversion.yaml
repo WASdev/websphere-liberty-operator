@@ -35,9 +35,6 @@ metadata:
             "include": [
               "thread"
             ],
-            "license": {
-              "accept": false
-            },
             "podName": "Specify_Pod_Name_Here"
           }
         },
@@ -60,9 +57,6 @@ metadata:
             "name": "websphereliberty-trace-sample"
           },
           "spec": {
-            "license": {
-              "accept": false
-            },
             "maxFileSize": 20,
             "maxFiles": 5,
             "podName": "Specify_Pod_Name_Here",
@@ -73,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-09-05T19:30:16Z"
+    createdAt: "2025-09-05T19:42:50Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.0'
