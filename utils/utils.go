@@ -21,11 +21,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"math/rand/v2"
 
@@ -33,7 +33,6 @@ import (
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,6 +53,7 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
+const serviceabilityPodMountPath = "/liberty/logs"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.5.0"
 
@@ -186,8 +186,8 @@ type PodInjectorClient interface {
 	SetMaxWorkers(scriptName, podName, podNamespace, maxWorkers string) bool
 	PollStatus(scriptName, podName, podNamespace, attrs string) string
 	StartScript(scriptName, podName, podNamespace, attrs string) bool
-	CompleteScript(scriptName, podName, podNamespace string)
-	PollLinperfFileName(scriptName, podName, podNamespace string) string
+	CompleteScript(scriptName, podName, podNamespace, attrs string)
+	PollLinperfFileName(scriptName, podName, podNamespace, attrs string) string
 }
 
 // Validate if the WebSphereLibertyApplication is valid
@@ -225,9 +225,11 @@ func parseFlag(key, value, delimiter string) string {
 }
 
 func EncodeLinperfAttr(instance *wlv1.WebSphereLibertyPerformanceData) string {
-	timespan := instance.GetTimespan()
-	interval := instance.GetInterval()
-	return fmt.Sprintf("timespan/%d|interval/%d", timespan, interval)
+	return fmt.Sprintf("timespan/%d|interval/%d|uid/%s|name/%s",
+		instance.GetTimespan(),
+		instance.GetInterval(),
+		instance.GetUID(),
+		instance.GetName())
 }
 
 func DecodeLinperfAttr(encodedAttr string) map[string]string {
@@ -251,22 +253,39 @@ func GetPerformanceDataWritingMessage(podName string) string {
 	return fmt.Sprintf("Collecting performance data for Pod '%s'...", podName)
 }
 
-func GetLinperfCmd(encodedAttr, podName, podNamespace string) string {
-	scriptDir := "/output/helper"
+func GetLinperfCmd(encodedAttrs, podName, podNamespace string) string {
+	scriptDir := "$WLP_OUTPUT_DIR/helper"
 	scriptName := "linperf.sh"
 
+	decodedLinperfAttrs := DecodeLinperfAttr(encodedAttrs)
+
 	linperfCmdArgs := []string{fmt.Sprintf("%s/%s", scriptDir, scriptName)}
-	outputDir := fmt.Sprintf("/serviceability/%s/%s/performanceData/", podNamespace, podName)
+	serviceabilityRootDir := "/serviceability"
+	outputDir := fmt.Sprintf("%s/%s/%s/performanceData/", serviceabilityRootDir, podNamespace, podName)
 	linperfCmdArgs = append(linperfCmdArgs, parseFlag("--output-dir", outputDir, FlagDelimiterEquals))
 
-	decodedLinperfAttrs := DecodeLinperfAttr(encodedAttr)
+	now := time.Now()
+	startDate := fmt.Sprintf("%d%d%d", now.Year(), now.Month(), now.Day())
+	startTime := fmt.Sprintf("%d%d%d", now.Hour(), now.Minute(), now.Second())
+	fileName := fmt.Sprintf("linperf_RESULTS_%s.%s.%s", decodedLinperfAttrs["name"], startDate, startTime)
+	linperfCmdArgs = append(linperfCmdArgs, parseFlag("--dir-name", fileName, FlagDelimiterEquals))
+
 	linperfCmdArgs = append(linperfCmdArgs, parseFlag("-s", decodedLinperfAttrs["timespan"], FlagDelimiterSpace))
 	linperfCmdArgs = append(linperfCmdArgs, parseFlag("-j", decodedLinperfAttrs["interval"], FlagDelimiterSpace))
+
 	linperfCmdArgs = append(linperfCmdArgs, "--ignore-root")
 	linperfCmd := strings.Join(linperfCmdArgs, FlagDelimiterSpace)
 
+	requiredPackages := []string{"procps-ng", "net-tools", "ncurses", "hostname"}
+	cmdArgs := []string{}
+	for _, pkg := range requiredPackages {
+		cmdArgs = append(cmdArgs, fmt.Sprintf("$pkgcmd list installed %s", pkg))
+	}
+	checkPackagesCmd := strings.Join(cmdArgs, " && ") // add spaces for readability
+
 	// linperfCmdWithPids := fmt.Sprintf("mkdir -p %s && PIDS=$(ls -l /proc/[0-9]*/exe | grep \"/java$\" | xargs -L 1 | cut -d ' ' -f9 | cut -d '/' -f 3 ) && PIDS_OUT=$(echo $PIDS | tr '\n' ' ') && ls -l /proc/[0-9]*/exe > /serviceability/%s/%s/test.out && %s \"1\"", outputDir, podNamespace, podName, linperfCmd)
-	linperfCmdWithPids := fmt.Sprintf("mkdir -p %s &&  %s \"1\"", outputDir, linperfCmd)
+	linperfCmdWithPids := fmt.Sprintf("if ! (command -v yum && pkgcmd=yum || pkgcmd=microdnf && %s); then exit 130; elif [ $(df | grep %s -c) -eq 0 ]; then exit 129; else mkdir -p %s && %s \"1\"; fi", checkPackagesCmd, serviceabilityRootDir, outputDir, linperfCmd)
+	// fmt.Println("Linperf cmd: " + linperfCmdWithPids) // un-commment this line for debugging
 	return linperfCmdWithPids
 }
 
@@ -323,9 +342,9 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 
 	if la.GetServiceability() != nil {
 		targetEnv = append(targetEnv,
-			corev1.EnvVar{Name: "IBM_HEAPDUMPDIR", Value: serviceabilityMountPath},
-			corev1.EnvVar{Name: "IBM_COREDIR", Value: serviceabilityMountPath},
-			corev1.EnvVar{Name: "IBM_JAVACOREDIR", Value: serviceabilityMountPath},
+			corev1.EnvVar{Name: "IBM_HEAPDUMPDIR", Value: serviceabilityPodMountPath},
+			corev1.EnvVar{Name: "IBM_COREDIR", Value: serviceabilityPodMountPath},
+			corev1.EnvVar{Name: "IBM_JAVACOREDIR", Value: serviceabilityPodMountPath},
 		)
 	}
 
@@ -1017,46 +1036,6 @@ func CustomizeLibertyFileMountXML(mountingPasswordKeySecret *corev1.Secret, moun
 	severXMLString := strings.Replace(string(serverXML), "MOUNT_LOCATION", fileLocation, 1)
 	mountingPasswordKeySecret.StringData[mountXMLFileName] = severXMLString
 	return nil
-}
-
-// Returns true if the WebSphereLibertyApplication leader's state has changed, causing existing LTPA Jobs to need a configuration update, otherwise return false
-func IsLTPAJobConfigurationOutdated(job *v1.Job, appLeaderInstance *wlv1.WebSphereLibertyApplication, client client.Client) bool {
-	// The Job contains the leader's pull secret
-	if appLeaderInstance.GetPullSecret() != nil && *appLeaderInstance.GetPullSecret() != "" {
-		ltpaJobHasLeaderPullSecret := false
-		for _, objectReference := range job.Spec.Template.Spec.ImagePullSecrets {
-			if objectReference.Name == *appLeaderInstance.GetPullSecret() {
-				ltpaJobHasLeaderPullSecret = true
-			}
-		}
-		if !ltpaJobHasLeaderPullSecret {
-			return true
-		}
-	}
-	// The Job contains the leader's custom ServiceAccount's pull secrets
-	if leaderSAName := rcoutils.GetServiceAccountName(appLeaderInstance); len(leaderSAName) > 0 {
-		customServiceAccount := &corev1.ServiceAccount{}
-		if err := client.Get(context.TODO(), types.NamespacedName{Name: leaderSAName, Namespace: appLeaderInstance.GetNamespace()}, customServiceAccount); err == nil {
-			for _, customSAObjectReference := range customServiceAccount.ImagePullSecrets {
-				// If one of the custom SA's pull secret's is not found within the Job, return outdated as true
-				if !LocalObjectReferenceContainsName(job.Spec.Template.Spec.ImagePullSecrets, customSAObjectReference.Name) {
-					return true
-				}
-			}
-		}
-	}
-	if len(job.Spec.Template.Spec.Containers) != 1 {
-		return true
-	}
-	// The Job matches the leader's pull policy
-	if job.Spec.Template.Spec.Containers[0].ImagePullPolicy != *appLeaderInstance.GetPullPolicy() {
-		return true
-	}
-	// The Job matches the leader's security context
-	if !reflect.DeepEqual(*job.Spec.Template.Spec.Containers[0].SecurityContext, *rcoutils.GetSecurityContext(appLeaderInstance)) {
-		return true
-	}
-	return false
 }
 
 // Converts a file name into a lowercase word separated string

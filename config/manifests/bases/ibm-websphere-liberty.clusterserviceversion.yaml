@@ -660,6 +660,12 @@ spec:
         path: license.accept
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:checkbox
+      statusDescriptors:
+      - description: Location of the trace log directory
+        displayName: Log Directory
+        path: logDirectory
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       version: v1
   displayName: IBM WebSphere Liberty
   icon:

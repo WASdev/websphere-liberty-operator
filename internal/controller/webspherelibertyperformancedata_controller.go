@@ -109,8 +109,7 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 	}
 
 	//do not reconcile if performance data collection already completed
-	oc := wlv1.GetOperationCondtion(instance.Status.Conditions, wlv1.OperationStatusConditionTypeCompleted)
-	if oc != nil && oc.Status == corev1.ConditionTrue {
+	if oc := wlv1.GetOperationCondtion(instance.Status.Conditions, wlv1.OperationStatusConditionTypeCompleted); oc != nil && oc.Status == corev1.ConditionTrue {
 		return reconcile.Result{}, err
 	}
 
@@ -131,19 +130,17 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		reqLogger.Error(err, message)
 		r.GetRecorder().Event(instance, "Warning", "ProcessingError", message)
 		// Set Started condition
-		c := wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:   wlv1.OperationStatusConditionTypeStarted,
 			Status: corev1.ConditionTrue,
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		// Set Completed condition
-		c = wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:    wlv1.OperationStatusConditionTypeCompleted,
 			Status:  corev1.ConditionFalse,
 			Reason:  "Error",
 			Message: errMessage,
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.GetClient().Status().Update(context.TODO(), instance)
@@ -152,13 +149,12 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		}
 		return reconcile.Result{RequeueAfter: 5 * time.Second}, nil
 	} else if pod.Status.Phase != corev1.PodRunning {
-		c := wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:    wlv1.OperationStatusConditionTypeStarted,
 			Status:  corev1.ConditionFalse,
 			Reason:  "Error",
 			Message: fmt.Sprintf("Waiting for Pod '%s' to be in a running state.", pod.Name),
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.GetClient().Status().Update(context.TODO(), instance)
@@ -172,23 +168,21 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		message := "Failed to connect to the operator pod injector"
 		reqLogger.Error(err, message)
 		r.GetRecorder().Event(instance, "Warning", "ProcessingError", message)
-		c := wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:    wlv1.OperationStatusConditionTypeStarted,
 			Status:  corev1.ConditionFalse,
 			Reason:  "Error",
 			Message: message,
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.GetClient().Status().Update(context.TODO(), instance)
 		return reconcile.Result{}, nil
 	} else {
-		c := wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:   wlv1.OperationStatusConditionTypeStarted,
 			Status: corev1.ConditionTrue,
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		r.GetClient().Status().Update(context.TODO(), instance)
 	}
 	defer r.PodInjectorClient.CloseConnection()
@@ -227,8 +221,8 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		r.PodInjectorClient.SetMaxWorkers("linperf", pod.Name, pod.Namespace, maxWorkers)
 	}
 
-	var c wlv1.OperationStatusCondition
-	injectorStatus := r.PodInjectorClient.PollStatus("linperf", pod.Name, pod.Namespace, utils.EncodeLinperfAttr(instance))
+	encodedAttrs := utils.EncodeLinperfAttr(instance)
+	injectorStatus := r.PodInjectorClient.PollStatus("linperf", pod.Name, pod.Namespace, encodedAttrs)
 	if injectorStatus != "done..." {
 		// exit on error
 		if strings.HasPrefix(injectorStatus, "error:") {
@@ -236,18 +230,16 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 			err = fmt.Errorf("%s", errMessage)
 			reqLogger.Error(err, errMessage)
 			r.GetRecorder().Event(instance, "Warning", "ProcessingError", err.Error())
-			c = wlv1.OperationStatusCondition{
+			instance.Status.SetCondition(wlv1.OperationStatusCondition{
 				Type:   wlv1.OperationStatusConditionTypeCompleted,
 				Status: corev1.ConditionFalse,
-			}
-			instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
-			c = wlv1.OperationStatusCondition{
+			})
+			instance.Status.SetCondition(wlv1.OperationStatusCondition{
 				Type:    wlv1.OperationStatusConditionTypeFailed,
 				Status:  corev1.ConditionTrue,
 				Reason:  "Error",
 				Message: err.Error(),
-			}
-			instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+			})
 			instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 			instance.Status.Versions.Reconciled = utils.OperandVersion
 			r.GetClient().Status().Update(context.TODO(), instance)
@@ -259,24 +251,22 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 			err = fmt.Errorf("%s", errMessage)
 			reqLogger.Error(err, errMessage)
 			r.GetRecorder().Event(instance, "Warning", "ProcessingError", err.Error())
-			c = wlv1.OperationStatusCondition{
+			instance.Status.SetCondition(wlv1.OperationStatusCondition{
 				Type:   wlv1.OperationStatusConditionTypeCompleted,
 				Status: corev1.ConditionFalse,
-			}
-			instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
-			c = wlv1.OperationStatusCondition{
+			})
+			instance.Status.SetCondition(wlv1.OperationStatusCondition{
 				Type:    wlv1.OperationStatusConditionTypeFailed,
 				Status:  corev1.ConditionTrue,
 				Reason:  "ConnectionLost",
 				Message: err.Error(),
-			}
-			instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+			})
 			instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 			instance.Status.Versions.Reconciled = utils.OperandVersion
 			r.GetClient().Status().Update(context.TODO(), instance)
 			return reconcile.Result{}, nil
 		} else if injectorStatus == "idle..." {
-			r.PodInjectorClient.StartScript("linperf", pod.Name, pod.Namespace, utils.EncodeLinperfAttr(instance))
+			r.PodInjectorClient.StartScript("linperf", pod.Name, pod.Namespace, encodedAttrs)
 		}
 
 		var errMessage string
@@ -292,13 +282,12 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		err = fmt.Errorf("%s", errMessage)
 		reqLogger.Error(err, errMessage)
 		r.GetRecorder().Event(instance, "Warning", "ProcessingError", err.Error())
-		c = wlv1.OperationStatusCondition{
+		instance.Status.SetCondition(wlv1.OperationStatusCondition{
 			Type:    wlv1.OperationStatusConditionTypeCompleted,
 			Status:  corev1.ConditionFalse,
 			Reason:  reason,
 			Message: err.Error(),
-		}
-		instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+		})
 		instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 		instance.Status.Versions.Reconciled = utils.OperandVersion
 		r.GetClient().Status().Update(context.TODO(), instance)
@@ -308,44 +297,43 @@ func (r *ReconcileWebSphereLibertyPerformanceData) Reconcile(ctx context.Context
 		}, nil
 	}
 
-	c = wlv1.OperationStatusCondition{
-		Type:   wlv1.OperationStatusConditionTypeCompleted,
-		Status: corev1.ConditionTrue,
-	}
-
 	performanceDataFile := ""
-	fileNameOut := r.PodInjectorClient.PollLinperfFileName("linperf", pod.Name, pod.Namespace)
+	fileNameOut := r.PodInjectorClient.PollLinperfFileName("linperf", pod.Name, pod.Namespace, encodedAttrs)
 	if strings.HasPrefix(fileNameOut, "name:") {
 		performanceDataFile = strings.TrimPrefix(fileNameOut, "name:")
 		performanceDataFile = strings.TrimSuffix(performanceDataFile, "\n")
 	}
 
-	instance.Status.Conditions = wlv1.SetOperationCondtion(instance.Status.Conditions, c)
+	instance.Status.SetCondition(wlv1.OperationStatusCondition{
+		Type:   wlv1.OperationStatusConditionTypeCompleted,
+		Status: corev1.ConditionTrue,
+	})
 	instance.Status.PerformanceDataFile = performanceDataFile
 	instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 	instance.Status.Versions.Reconciled = utils.OperandVersion
 	if err = r.GetClient().Status().Update(context.TODO(), instance); err == nil {
 		// cleanup pod refs
-		r.PodInjectorClient.CompleteScript("linperf", pod.Name, pod.Namespace)
+		r.PodInjectorClient.CompleteScript("linperf", pod.Name, pod.Namespace, encodedAttrs)
 	}
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileWebSphereLibertyPerformanceData) finalizeWebSphereLibertyPerformanceData(reqLogger logr.Logger, olpd *wlv1.WebSphereLibertyPerformanceData) error {
+func (r *ReconcileWebSphereLibertyPerformanceData) finalizeWebSphereLibertyPerformanceData(reqLogger logr.Logger, wlpd *wlv1.WebSphereLibertyPerformanceData) error {
 	if connErr := r.PodInjectorClient.Connect(); connErr != nil {
 		return connErr
 	}
-	r.PodInjectorClient.CompleteScript("linperf", olpd.Spec.PodName, olpd.Namespace)
+	encodedAttrs := utils.EncodeLinperfAttr(wlpd)
+	r.PodInjectorClient.CompleteScript("linperf", wlpd.Spec.PodName, wlpd.Namespace, encodedAttrs)
 	r.PodInjectorClient.CloseConnection()
 	return nil
 }
 
-func (r *ReconcileWebSphereLibertyPerformanceData) addFinalizer(reqLogger logr.Logger, olpd *wlv1.WebSphereLibertyPerformanceData) error {
+func (r *ReconcileWebSphereLibertyPerformanceData) addFinalizer(reqLogger logr.Logger, wlpd *wlv1.WebSphereLibertyPerformanceData) error {
 	reqLogger.Info("Adding Finalizer for WebSphereLibertyPerformanceData")
-	olpd.SetFinalizers(append(olpd.GetFinalizers(), performanceDataFinalizer))
+	wlpd.SetFinalizers(append(wlpd.GetFinalizers(), performanceDataFinalizer))
 
 	// Update CR
-	err := r.GetClient().Update(context.TODO(), olpd)
+	err := r.GetClient().Update(context.TODO(), wlpd)
 	if err != nil {
 		reqLogger.Error(err, "Failed to update WebSphereLibertyPerformanceData with finalizer")
 		return err

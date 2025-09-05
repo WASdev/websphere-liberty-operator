@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -66,10 +68,6 @@ type WebSphereLibertyPerformanceDataList struct {
 	Items           []WebSphereLibertyPerformanceData `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&WebSphereLibertyPerformanceData{}, &WebSphereLibertyPerformanceDataList{})
-}
-
 func getIntValueOrDefault(value *int, defaultValue int) int {
 	if value == nil {
 		return defaultValue
@@ -87,4 +85,63 @@ func (cr *WebSphereLibertyPerformanceData) GetTimespan() int {
 func (cr *WebSphereLibertyPerformanceData) GetInterval() int {
 	defaultInterval := 30
 	return getIntValueOrDefault(cr.Spec.Interval, defaultInterval)
+}
+
+// GetStatus return condition's status
+func (cr *WebSphereLibertyPerformanceData) GetStatus() *WebSphereLibertyPerformanceDataStatus {
+	return &cr.Status
+}
+
+// NewCondition returns new condition
+func (s *WebSphereLibertyPerformanceDataStatus) NewCondition() OperationStatusCondition {
+	return OperationStatusCondition{}
+}
+
+// GetConditions returns slice of conditions
+func (s *WebSphereLibertyPerformanceDataStatus) GetConditions() []OperationStatusCondition {
+	var conditions = []OperationStatusCondition{}
+	for i := range s.Conditions {
+		conditions[i] = s.Conditions[i]
+	}
+	return conditions
+}
+
+// GetCondition ...
+func (s *WebSphereLibertyPerformanceDataStatus) GetCondition(t OperationStatusConditionType) OperationStatusCondition {
+
+	for i := range s.Conditions {
+		if s.Conditions[i].GetType() == t {
+			return s.Conditions[i]
+		}
+	}
+	return OperationStatusCondition{LastUpdateTime: metav1.Time{}} //revisit
+}
+
+// SetCondition ...
+func (s *WebSphereLibertyPerformanceDataStatus) SetCondition(c OperationStatusCondition) {
+	condition := &OperationStatusCondition{}
+	found := false
+	for i := range s.Conditions {
+		if s.Conditions[i].GetType() == c.GetType() {
+			condition = &s.Conditions[i]
+			found = true
+			break
+		}
+	}
+
+	if condition.GetStatus() != c.GetStatus() || condition.GetMessage() != c.GetMessage() || condition.GetReason() != c.GetReason() {
+		condition.SetLastTransitionTime(&metav1.Time{Time: time.Now()})
+	}
+
+	condition.SetReason(c.GetReason())
+	condition.SetMessage(c.GetMessage())
+	condition.SetStatus(c.GetStatus())
+	condition.SetType(c.GetType())
+	if !found {
+		s.Conditions = append(s.Conditions, *condition)
+	}
+}
+
+func init() {
+	SchemeBuilder.Register(&WebSphereLibertyPerformanceData{}, &WebSphereLibertyPerformanceDataList{})
 }
