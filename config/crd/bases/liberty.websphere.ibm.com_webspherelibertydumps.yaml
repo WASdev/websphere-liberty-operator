@@ -90,7 +90,8 @@ spec:
                 type: array
                 x-kubernetes-list-type: set
               license:
-                description: License information is required.
+                description: Optional. License information is no longer required for
+                  the dump operation.
                 properties:
                   accept:
                     description: Optional. License information is no longer required

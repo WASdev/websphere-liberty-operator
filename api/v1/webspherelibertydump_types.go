@@ -25,7 +25,7 @@ import (
 // WebSphereLibertyDumpSpec defines the desired state of WebSphereLibertyDump
 type WebSphereLibertyDumpSpec struct {
 
-	// License information is required.
+	// Optional. License information is no longer required for the dump operation.
 	// +operator-sdk:csv:customresourcedefinitions:order=1,type=spec,displayName="License",xDescriptors="urn:alm:descriptor:com.tectonic.ui:text"
 	License LicenseSimple `json:"license"`
 

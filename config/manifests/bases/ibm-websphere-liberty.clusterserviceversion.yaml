@@ -611,7 +611,8 @@ spec:
       kind: WebSphereLibertyDump
       name: webspherelibertydumps.liberty.websphere.ibm.com
       specDescriptors:
-      - description: License information is required.
+      - description: Optional. License information is no longer required for the dump
+          operation.
         displayName: License
         path: license
         x-descriptors:
