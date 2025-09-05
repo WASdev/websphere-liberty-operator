@@ -77,6 +77,8 @@ spec:
                   accept:
                     description: Optional. License information is no longer required
                       for day-2 operations.
+                    enum:
+                    - true
                     type: boolean
                 required:
                 - accept
