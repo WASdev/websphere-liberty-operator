@@ -53,7 +53,6 @@ var log = logf.Log.WithName("websphereliberty_utils")
 
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
-const serviceabilityPodMountPath = "/liberty/logs"
 const ssoEnvVarPrefix = "SEC_SSO_"
 const OperandVersion = "1.5.0"
 
@@ -341,7 +340,9 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 	}
 
 	if la.GetServiceability() != nil {
+		serviceabilityPodMountPath := fmt.Sprintf("/serviceability/%s/%s/logs", la.GetNamespace(), "$POD_NAME")
 		targetEnv = append(targetEnv,
+			corev1.EnvVar{Name: "POD_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}}},
 			corev1.EnvVar{Name: "IBM_HEAPDUMPDIR", Value: serviceabilityPodMountPath},
 			corev1.EnvVar{Name: "IBM_COREDIR", Value: serviceabilityPodMountPath},
 			corev1.EnvVar{Name: "IBM_JAVACOREDIR", Value: serviceabilityPodMountPath},
