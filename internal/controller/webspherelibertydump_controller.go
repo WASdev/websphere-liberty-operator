@@ -110,7 +110,8 @@ func (r *ReconcileWebSphereLibertyDump) Reconcile(ctx context.Context, request c
 	currentTime := time.Now()
 	dumpFolder := "/serviceability/" + pod.Namespace + "/" + pod.Name + "/serverDumps"
 	dumpFileName := dumpFolder + "/" + "dump_" + currentTime.UTC().Format("2006.01.02_15.04.05") + "_utc.zip"
-	dumpCmd := "mkdir -p " + dumpFolder + " &&  server dump --archive=" + dumpFileName
+	dumpLogDirLink := "if ! test -e /liberty/logs; then if [[ ! -z $SERVICEABILITY_NAMESPACE ]] && [[ ! -z $HOSTNAME ]]; then SERVICEABILITY_FOLDER=/serviceability/$SERVICEABILITY_NAMESPACE/$HOSTNAME/logs; mkdir -p $SERVICEABILITY_FOLDER; ln -s $SERVICEABILITY_FOLDER /liberty/logs; else ln -s /serviceability /liberty/logs; fi; fi;"
+	dumpCmd := dumpLogDirLink + " && mkdir -p " + dumpFolder + " &&  server dump --archive=" + dumpFileName
 	if len(instance.Spec.Include) > 0 {
 		dumpCmd += " --include="
 		for i := range instance.Spec.Include {
