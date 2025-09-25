@@ -568,38 +568,26 @@ spec:
           be removed from service endpoints if the probe fails.
         displayName: Readiness Probe
         path: probes.readiness
-      - description: Probe to determine successful initialization. If specified, other
-          probes are not executed until this completes successfully.
-        displayName: Startup Probe
-        path: probes.startup
-      - description: Disable the creation of the network policy. Defaults to false.
-        displayName: Disable
-        path: networkPolicy.disable
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Enable the Semeru Cloud Compiler. Defaults to false.
         displayName: Enable
         path: semeruCloudCompiler.enable
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
-      - description: Specify the labels of namespaces that incoming traffic is allowed
-          from.
-        displayName: Namespace Labels
-        path: networkPolicy.namespaceLabels
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Probe to determine successful initialization. If specified, other
+          probes are not executed until this completes successfully.
+        displayName: Startup Probe
+        path: probes.startup
       - description: Number of desired pods for the Semeru Cloud Compiler. Defaults
           to 1.
         displayName: Replicas
         path: semeruCloudCompiler.replicas
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podCount
-      - description: Specify the labels of pod(s) that incoming traffic is allowed
-          from.
-        displayName: From Labels
-        path: networkPolicy.fromLabels
+      - description: Disable the creation of the network policy. Defaults to false.
+        displayName: Disable
+        path: networkPolicy.disable
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
       - description: Resource requests and limits for the Semeru Cloud Compiler. The
           CPU defaults to 100m with a limit of 2000m. The memory defaults to 800Mi,
           with a limit of 1200Mi.
@@ -607,6 +595,26 @@ spec:
         path: semeruCloudCompiler.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Specify the labels of namespaces that incoming traffic is allowed
+          from.
+        displayName: Namespace Labels
+        path: networkPolicy.namespaceLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The health settings for the Semeru Cloud Compiler.
+        displayName: Health
+        path: semeruCloudCompiler.health
+      - description: Specify the labels of pod(s) that incoming traffic is allowed
+          from.
+        displayName: From Labels
+        path: networkPolicy.fromLabels
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: The health port for the Semeru Cloud Compiler. Defaults to 38600.
+        displayName: Port
+        path: semeruCloudCompiler.health.port
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: 'Product edition. Defaults to IBM WebSphere Application Server.
           Other options: IBM WebSphere Application Server Liberty Core, IBM WebSphere
           Application Server Network Deployment'

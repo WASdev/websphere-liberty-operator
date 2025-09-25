@@ -46,13 +46,64 @@ const (
 	SemeruGenerationLabelNameSuffix         = "/semeru-compiler-generation"
 	StatusReferenceSemeruGeneration         = "semeruGeneration"
 	StatusReferenceSemeruInstancesCompleted = "semeruInstancesCompleted"
+	SemeruContainerName                     = "compiler"
 )
+
+func getCompilerMeta(wlva *wlv1.WebSphereLibertyApplication) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      getSemeruCompilerNameWithGeneration(wlva),
+		Namespace: wlva.GetNamespace(),
+	}
+}
+
+func getSemeruDeploymentContainer(deploy *appsv1.Deployment) (corev1.Container, error) {
+	for _, container := range deploy.Spec.Template.Spec.Containers {
+		if container.Name == SemeruContainerName {
+			return container, nil
+		}
+	}
+	return corev1.Container{}, fmt.Errorf("could not find the Semeru Deployment container")
+}
+
+// Returns true if the semeru health port configuration has changed otherwise false
+func (r *ReconcileWebSphereLiberty) upgradeSemeruHealthPorts(inputMeta metav1.ObjectMeta, wlva *wlv1.WebSphereLibertyApplication) bool {
+	var healthPort int32 = 38600
+	if wlva.GetSemeruCloudCompiler().GetHealth() != nil {
+		healthPort = *wlva.GetSemeruCloudCompiler().GetHealth().GetPort()
+	}
+	semeruDeployment := &appsv1.Deployment{ObjectMeta: inputMeta}
+	if r.GetClient().Get(context.TODO(), types.NamespacedName{Name: semeruDeployment.Name, Namespace: semeruDeployment.Namespace}, semeruDeployment) == nil {
+		container, err := getSemeruDeploymentContainer(semeruDeployment)
+		if err != nil {
+			return false
+		}
+		if healthPort == 38400 && len(container.Ports) > 1 {
+			return true
+		}
+		containsHealthPort := false
+		for _, port := range container.Ports {
+			if port.ContainerPort == healthPort {
+				containsHealthPort = true
+			}
+		}
+		if !containsHealthPort {
+			return true
+		}
+	}
+	return false
+}
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
 func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
-	compilerMeta := metav1.ObjectMeta{
-		Name:      getSemeruCompilerNameWithGeneration(wlva),
-		Namespace: wlva.GetNamespace(),
+	compilerMeta := getCompilerMeta(wlva)
+
+	// check for any diffs that require generation changes
+	if r.isSemeruEnabled(wlva) {
+		upgradeRequired := r.upgradeSemeruHealthPorts(compilerMeta, wlva)
+		if upgradeRequired {
+			createNewSemeruGeneration(wlva)      // update generation
+			compilerMeta = getCompilerMeta(wlva) // adjust compilerMeta to reference the new generation
+		}
 	}
 
 	currentGeneration := getGeneration(wlva)
@@ -255,6 +306,8 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 }
 
 func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
+	var port int32 = 38400
+	var healthPort int32 = 38600
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 
@@ -276,11 +329,20 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	limitsMemory := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceMemory, "1200Mi")
 	limitsCPU := getQuantityFromLimitsOrDefault(instanceResources, corev1.ResourceCPU, "2000m")
 
+	if semeruCloudCompiler.GetHealth() != nil {
+		healthPort = *semeruCloudCompiler.GetHealth().GetPort()
+	}
+	var portIntOrStr intstr.IntOrString
+	if healthPort == port {
+		portIntOrStr = intstr.FromInt32(port)
+	} else {
+		portIntOrStr = intstr.FromString(fmt.Sprintf("%d-tcp", healthPort))
+	}
 	// Liveness probe
 	livenessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			TCPSocket: &corev1.TCPSocketAction{
-				Port: intstr.FromInt(38400),
+				Port: portIntOrStr,
 			},
 		},
 		InitialDelaySeconds: 10,
@@ -291,7 +353,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	readinessProbe := corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			TCPSocket: &corev1.TCPSocketAction{
-				Port: intstr.FromInt(38400),
+				Port: portIntOrStr,
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -300,6 +362,22 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 	semeruPodMatchLabels := map[string]string{
 		"app.kubernetes.io/instance": getSemeruCompilerNameWithGeneration(wlva),
+	}
+	containerPorts := make([]corev1.ContainerPort, 0)
+	containerPorts = append(containerPorts, corev1.ContainerPort{
+		ContainerPort: port,
+		Protocol:      corev1.ProtocolTCP,
+	})
+
+	healthProbesFlag := ""
+	if healthPort != port {
+		healthProbesFlag = " -XX:+JITServerHealthProbes" + fmt.Sprintf(" -XX:JITServerHealthProbePort=%d", healthPort)
+		containerPorts[0].Name = fmt.Sprintf("%d-tcp", port)
+		containerPorts = append(containerPorts, corev1.ContainerPort{
+			Name:          fmt.Sprintf("%d-tcp", healthPort),
+			ContainerPort: healthPort,
+			Protocol:      corev1.ProtocolTCP,
+		})
 	}
 	deploy.Spec.Template = corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -333,16 +411,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 			},
 			Containers: []corev1.Container{
 				{
-					Name:            "compiler",
+					Name:            SemeruContainerName,
 					Image:           wlva.Status.GetImageReference(),
 					ImagePullPolicy: *wlva.GetPullPolicy(),
 					Command:         []string{"jitserver"},
-					Ports: []corev1.ContainerPort{
-						{
-							ContainerPort: 38400,
-							Protocol:      corev1.ProtocolTCP,
-						},
-					},
+					Ports:           containerPorts,
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceMemory: requestsMemory,
@@ -356,6 +429,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 					Env: []corev1.EnvVar{
 						{Name: "OPENJ9_JAVA_OPTIONS", Value: "-XX:+JITServerLogConnections" +
 							" -XX:+JITServerShareROMClasses" +
+							healthProbesFlag +
 							" -XX:JITServerSSLKey=/etc/x509/certs/tls.key" +
 							" -XX:JITServerSSLCert=/etc/x509/certs/tls.crt"},
 					},
@@ -413,16 +487,34 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
 	var port int32 = 38400
+	var healthPort int32 = 38600
 	var timeout int32 = 86400
 	svc.Labels = getLabels(wlva)
 	svc.Spec.Selector = getSelectors(wlva)
 	utils.CustomizeServiceAnnotations(svc)
-	if len(svc.Spec.Ports) == 0 {
+	numPorts := len(svc.Spec.Ports)
+	if numPorts == 0 {
 		svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
 	}
+
 	svc.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 	svc.Spec.Ports[0].Port = port
 	svc.Spec.Ports[0].TargetPort = intstr.FromInt(int(port))
+	if wlva.GetSemeruCloudCompiler().GetHealth() != nil {
+		healthPort = *wlva.GetSemeruCloudCompiler().GetHealth().GetPort()
+	}
+	if healthPort != port {
+		numPorts = len(svc.Spec.Ports)
+		if numPorts == 1 {
+			svc.Spec.Ports = append(svc.Spec.Ports, corev1.ServicePort{})
+		}
+		svc.Spec.Ports[0].Name = fmt.Sprintf("%d-tcp", port)
+		svc.Spec.Ports[0].TargetPort = intstr.FromString(fmt.Sprintf("%d-tcp", port))
+		svc.Spec.Ports[1].Name = fmt.Sprintf("%d-tcp", healthPort)
+		svc.Spec.Ports[1].Protocol = corev1.ProtocolTCP
+		svc.Spec.Ports[1].Port = healthPort
+		svc.Spec.Ports[1].TargetPort = intstr.FromString(fmt.Sprintf("%d-tcp", healthPort))
+	}
 	svc.Spec.SessionAffinity = corev1.ServiceAffinityClientIP
 	svc.Spec.SessionAffinityConfig = &corev1.SessionAffinityConfig{
 		ClientIP: &corev1.ClientIPConfig{
@@ -585,14 +677,13 @@ func (r *ReconcileWebSphereLiberty) getSemeruJavaOptions(instance *wlv1.WebSpher
 			certificateLocation = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 		}
 		jitServerAddress := instance.Status.SemeruCompiler.ServiceHostname
-		jitSeverOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v",
-			jitServerAddress, certificateLocation)
+		jitServerOptions := fmt.Sprintf("-XX:+UseJITServer -XX:+JITServerLogConnections -XX:JITServerAddress=%v -XX:JITServerSSLRootCerts=%v", jitServerAddress, certificateLocation)
 
 		args := []string{
 			"/bin/bash",
 			"-c",
-			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " + jitSeverOptions +
-				"\" && export OPENJ9_RESTORE_JAVA_OPTIONS=\"$OPENJ9_RESTORE_JAVA_OPTIONS " + jitSeverOptions +
+			"export OPENJ9_JAVA_OPTIONS=\"$OPENJ9_JAVA_OPTIONS " + jitServerOptions +
+				"\" && export OPENJ9_RESTORE_JAVA_OPTIONS=\"$OPENJ9_RESTORE_JAVA_OPTIONS " + jitServerOptions +
 				"\" && server run",
 		}
 		return args
