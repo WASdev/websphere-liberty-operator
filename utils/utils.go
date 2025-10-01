@@ -1118,11 +1118,7 @@ func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProb
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
 	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
-	if instanceProbe.Exec == nil {
-		configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
-	} else {
-		instanceProbe.Exec = defaultProbe.Exec
-	}
+	configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
 	return instanceProbe
 }
 
