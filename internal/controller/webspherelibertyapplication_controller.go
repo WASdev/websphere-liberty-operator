@@ -548,6 +548,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(statefulSet, instance, func() error {
 			oputils.CustomizeStatefulSet(statefulSet, instance)
+			lutils.CustomizeFileBasedProbes(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePodSpec(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePersistence(statefulSet, instance)
 			if err := lutils.CustomizeLibertyEnv(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
@@ -646,6 +647,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(deploy, instance, func() error {
 			oputils.CustomizeDeployment(deploy, instance)
+			lutils.CustomizeFileBasedProbes(&deploy.Spec.Template, instance)
 			oputils.CustomizePodSpec(&deploy.Spec.Template, instance)
 			if err := lutils.CustomizeLibertyEnv(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())

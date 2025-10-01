@@ -1117,11 +1117,10 @@ func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
 func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
-	instanceProbe = rcoutils.CustomizeProbeDefaults(defaultProbe, instanceProbe) // treat instanceProbe as default and overlay defaultProbe onto it
-	if instanceProbe.Exec == nil {
+	isExecConfigured := instanceProbe.Exec != nil
+	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
+	if !isExecConfigured {
 		configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
-	} else {
-		instanceProbe.Exec = defaultProbe.Exec
 	}
 	return instanceProbe
 }
