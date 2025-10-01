@@ -1125,7 +1125,7 @@ func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProb
 	if instanceProbe.Exec == nil {
 		configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
 	} else {
-		instanceProbe.Exec = instanceProbe.Exec
+		instanceProbe.Exec = defaultProbe.Exec
 	}
 	return instanceProbe
 }
