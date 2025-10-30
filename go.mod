@@ -3,7 +3,7 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.25
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20251030183041-f97365704cff
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20251030212450-26106dd3b42e
 	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20251030203946-901bd467d214
 	github.com/cert-manager/cert-manager v1.16.5
 	github.com/go-logr/logr v1.4.2
