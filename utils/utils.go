@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"math/rand/v2"
 
@@ -250,41 +249,6 @@ func GetPerformanceDataConnectionLostMessage(podName string) string {
 
 func GetPerformanceDataWritingMessage(podName string) string {
 	return fmt.Sprintf("Collecting performance data for Pod '%s'...", podName)
-}
-
-func GetLinperfCmd(encodedAttrs, podName, podNamespace string) string {
-	scriptDir := "$WLP_OUTPUT_DIR/helper"
-	scriptName := "linperf.sh"
-
-	decodedLinperfAttrs := DecodeLinperfAttr(encodedAttrs)
-
-	linperfCmdArgs := []string{fmt.Sprintf("%s/%s", scriptDir, scriptName)}
-	serviceabilityRootDir := "/serviceability"
-	outputDir := fmt.Sprintf("%s/%s/%s/performanceData/", serviceabilityRootDir, podNamespace, podName)
-	linperfCmdArgs = append(linperfCmdArgs, parseFlag("--output-dir", outputDir, FlagDelimiterEquals))
-
-	now := time.Now()
-	startDate := fmt.Sprintf("%d%d%d", now.Year(), now.Month(), now.Day())
-	startTime := fmt.Sprintf("%d%d%d", now.Hour(), now.Minute(), now.Second())
-	fileName := fmt.Sprintf("linperf_RESULTS_%s.%s.%s", decodedLinperfAttrs["name"], startDate, startTime)
-	linperfCmdArgs = append(linperfCmdArgs, parseFlag("--dir-name", fileName, FlagDelimiterEquals))
-
-	linperfCmdArgs = append(linperfCmdArgs, parseFlag("-s", decodedLinperfAttrs["timespan"], FlagDelimiterSpace))
-	linperfCmdArgs = append(linperfCmdArgs, parseFlag("-j", decodedLinperfAttrs["interval"], FlagDelimiterSpace))
-
-	linperfCmdArgs = append(linperfCmdArgs, "--ignore-root")
-	linperfCmd := strings.Join(linperfCmdArgs, FlagDelimiterSpace)
-
-	requiredCLIs := []string{"netstat", "ps", "dmesg", "tput", "ifconfig", "vmstat", "top", "uptime", "hostname"}
-	cmdArgs := []string{}
-	for _, cli := range requiredCLIs {
-		cmdArgs = append(cmdArgs, fmt.Sprintf("command -v %s >/dev/null 2>&1", cli))
-	}
-	checkCLICmd := strings.Join(cmdArgs, " && ") // add spaces for readability
-
-	linperfCmdWithPids := fmt.Sprintf("if ! (%s); then exit 130; elif [ $(df | grep %s -c) -eq 0 ]; then exit 129; else mkdir -p %s && %s \"1\"; fi", checkCLICmd, serviceabilityRootDir, outputDir, linperfCmd)
-	// fmt.Println("Linperf cmd: " + linperfCmdWithPids) // un-commment this line for debugging
-	return linperfCmdWithPids
 }
 
 // ExecuteCommandInContainer Execute command inside a container in a pod through API
