@@ -50,6 +50,10 @@ import (
 
 var log = logf.Log.WithName("websphereliberty_utils")
 
+// Status References
+const StatusReferenceLibertyVersion = "libertyVersion"
+const StatusReferenceLibertyVersionLastPull = "libertyVersionLastPull"
+
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
@@ -99,6 +103,14 @@ var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
 	wlv1.LicenseEntitlementFamilyEdition:   "be8ae84b3dd04d81b90af0d846849182",
 	wlv1.LicenseEntitlementCP4Apps:         "4df52d2cdc374ba09f631a650ad2b5bf",
 }
+
+// File-based probe constants
+const StartupProbeFileBasedScriptName = "startupHealthCheck.sh"
+const LivenessProbeFileBasedScriptName = "livenessHealthCheck.sh"
+const ReadinessProbeFileBasedScriptName = "readinessHealthCheck.sh"
+const StartupProbeFileName = "started"
+const LivenessProbeFileName = "live"
+const ReadinessProbeFileName = "ready"
 
 type LTPAMetadata struct {
 	Kind       string
@@ -209,6 +221,7 @@ const (
 	FlagDelimiterSpace                = " "
 	FlagDelimiterEquals               = "="
 	OpConfigPerformanceDataMaxWorkers = "performanceDataMaxWorkers"
+	OpConfigImageVersionChecks        = "imageVersionChecks"
 )
 
 var DefaultLibertyOpConfig *sync.Map
@@ -216,6 +229,7 @@ var DefaultLibertyOpConfig *sync.Map
 func init() {
 	DefaultLibertyOpConfig = &sync.Map{}
 	DefaultLibertyOpConfig.Store(OpConfigPerformanceDataMaxWorkers, "10")
+	DefaultLibertyOpConfig.Store(OpConfigImageVersionChecks, "true")
 }
 
 func parseFlag(key, value, delimiter string) string {
@@ -312,6 +326,28 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 			corev1.EnvVar{Name: "IBM_HEAPDUMPDIR", Value: logDirEnvValue},
 			corev1.EnvVar{Name: "IBM_COREDIR", Value: logDirEnvValue},
 			corev1.EnvVar{Name: "IBM_JAVACOREDIR", Value: logDirEnvValue},
+		)
+	}
+
+	if IsFileBasedProbesEnabled(la) {
+		checkInterval := "5s"
+		startupCheckInterval := "100ms"
+		if la.Spec.Probes != nil {
+			if la.Spec.Probes.CheckInterval != nil && len(*la.Spec.Probes.CheckInterval) > 0 {
+				// Lightly guard against user setting checkInterval to 0, 0ms, or 0s because isFileBasedProbesEnabled() returned true
+				configCheckInterval := *la.Spec.Probes.CheckInterval
+				if configCheckInterval != "0" && configCheckInterval != "0ms" && configCheckInterval != "0s" {
+					checkInterval = configCheckInterval
+				}
+			}
+			if la.Spec.Probes.StartupCheckInterval != nil && len(*la.Spec.Probes.StartupCheckInterval) > 0 {
+				startupCheckInterval = *la.Spec.Probes.StartupCheckInterval
+			}
+		}
+
+		targetEnv = append(targetEnv,
+			corev1.EnvVar{Name: "MP_HEALTH_CHECK_INTERVAL", Value: checkInterval},
+			corev1.EnvVar{Name: "MP_HEALTH_STARTUP_CHECK_INTERVAL", Value: startupCheckInterval},
 		)
 	}
 
@@ -1005,6 +1041,92 @@ func CustomizeLibertyFileMountXML(mountingPasswordKeySecret *corev1.Secret, moun
 	return nil
 }
 
+func IsFileBasedProbesEnabled(instance *wlv1.WebSphereLibertyApplication) bool {
+	return instance.Spec.Probes != nil && instance.Spec.Probes.EnableFileBased != nil && *instance.Spec.Probes.EnableFileBased
+}
+
+func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
+	if probe != nil && probe.Exec != nil && len(probe.Exec.Command) == 3 {
+		scriptCmd := probe.Exec.Command[2]
+		if strings.HasPrefix(scriptCmd, StartupProbeFileBasedScriptName) ||
+			strings.HasPrefix(scriptCmd, LivenessProbeFileBasedScriptName) ||
+			strings.HasPrefix(scriptCmd, ReadinessProbeFileBasedScriptName) {
+			probe = &corev1.Probe{}
+		}
+	}
+	return probe
+}
+
+func configureFileBasedProbeExec(instance *wlv1.WebSphereLibertyApplication, probe *corev1.Probe, scriptName string, probeFile string) {
+	probe = getProbeWithoutHandlers(probe) // remove any preset handlers configured to this probe
+	probesConfig := instance.Spec.Probes
+	cmdList := []string{scriptName}
+	if scriptName == StartupProbeFileBasedScriptName {
+		// Set timeout seconds for the startup probe
+		timeoutSeconds := int32(1)
+		if probe.TimeoutSeconds > 0 {
+			timeoutSeconds = probe.TimeoutSeconds
+		}
+		cmdList = append(cmdList, fmt.Sprintf("-t %d", timeoutSeconds))
+	} else {
+		// Set period seconds for all other probes
+		periodSeconds := int32(10)
+		if probe.PeriodSeconds > 0 {
+			periodSeconds = probe.PeriodSeconds
+		}
+		cmdList = append(cmdList, fmt.Sprintf("-p %d", periodSeconds))
+	}
+	if probesConfig.FileDirectory != nil && len(*probesConfig.FileDirectory) > 0 {
+		fileDirectory := strings.TrimRight(*probesConfig.FileDirectory, "/")
+		if len(fileDirectory) > 0 {
+			cmdList = append(cmdList, fmt.Sprintf("-f %s/%s", fileDirectory, probeFile))
+		}
+	}
+	probe.Exec = &corev1.ExecAction{
+		Command: []string{"/bin/sh", "-c", strings.Join(cmdList, FlagDelimiterSpace)},
+	}
+}
+
+func getProbeWithoutHandlers(probe *corev1.Probe) *corev1.Probe {
+	probe = getOrInitProbe(probe)
+	probe.ProbeHandler = corev1.ProbeHandler{}
+	return probe
+}
+
+func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
+	if probe == nil {
+		return &corev1.Probe{}
+	}
+	return probe
+}
+
+func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
+	defaultProbe = getOrInitProbe(defaultProbe)
+	instanceProbe = getOrInitProbe(instanceProbe)
+	isExecConfigured := instanceProbe.Exec != nil
+	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
+	if !isExecConfigured {
+		configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
+	}
+	return instanceProbe
+}
+
+func CustomizeFileBasedProbes(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication) {
+	if !IsFileBasedProbesEnabled(instance) {
+		if instance.Spec.Probes == nil {
+			return
+		}
+		// Reset probe if file-based settings were previously configured
+		instance.Spec.Probes.Startup = clearFileBasedProbe(instance.Spec.Probes.Startup)
+		instance.Spec.Probes.Liveness = clearFileBasedProbe(instance.Spec.Probes.Liveness)
+		instance.Spec.Probes.Readiness = clearFileBasedProbe(instance.Spec.Probes.Readiness)
+		return
+	}
+	instance.Spec.Probes.Startup = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	instance.Spec.Probes.Liveness = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	instance.Spec.Probes.Readiness = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+}
+
 // Converts a file name into a lowercase word separated string
 // Example: managedLTPASecret.xml -> managed-ltpa-secret-xml
 func parseMountName(fileName string) string {
@@ -1227,6 +1349,22 @@ func CompareOperandVersion(a string, b string) int {
 	arrA := strings.Split(a[1:], "_")
 	arrB := strings.Split(b[1:], "_")
 	for i := range arrA {
+		intA, _ := strconv.ParseInt(GetFirstNumberFromString(arrA[i]), 10, 64)
+		intB, _ := strconv.ParseInt(GetFirstNumberFromString(arrB[i]), 10, 64)
+		if intA != intB {
+			return int(intA - intB)
+		}
+	}
+	return 0
+}
+
+func CompareLibertyVersion(a string, b string) int {
+	arrA := strings.Split(a, ".")
+	arrB := strings.Split(b, ".")
+	for i := range arrA {
+		if i == 1 || i == 2 {
+			continue
+		}
 		intA, _ := strconv.ParseInt(GetFirstNumberFromString(arrA[i]), 10, 64)
 		intB, _ := strconv.ParseInt(GetFirstNumberFromString(arrB[i]), 10, 64)
 		if intA != intB {
