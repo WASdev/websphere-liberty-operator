@@ -103,9 +103,11 @@ spec:
             subPath: operator.sock
       volumes:
         - name: scratch
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 20Mi
         - name: socket
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 20Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       affinity:

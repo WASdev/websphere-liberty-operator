@@ -366,7 +366,9 @@ spec:
       serviceAccountName: wlo-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
-      - emptyDir: {}
+      - emptyDir:
+          sizeLimit: 20Mi
         name: scratch
-      - emptyDir: {}
+      - emptyDir:
+          sizeLimit: 20Mi
         name: socket
