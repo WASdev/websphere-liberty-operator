@@ -1096,11 +1096,7 @@ func (r *ReconcileWebSphereLiberty) getDockerImageMetadata(reqLogger logr.Logger
 		}
 		wlappSecrets = append(wlappSecrets, *pullSecret)
 	}
-	insecure := false
-	if wlapp.GetImportPolicy() != nil && wlapp.GetImportPolicy().GetInsecure() != nil {
-		insecure = *wlapp.GetImportPolicy().GetInsecure()
-	}
-	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetDockerImageMetadata(context.TODO(), imageRef, pullSecret, insecure)
+	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetContainerImageMetadata(context.TODO(), imageRef, pullSecret, false)
 }
 
 func (r *ReconcileWebSphereLiberty) checkLibertyVersionGuards(instance *webspherelibertyv1.WebSphereLibertyApplication) error {
