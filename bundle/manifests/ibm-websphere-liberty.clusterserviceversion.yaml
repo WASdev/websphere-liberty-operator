@@ -67,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-11-12T02:36:20Z"
+    createdAt: "2025-11-12T19:54:07Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.2'
@@ -1032,9 +1032,11 @@ spec:
               serviceAccountName: wlo-controller-manager
               terminationGracePeriodSeconds: 10
               volumes:
-              - emptyDir: {}
+              - emptyDir:
+                  sizeLimit: 20Mi
                 name: scratch
-              - emptyDir: {}
+              - emptyDir:
+                  sizeLimit: 20Mi
                 name: socket
       permissions:
       - rules:
