@@ -218,10 +218,11 @@ func Validate(wlapp *wlv1.WebSphereLibertyApplication) (bool, error) {
 }
 
 const (
-	FlagDelimiterSpace                = " "
-	FlagDelimiterEquals               = "="
-	OpConfigPerformanceDataMaxWorkers = "performanceDataMaxWorkers"
-	OpConfigImageVersionChecks        = "imageVersionChecks"
+	FlagDelimiterSpace                               = " "
+	FlagDelimiterEquals                              = "="
+	OpConfigPerformanceDataMaxWorkers                = "performanceDataMaxWorkers"
+	OpConfigImageVersionChecks                       = "imageVersionChecks"
+	OpConfigImageVersionChecksRefreshIntervalMinutes = "imageVersionChecksRefreshIntervalMinutes"
 )
 
 var DefaultLibertyOpConfig *sync.Map
@@ -230,6 +231,7 @@ func init() {
 	DefaultLibertyOpConfig = &sync.Map{}
 	DefaultLibertyOpConfig.Store(OpConfigPerformanceDataMaxWorkers, "10")
 	DefaultLibertyOpConfig.Store(OpConfigImageVersionChecks, "true")
+	DefaultLibertyOpConfig.Store(OpConfigImageVersionChecksRefreshIntervalMinutes, "720")
 }
 
 func parseFlag(key, value, delimiter string) string {
@@ -1041,6 +1043,12 @@ func CustomizeLibertyFileMountXML(mountingPasswordKeySecret *corev1.Secret, moun
 	return nil
 }
 
+func IsLibertyVersionCheckNeeded(instance *wlv1.WebSphereLibertyApplication) bool {
+	isFileBasedProbesEnabled := IsFileBasedProbesEnabled(instance)
+	// add more conditions for liberty version checking here
+	return isFileBasedProbesEnabled // || ...
+}
+
 func IsFileBasedProbesEnabled(instance *wlv1.WebSphereLibertyApplication) bool {
 	return instance.Spec.Probes != nil && instance.Spec.Probes.EnableFileBased != nil && *instance.Spec.Probes.EnableFileBased
 }
@@ -1111,20 +1119,17 @@ func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProb
 	return instanceProbe
 }
 
-func CustomizeFileBasedProbes(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication) {
+func CustomizePodSpecFileBasedProbes(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication) {
 	if !IsFileBasedProbesEnabled(instance) {
-		if instance.Spec.Probes == nil {
-			return
-		}
-		// Reset probe if file-based settings were previously configured
-		instance.Spec.Probes.Startup = clearFileBasedProbe(instance.Spec.Probes.Startup)
-		instance.Spec.Probes.Liveness = clearFileBasedProbe(instance.Spec.Probes.Liveness)
-		instance.Spec.Probes.Readiness = clearFileBasedProbe(instance.Spec.Probes.Readiness)
 		return
 	}
-	instance.Spec.Probes.Startup = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
-	instance.Spec.Probes.Liveness = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
-	instance.Spec.Probes.Readiness = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	appContainer := rcoutils.GetAppContainer(pts.Spec.Containers)
+	if appContainer == nil {
+		return
+	}
+	appContainer.StartupProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	appContainer.LivenessProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	appContainer.ReadinessProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
 }
 
 // Converts a file name into a lowercase word separated string

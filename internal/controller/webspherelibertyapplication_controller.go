@@ -135,21 +135,22 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	var warnings *[]oputils.StatusWarning = nil
 
 	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalMinimum, OperatorName); err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalPercentage, OperatorName); err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalFailureMaximum, OperatorName); err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if err = common.CheckValidValue(common.Config, common.OpConfigReconcileIntervalSuccessMaximum, OperatorName); err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if instance.Status.Versions.Reconciled == "1.4.1" {
@@ -160,13 +161,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile ConfigMap")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
 	isKnativeSupported, err := r.IsGroupVersionSupported(servingv1.SchemeGroupVersion.String(), "Service")
 	if err != nil {
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	} else if !isKnativeSupported && instance.Spec.CreateKnativeService != nil && *instance.Spec.CreateKnativeService {
 		reqLogger.V(1).Info(fmt.Sprintf("%s is not supported on the cluster", servingv1.SchemeGroupVersion.String()))
 	}
@@ -175,7 +176,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// not managed by this operator
 	err = oputils.CheckForNameConflicts("WebSphereLibertyApplication", instance.Name, instance.Namespace, r.GetClient(), request, isKnativeSupported)
 	if err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// Check if the WebSphereLibertyApplication instance is marked to be deleted, which is
@@ -211,7 +212,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// If there's any validation error, don't bother with requeuing
 	if err != nil {
 		reqLogger.Error(err, "Error validating WebSphereLibertyApplication")
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		return reconcile.Result{}, nil
 	}
 
@@ -219,7 +220,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// If there's any validation error, don't bother with requeuing
 	if err != nil {
 		reqLogger.Error(err, "Error validating WebSphereLibertyApplication")
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		return reconcile.Result{}, nil
 	}
 
@@ -232,7 +233,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	err = r.GetClient().Update(context.TODO(), instance)
 	if err != nil {
 		reqLogger.Error(err, "Error updating WebSphereLibertyApplication")
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// if currentGen == 1 {
@@ -244,18 +245,21 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		Namespace: instance.Namespace,
 	}
 
-	skipLibertyVersionChecks := common.LoadFromConfig(common.Config, lutils.OpConfigImageVersionChecks) != "true"
+	skipLibertyVersionChecks := common.LoadFromConfig(common.Config, lutils.OpConfigImageVersionChecks) == "false" || !lutils.IsLibertyVersionCheckNeeded(instance)
 	imageReferenceOld := instance.Status.ImageReference
 	instance.Status.ImageReference = instance.Spec.ApplicationImage
-	if !skipLibertyVersionChecks && imageReferenceOld != instance.Status.ImageReference {
+
+	if skipLibertyVersionChecks || imageReferenceOld != instance.Status.ImageReference {
 		// clear the liberty version field if the image has changed
 		lutils.RemoveMapElementByKey(instance.Status.GetReferences(), lutils.StatusReferenceLibertyVersion)
+		lutils.RemoveMapElementByKey(instance.Status.GetReferences(), lutils.StatusReferenceLibertyVersionLastPull)
+		instance.Status.PulledImageReference = ""
 	}
 
 	versionTakenFromImageStream := false
 	image, err := imageutil.ParseDockerImageReference(instance.Spec.ApplicationImage)
 	if err != nil {
-		reqLogger.Error(err, "The .spec.applicationImage does not have a valid docker image reference")
+		reqLogger.Error(err, "The .spec.applicationImage does not have a valid container image reference")
 	}
 	isTagName := imageutil.JoinImageStreamTag(image.Name, image.Tag)
 	isTagNamespace := image.Namespace
@@ -272,14 +276,32 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			image := isTag.Image
 			if image.DockerImageReference != "" {
 				instance.Status.ImageReference = image.DockerImageReference
+				if !skipLibertyVersionChecks {
+					instance.Status.PulledImageReference = image.DockerImageReference
+				}
 			}
-			libertyVersion := libertyimage.ParseLibertyVersionFromDockerImageMetadata(&isTag.Image.DockerImageMetadata)
-			if libertyVersion == "" {
-				reqLogger.Info("Could not parse Liberty version field from ImageStream metadata; version was not found in any of the labels: " + strings.Join(libertyimage.ValidLibertyVersionLabels, ", "))
-				instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyimage.NilLibertyVersion)
-			} else if instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersion] != libertyVersion {
-				instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyVersion)
-				instance.Status.SetReference(lutils.StatusReferenceLibertyVersionLastPull, fmt.Sprint(time.Now().UTC().Unix()))
+			if !skipLibertyVersionChecks {
+				libertyVersion := libertyimage.ParseLibertyVersionFromContainerImageMetadata(&isTag.Image.DockerImageMetadata)
+				if libertyVersion == "" {
+					warningMessage := "Could not parse Liberty version field from ImageStream metadata; version was not found in any of the labels: " + strings.Join(libertyimage.ValidLibertyVersionLabels, ", ")
+					reqLogger.Info(warningMessage)
+					instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyimage.NilLibertyVersion)
+					instance.Status.SetReference(lutils.StatusReferenceLibertyVersionLastPull, fmt.Sprint(time.Now().UTC().Unix()))
+					if warnings == nil {
+						warnings = &[]oputils.StatusWarning{}
+					}
+					// add a warning that displays to the user when the Liberty version couldn't be parsed
+					*warnings = append(*warnings, oputils.StatusWarning{
+						GetCondition: func(ba common.BaseComponent) bool {
+							libVersion := ba.GetStatus().GetReferences()[lutils.StatusReferenceLibertyVersion]
+							return libVersion == libertyimage.NilLibertyVersion
+						},
+						Message: warningMessage,
+					})
+				} else if instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersion] != libertyVersion {
+					instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyVersion)
+					instance.Status.SetReference(lutils.StatusReferenceLibertyVersionLastPull, fmt.Sprint(time.Now().UTC().Unix()))
+				}
 			}
 			versionTakenFromImageStream = true
 		}
@@ -295,14 +317,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			})
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile ServiceAccount")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		} else {
 			serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 			err = r.DeleteResource(serviceAccount)
 			if err != nil {
 				reqLogger.Error(err, "Failed to delete ServiceAccount")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		}
 	}
@@ -311,42 +333,61 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
 	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
 	if saErr != nil {
-		return r.ManageError(saErr, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(saErr, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
-	// Update secondsSinceLastPull if the image is a tagged image (i.e latest)
-	libertyVersion := instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersion]
-	secondsSinceLastPull := 0
-	if instance.Spec.ApplicationImage != instance.Status.ImageReference {
-		libertyVersionLastPullString := instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersionLastPull]
-		libertyVersionLastPull, err := strconv.Atoi(libertyVersionLastPullString)
-		// get the time in seconds since the last latest image pull
-		if err == nil {
-			now := int(time.Now().UTC().Unix())
-			secondsSinceLastPull = now - libertyVersionLastPull
+	if !skipLibertyVersionChecks && !versionTakenFromImageStream {
+		// Update secondsSinceLastPull if the image is a tagged image (i.e latest)
+		libertyVersion := instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersion]
+		imageVersionChecksRefreshIntervalMinutesString := common.LoadFromConfig(common.Config, lutils.OpConfigImageVersionChecksRefreshIntervalMinutes)
+		imageVersionChecksRefreshIntervalMinutes, err := strconv.Atoi(imageVersionChecksRefreshIntervalMinutesString)
+		// imageVersionChecksRefreshIntervalMinutes must be a valid int greater than 0
+		if err != nil || imageVersionChecksRefreshIntervalMinutes <= 0 {
+			imageVersionChecksRefreshIntervalMinutes = 720 // defaults to one pull every 12 hours
 		}
-	}
-
-	// Get liberty version if the reference is not set or if secondsSinceLastPull >= 43200
-	if !skipLibertyVersionChecks && !versionTakenFromImageStream && (libertyVersion == "" || secondsSinceLastPull >= 43200) {
-		pulledManifestDigest, pulledLibertyVersion, err := r.pullLibertyVersionFromManifest(reqLogger, instance, instance.Spec.ApplicationImage, image, isTagNamespace)
-		if err != nil {
-			reqLogger.Error(err, "Couldn't get docker image metadata - unauthorized or image does not exist")
-			instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyimage.NilLibertyVersion)
-			r.ManageError(err, common.StatusConditionTypeWarning, instance)
-		} else {
-			libertyVersion = pulledLibertyVersion
-			if pulledManifestDigest != "" {
-				instance.Status.ImageReference = pulledManifestDigest
+		secondsSinceLastPull := 0
+		if libertyVersion == libertyimage.NilLibertyVersion || instance.Status.ImageReference != instance.Status.PulledImageReference {
+			libertyVersionLastPullString := instance.Status.GetReferences()[lutils.StatusReferenceLibertyVersionLastPull]
+			libertyVersionLastPull, err := strconv.Atoi(libertyVersionLastPullString)
+			// get the time in seconds since the last latest image pull
+			if err == nil && libertyVersionLastPull > 0 {
+				now := int(time.Now().UTC().Unix())
+				secondsSinceLastPull = now - libertyVersionLastPull
 			}
-			instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyVersion)
-			instance.Status.SetReference(lutils.StatusReferenceLibertyVersionLastPull, fmt.Sprint(time.Now().UTC().Unix()))
 		}
+
+		// Get liberty version if the reference is not set or if secondsSinceLastPull >= 60*imageVersionChecksRefreshIntervalMinutes
+		if libertyVersion == "" || int(float64(secondsSinceLastPull)/60) >= imageVersionChecksRefreshIntervalMinutes {
+			pulledManifestDigest, pulledLibertyVersion, err := r.pullLibertyVersionFromManifest(reqLogger, instance, instance.Spec.ApplicationImage, image, isTagNamespace)
+			if err != nil {
+				reqLogger.Error(err, "Failed to pull container image metadata; unauthorized or the image does not exist")
+				instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyimage.NilLibertyVersion)
+			} else {
+				libertyVersion = pulledLibertyVersion
+				if pulledManifestDigest != "" {
+					instance.Status.PulledImageReference = pulledManifestDigest
+				}
+				instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyVersion)
+				instance.Status.SetReference(lutils.StatusReferenceLibertyVersionLastPull, fmt.Sprint(time.Now().UTC().Unix()))
+			}
+		}
+
+		if warnings == nil {
+			warnings = &[]oputils.StatusWarning{}
+		}
+		// add a warning that displays to the user when the Liberty version couldn't be parsed
+		*warnings = append(*warnings, oputils.StatusWarning{
+			GetCondition: func(ba common.BaseComponent) bool {
+				libVersion := ba.GetStatus().GetReferences()[lutils.StatusReferenceLibertyVersion]
+				return libVersion == libertyimage.NilLibertyVersion || libVersion == ""
+			},
+			Message: "Failed to pull container image metadata; unauthorized or the image does not exist",
+		})
 	}
 
 	if !skipLibertyVersionChecks {
 		if err := r.checkLibertyVersionGuards(instance); err != nil {
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
@@ -356,7 +397,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if r.isLTPAKeySharingEnabled(instance) {
 		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 		ltpaMetadataList = leaderMetadataList.(*lutils.LTPAMetadataList)
 		if ltpaMetadataList != nil && len(ltpaMetadataList.Items) == 2 {
@@ -370,7 +411,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
 		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 		passwordEncryptionMetadataList = leaderMetadataList.(*lutils.PasswordEncryptionMetadataList)
 		if passwordEncryptionMetadataList != nil && len(passwordEncryptionMetadataList.Items) == 1 {
@@ -380,7 +421,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		// error if the password encryption key sharing is enabled but the Secret is not found
 		passwordEncryptionSecretName := lutils.PasswordEncryptionKeyRootName + passwordEncryptionMetadata.Name
 		err := errors.Wrapf(fmt.Errorf("Secret %q not found", passwordEncryptionSecretName), "Secret for Password Encryption was not found. Create a secret named %q in namespace %q with the encryption key specified in data field %q.", passwordEncryptionSecretName, instance.GetNamespace(), "passwordEncryptionKey")
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if imageReferenceOld != instance.Status.ImageReference {
@@ -391,7 +432,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.UpdateStatus(instance)
 		if err != nil {
 			reqLogger.Error(err, "Error updating WebSphere Liberty application status")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
@@ -402,7 +443,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(instance)
 	if err != nil {
 		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 	// If semeru compiler is enabled, make sure its ready
 	if r.isSemeruEnabled(instance) {
@@ -411,7 +452,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.areSemeruCompilerResourcesReady(instance)
 		if err != nil {
 			reqLogger.Error(err, message)
-			return r.ManageError(err, common.StatusConditionTypeResourcesReady, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeResourcesReady, instance, warnings)
 		}
 	}
 
@@ -428,7 +469,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.DeleteResources(resources)
 		if err != nil {
 			reqLogger.Error(err, "Failed to clean up non-Knative resources")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 
 		if ok, _ := r.IsGroupVersionSupported(networkingv1.SchemeGroupVersion.String(), "Ingress"); ok {
@@ -440,7 +481,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			err = r.DeleteResource(route)
 			if err != nil {
 				reqLogger.Error(err, "Failed to clean up non-Knative resource Route")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		}
 		if isKnativeSupported {
@@ -453,15 +494,15 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile Knative Service")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 
 			instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 			instance.Status.Versions.Reconciled = lutils.OperandVersion
 			reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
-			return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
+			return r.ManageSuccessWithWarnings(common.StatusConditionTypeReconciled, instance, warnings)
 		}
-		return r.ManageError(errors.New("failed to reconcile Knative service as operator could not find Knative CRDs"), common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(errors.New("failed to reconcile Knative service as operator could not find Knative CRDs"), common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if isKnativeSupported {
@@ -469,14 +510,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.DeleteResource(ksvc)
 		if err != nil {
 			reqLogger.Error(err, "Failed to delete Knative Service")
-			r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
 	useCertmanager, err := r.GenerateSvcCertSecret(ba, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile CertManager Certificate")
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 	if ba.GetService().GetCertificateSecretRef() != nil {
 		ba.GetStatus().SetReference(common.StatusReferenceCertSecretName, *ba.GetService().GetCertificateSecretRef())
@@ -499,13 +540,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	})
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile Service")
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if (ba.GetManageTLS() == nil || *ba.GetManageTLS()) &&
 		ba.GetStatus().GetReferences()[common.StatusReferenceCertSecretName] == "" {
-		return r.ManageError(errors.New("Failed to generate TLS certificate. Ensure cert-manager is installed and running"),
-			common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(errors.New("Failed to generate TLS certificate. Ensure cert-manager is installed and running"),
+			common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	networkPolicy := &networkingv1.NetworkPolicy{ObjectMeta: defaultMeta}
@@ -516,12 +557,12 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile network policy")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	} else {
 		if err := r.DeleteResource(networkPolicy); err != nil {
 			reqLogger.Error(err, "Failed to delete network policy")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
@@ -531,7 +572,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, &corev1.PersistentVolumeClaim{})
 			if err != nil && kerrors.IsNotFound(err) {
 				reqLogger.Error(err, "Failed to find PersistentVolumeClaim "+pvcName+" in namespace "+instance.Namespace)
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		} else {
 			err = r.CreateOrUpdate(lutils.CreateServiceabilityPVC(instance), nil, func() error {
@@ -539,7 +580,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			})
 			if err != nil {
 				reqLogger.Error(err, "Failed to create PersistentVolumeClaim for Serviceability")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		}
 	} else {
@@ -548,35 +589,35 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	err = r.ReconcileBindings(instance)
 	if err != nil {
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// Manage the shared password encryption key Secret if it exists
 	message, encryptionSecretName, passwordEncryptionKeyLastRotation, err := r.reconcilePasswordEncryptionKey(instance, passwordEncryptionMetadata)
 	if err != nil {
 		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// Create and manage the shared LTPA keys Secret if the feature is enabled
 	message, ltpaSecretName, ltpaKeysLastRotation, err := r.reconcileLTPAKeys(instance, ltpaKeysMetadata)
 	if err != nil {
 		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// get the last key-related rotation time as a string to be used by reconcileLTPAConfig for non-leaders to yield (blocking) to the LTPA config leader
 	lastKeyRelatedRotation, err := lutils.GetMaxTime(passwordEncryptionKeyLastRotation, ltpaKeysLastRotation)
 	if err != nil {
 		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	// Using the LTPA keys and config metadata, create and manage the shared LTPA Liberty server XML if the feature is enabled
 	message, ltpaXMLSecretName, err := r.reconcileLTPAConfig(instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 	if err != nil {
 		reqLogger.Error(err, message)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
 	if instance.Spec.StatefulSet != nil {
@@ -586,7 +627,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 		if err != nil {
 			reqLogger.Error(err, "Failed to delete Deployment")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 		svc := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: instance.Name + "-headless", Namespace: instance.Namespace}}
 		err = r.CreateOrUpdate(svc, instance, func() error {
@@ -597,14 +638,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile headless Service")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 
 		statefulSet := &appsv1.StatefulSet{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(statefulSet, instance, func() error {
 			oputils.CustomizeStatefulSet(statefulSet, instance)
-			lutils.CustomizeFileBasedProbes(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePodSpec(&statefulSet.Spec.Template, instance)
+			lutils.CustomizePodSpecFileBasedProbes(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePersistence(statefulSet, instance)
 			if err := lutils.CustomizeLibertyEnv(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
@@ -679,7 +720,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile StatefulSet")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 
 	} else {
@@ -688,7 +729,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		err = r.DeleteResource(statefulSet)
 		if err != nil {
 			reqLogger.Error(err, "Failed to delete Statefulset")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 
 		// Delete StatefulSet if exists
@@ -697,13 +738,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 		if err != nil {
 			reqLogger.Error(err, "Failed to delete headless Service")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 		deploy := &appsv1.Deployment{ObjectMeta: defaultMeta}
 		err = r.CreateOrUpdate(deploy, instance, func() error {
 			oputils.CustomizeDeployment(deploy, instance)
-			lutils.CustomizeFileBasedProbes(&statefulSet.Spec.Template, instance)
 			oputils.CustomizePodSpec(&deploy.Spec.Template, instance)
+			lutils.CustomizePodSpecFileBasedProbes(&deploy.Spec.Template, instance)
 			if err := lutils.CustomizeLibertyEnv(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				reqLogger.Error(err, "Failed to reconcile Liberty env, error: "+err.Error())
 				return err
@@ -777,7 +818,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		})
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile Deployment")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 
 	}
@@ -791,20 +832,20 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 		if err != nil {
 			reqLogger.Error(err, "Failed to reconcile HorizontalPodAutoscaler")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	} else {
 		hpa := &autoscalingv2.HorizontalPodAutoscaler{ObjectMeta: defaultMeta}
 		err = r.DeleteResource(hpa)
 		if err != nil {
 			reqLogger.Error(err, "Failed to delete HorizontalPodAutoscaler")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
 	if ok, err := r.IsGroupVersionSupported(routev1.SchemeGroupVersion.String(), "Route"); err != nil {
 		reqLogger.Error(err, fmt.Sprintf("Failed to check if %s is supported", routev1.SchemeGroupVersion.String()))
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	} else if ok {
 		if instance.Spec.Expose != nil && *instance.Spec.Expose {
 			if oputils.ShouldDeleteRoute(ba) {
@@ -813,7 +854,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				err = r.DeleteResource(route)
 				if err != nil {
 					reqLogger.Error(err, "Failed to delete Route")
-					return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+					return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 				}
 			}
 			route := &routev1.Route{ObjectMeta: defaultMeta}
@@ -828,7 +869,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			})
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile Route")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 
 		} else {
@@ -836,14 +877,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			err = r.DeleteResource(route)
 			if err != nil {
 				reqLogger.Error(err, "Failed to delete Route")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		}
 	} else {
 
 		if ok, err := r.IsGroupVersionSupported(networkingv1.SchemeGroupVersion.String(), "Ingress"); err != nil {
 			reqLogger.Error(err, fmt.Sprintf("Failed to check if %s is supported", networkingv1.SchemeGroupVersion.String()))
-			r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		} else if ok {
 			if instance.Spec.Expose != nil && *instance.Spec.Expose {
 				ing := &networkingv1.Ingress{ObjectMeta: defaultMeta}
@@ -853,14 +894,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				})
 				if err != nil {
 					reqLogger.Error(err, "Failed to reconcile Ingress")
-					return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+					return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 				}
 			} else {
 				ing := &networkingv1.Ingress{ObjectMeta: defaultMeta}
 				err = r.DeleteResource(ing)
 				if err != nil {
 					reqLogger.Error(err, "Failed to delete Ingress")
-					return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+					return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 				}
 			}
 		}
@@ -868,12 +909,12 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	if ok, err := r.IsGroupVersionSupported(prometheusv1.SchemeGroupVersion.String(), "ServiceMonitor"); err != nil {
 		reqLogger.Error(err, fmt.Sprintf("Failed to check if %s is supported", prometheusv1.SchemeGroupVersion.String()))
-		r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	} else if ok {
 		if instance.Spec.Monitoring != nil && (instance.Spec.CreateKnativeService == nil || !*instance.Spec.CreateKnativeService) {
 			// Validate the monitoring endpoints' configuration before creating/updating the ServiceMonitor
 			if err := oputils.ValidatePrometheusMonitoringEndpoints(instance, r.GetClient(), instance.GetNamespace()); err != nil {
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 			sm := &prometheusv1.ServiceMonitor{ObjectMeta: defaultMeta}
 			err = r.CreateOrUpdate(sm, instance, func() error {
@@ -882,14 +923,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			})
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile ServiceMonitor")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		} else {
 			sm := &prometheusv1.ServiceMonitor{ObjectMeta: defaultMeta}
 			err = r.DeleteResource(sm)
 			if err != nil {
 				reqLogger.Error(err, "Failed to delete ServiceMonitor")
-				return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 		}
 
@@ -901,14 +942,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	if areCompletedSemeruInstancesMarkedToBeDeleted && r.isWebSphereLibertyApplicationReady(instance) {
 		if err := r.deleteCompletedSemeruInstances(instance); err != nil {
 			reqLogger.Error(err, "Failed to delete completed Semeru instance")
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
 	}
 
 	instance.Status.ObservedGeneration = instance.GetObjectMeta().GetGeneration()
 	instance.Status.Versions.Reconciled = lutils.OperandVersion
 	reqLogger.Info("Reconcile WebSphereLibertyApplication - completed")
-	return r.ManageSuccess(common.StatusConditionTypeReconciled, instance)
+	return r.ManageSuccessWithWarnings(common.StatusConditionTypeReconciled, instance, warnings)
 }
 
 func (r *ReconcileWebSphereLiberty) isWebSphereLibertyApplicationReady(ba common.BaseComponent) bool {
@@ -1080,7 +1121,7 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 	}
 }
 
-func (r *ReconcileWebSphereLiberty) getDockerImageMetadata(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
+func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
 	wlappSecrets := []corev1.Secret{}
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
@@ -1132,12 +1173,12 @@ func (r *ReconcileWebSphereLiberty) pullLibertyVersionFromManifest(reqLogger log
 	}
 	// To prevent leaking credentials, don't attempt to pull an image that is not namespace bounded
 	if namespace != "" {
-		idOrDigest, dockerImageMetadata, err := r.getDockerImageMetadata(reqLogger, instance, image)
+		idOrDigest, imageMetadata, err := r.getContainerImageMetadata(reqLogger, instance, image)
 		if err == nil {
 			// Get liberty version from the labels
-			libertyVersion := libertyimage.ParseLibertyVersionFromDockerImageMetadata(dockerImageMetadata)
+			libertyVersion := libertyimage.ParseLibertyVersionFromContainerImageMetadata(imageMetadata)
 			if libertyVersion == "" {
-				return "", "", fmt.Errorf("Could not parse Liberty version field from Docker image metadata; version was not found in any of the labels: %s", strings.Join(libertyimage.ValidLibertyVersionLabels, ", "))
+				return "", "", fmt.Errorf("Could not parse Liberty version field from container image metadata; version was not found in any of the labels: %s", strings.Join(libertyimage.ValidLibertyVersionLabels, ", "))
 			}
 			imageName := name
 			if idOrDigest != "" {
@@ -1147,5 +1188,5 @@ func (r *ReconcileWebSphereLiberty) pullLibertyVersionFromManifest(reqLogger log
 		}
 		return "", "", err
 	}
-	return "", "", fmt.Errorf("Blocked from getting docker image metadata because the image is missing a namespace record")
+	return "", "", fmt.Errorf("Blocked from getting container image metadata because the image is missing a namespace record")
 }
