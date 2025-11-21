@@ -1093,7 +1093,10 @@ func IsLibertyVersionCheckNeeded(instance *wlv1.WebSphereLibertyApplication) boo
 }
 
 func IsFileBasedProbesEnabled(instance *wlv1.WebSphereLibertyApplication) bool {
-	return instance.Spec.Probes != nil && instance.Spec.Probes.EnableFileBased != nil && *instance.Spec.Probes.EnableFileBased
+	if instance.Spec.Probes == nil || instance.Spec.Probes.EnableFileBased == nil || !*instance.Spec.Probes.EnableFileBased {
+		return false
+	}
+	return instance.Spec.Probes.WebSphereLibertyApplicationProbes.Startup != nil || instance.Spec.Probes.WebSphereLibertyApplicationProbes.Liveness != nil || instance.Spec.Probes.WebSphereLibertyApplicationProbes.Readiness != nil
 }
 
 func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
