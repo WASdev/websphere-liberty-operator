@@ -596,11 +596,6 @@ func (in *WebSphereLibertyApplicationProbesConfig) DeepCopyInto(out *WebSphereLi
 		*out = new(bool)
 		**out = **in
 	}
-	if in.FileDirectory != nil {
-		in, out := &in.FileDirectory, &out.FileDirectory
-		*out = new(string)
-		**out = **in
-	}
 	if in.CheckInterval != nil {
 		in, out := &in.CheckInterval, &out.CheckInterval
 		*out = new(string)

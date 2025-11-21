@@ -1072,9 +1072,8 @@ func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func configureFileBasedProbeExec(instance *wlv1.WebSphereLibertyApplication, probe *corev1.Probe, scriptName string, probeFile string) {
+func configureFileBasedProbeExec(probe *corev1.Probe, scriptName string, probeFile string) {
 	probe = getProbeWithoutHandlers(probe) // remove any preset handlers configured to this probe
-	probesConfig := instance.Spec.Probes
 	cmdList := []string{scriptName}
 	if scriptName == StartupProbeFileBasedScriptName {
 		// Set timeout seconds for the startup probe
@@ -1090,12 +1089,6 @@ func configureFileBasedProbeExec(instance *wlv1.WebSphereLibertyApplication, pro
 			periodSeconds = probe.PeriodSeconds
 		}
 		cmdList = append(cmdList, fmt.Sprintf("-p %d", periodSeconds))
-	}
-	if probesConfig.FileDirectory != nil && len(*probesConfig.FileDirectory) > 0 {
-		fileDirectory := strings.TrimRight(*probesConfig.FileDirectory, "/")
-		if len(fileDirectory) > 0 {
-			cmdList = append(cmdList, fmt.Sprintf("-f %s/%s", fileDirectory, probeFile))
-		}
 	}
 	probe.Exec = &corev1.ExecAction{
 		Command: []string{"/bin/sh", "-c", strings.Join(cmdList, FlagDelimiterSpace)},
@@ -1115,13 +1108,13 @@ func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func patchFileBasedProbe(instance *wlv1.WebSphereLibertyApplication, defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
+func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
 	isExecConfigured := instanceProbe.Exec != nil
 	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
 	if !isExecConfigured {
-		configureFileBasedProbeExec(instance, instanceProbe, scriptName, probeFile)
+		configureFileBasedProbeExec(instanceProbe, scriptName, probeFile)
 	}
 	return instanceProbe
 }
@@ -1134,9 +1127,9 @@ func CustomizePodSpecFileBasedProbes(pts *corev1.PodTemplateSpec, instance *wlv1
 	if appContainer == nil {
 		return
 	}
-	appContainer.StartupProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
-	appContainer.LivenessProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
-	appContainer.ReadinessProbe = patchFileBasedProbe(instance, instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
 }
 
 // Converts a file name into a lowercase word separated string
