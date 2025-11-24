@@ -224,6 +224,7 @@ const (
 	OpConfigPerformanceDataMaxWorkers                = "performanceDataMaxWorkers"
 	OpConfigImageVersionChecks                       = "imageVersionChecks"
 	OpConfigImageVersionChecksRefreshIntervalMinutes = "imageVersionChecksRefreshIntervalMinutes"
+	OpConfigPasswordEncodingType                     = "passwordEncodingType"
 )
 
 var DefaultLibertyOpConfig *sync.Map
@@ -233,6 +234,7 @@ func init() {
 	DefaultLibertyOpConfig.Store(OpConfigPerformanceDataMaxWorkers, "10")
 	DefaultLibertyOpConfig.Store(OpConfigImageVersionChecks, "true")
 	DefaultLibertyOpConfig.Store(OpConfigImageVersionChecksRefreshIntervalMinutes, "720")
+	DefaultLibertyOpConfig.Store(OpConfigPasswordEncodingType, "aes")
 }
 
 func parseFlag(key, value, delimiter string) string {

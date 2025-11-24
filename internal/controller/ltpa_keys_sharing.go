@@ -28,6 +28,7 @@ import (
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
+	"github.com/application-stacks/runtime-component-operator/common"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -283,7 +284,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		} else {
 			currentPasswordEncryptionKey = nil
 		}
-		rawLTPAKeysStringData, err := createLTPAKeys(password, currentPasswordEncryptionKey)
+		rawLTPAKeysStringData, err := createLTPAKeys(password, currentPasswordEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 		if err != nil {
 			return "", "", "", err
 		}
@@ -449,7 +450,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			} else {
 				currentPasswordEncryptionKey = nil
 			}
-			encodedPassword, err := encode(password, currentPasswordEncryptionKey)
+			encodedPassword, err := encode(password, currentPasswordEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 			if err != nil {
 				return "", err
 			}
