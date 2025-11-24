@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -311,8 +312,7 @@ func ExecuteCommandInContainer(config *rest.Config, podName, podNamespace, conta
 	return stderr.String(), nil
 }
 
-// CustomizeLibertyEnv adds configured env variables appending configured liberty settings
-func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
+func createLibertyEnv(la *wlv1.WebSphereLibertyApplication, client client.Client) ([]corev1.EnvVar, []corev1.EnvVar, error) {
 	// ENV variables have already been set, check if they exist before setting defaults
 	targetEnv := []corev1.EnvVar{
 		{Name: "WLP_LOGGING_CONSOLE_LOGLEVEL", Value: "info"},
@@ -359,6 +359,30 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 		targetEnv = append(targetEnv, corev1.EnvVar{Name: "SEC_IMPORT_K8S_CERTS", Value: "true"})
 	}
 
+	/*
+		if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
+				return targetEnv, replacementEnv, err
+			}
+		}
+
+		if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
+			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
+				return targetEnv, replacementEnv, err
+			}
+		}
+	*/
+
+	return targetEnv, replacementEnv, nil
+}
+
+// CustomizeLibertyEnv adds configured env variables appending configured liberty settings
+func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
+	targetEnv, replacementEnv, err := createLibertyEnv(la, client)
+	if err != nil {
+		return err
+	}
+
 	// replacementEnv overrides any existing env within the env list
 	envList := pts.Spec.Containers[0].Env
 	for _, v := range replacementEnv {
@@ -373,20 +397,32 @@ func CustomizeLibertyEnv(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyA
 			pts.Spec.Containers[0].Env = append(pts.Spec.Containers[0].Env, v)
 		}
 	}
+	return nil
+}
 
-	/*
-		if la.GetService() != nil && la.GetService().GetCertificateSecretRef() != nil {
-			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetService().GetCertificateSecretRef(), "SERVICE_CERT"); err != nil {
-				return err
-			}
-		}
+func CustomizeKnativeServiceLibertyEnv(ksvc *servingv1.Service, la *wlv1.WebSphereLibertyApplication, client client.Client) error {
+	if ksvc == nil || len(ksvc.Spec.Template.Spec.Containers) == 0 {
+		return nil
+	}
+	targetEnv, replacementEnv, err := createLibertyEnv(la, client)
+	if err != nil {
+		return err
+	}
 
-		if la.GetRoute() != nil && la.GetRoute().GetCertificateSecretRef() != nil {
-			if err := addSecretResourceVersionAsEnvVar(pts, la, client, *la.GetRoute().GetCertificateSecretRef(), "ROUTE_CERT"); err != nil {
-				return err
-			}
+	// replacementEnv overrides any existing env within the env list
+	envList := ksvc.Spec.Template.Spec.Containers[0].Env
+	for _, v := range replacementEnv {
+		if envVar, found := findEnvVar(v.Name, envList); found {
+			envVar.Value = v.Value
 		}
-	*/
+	}
+
+	// targetEnv appends any unset env into the env list
+	for _, v := range targetEnv {
+		if _, found := findEnvVar(v.Name, envList); !found {
+			ksvc.Spec.Template.Spec.Containers[0].Env = append(ksvc.Spec.Template.Spec.Containers[0].Env, v)
+		}
+	}
 
 	return nil
 }
@@ -1059,7 +1095,10 @@ func IsLibertyVersionCheckNeeded(instance *wlv1.WebSphereLibertyApplication) boo
 }
 
 func IsFileBasedProbesEnabled(instance *wlv1.WebSphereLibertyApplication) bool {
-	return instance.Spec.Probes != nil && instance.Spec.Probes.EnableFileBased != nil && *instance.Spec.Probes.EnableFileBased
+	if instance.Spec.Probes == nil || instance.Spec.Probes.EnableFileBased == nil || !*instance.Spec.Probes.EnableFileBased {
+		return false
+	}
+	return instance.Spec.Probes.WebSphereLibertyApplicationProbes.Startup != nil || instance.Spec.Probes.WebSphereLibertyApplicationProbes.Liveness != nil || instance.Spec.Probes.WebSphereLibertyApplicationProbes.Readiness != nil
 }
 
 func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
@@ -1113,7 +1152,7 @@ func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
 func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
-	isExecConfigured := instanceProbe.Exec != nil
+	isExecConfigured := instanceProbe.Exec != nil // this flag allows the user to override the ExecAction object to bring their own custom file-based health check
 	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
 	if !isExecConfigured {
 		configureFileBasedProbeExec(instanceProbe, scriptName, probeFile)
@@ -1121,17 +1160,41 @@ func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe
 	return instanceProbe
 }
 
+// Modifies the PodTemplateSpec to use Liberty file-based health checks in the "app" container
 func CustomizePodSpecFileBasedProbes(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication) {
 	if !IsFileBasedProbesEnabled(instance) {
 		return
 	}
 	appContainer := rcoutils.GetAppContainer(pts.Spec.Containers)
+	customizeFileBasedProbes(appContainer, instance)
+}
+
+// Modifies the Knative Service instance to use Liberty file-based health checks in the "user-container" container
+func CustomizeKnativeServiceFileBasedProbes(ksvc *servingv1.Service, instance *wlv1.WebSphereLibertyApplication) {
+	if !IsFileBasedProbesEnabled(instance) {
+		return
+	}
+	if len(ksvc.Spec.Template.Spec.Containers) == 0 {
+		return
+	}
+	appContainer := &ksvc.Spec.Template.Spec.Containers[0]
+	customizeFileBasedProbes(appContainer, instance)
+}
+
+// A helper function to customize Liberty file-based health checks on top of the MicroProfile probe defaults in GetDefaultStartupProbe
+func customizeFileBasedProbes(appContainer *corev1.Container, instance *wlv1.WebSphereLibertyApplication) {
 	if appContainer == nil {
 		return
 	}
-	appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
-	appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
-	appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Startup != nil {
+		appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	}
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Liveness != nil {
+		appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	}
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Readiness != nil {
+		appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	}
 }
 
 // Converts a file name into a lowercase word separated string
