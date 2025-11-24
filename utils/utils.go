@@ -1184,9 +1184,15 @@ func customizeFileBasedProbes(appContainer *corev1.Container, instance *wlv1.Web
 	if appContainer == nil {
 		return
 	}
-	appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
-	appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
-	appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Startup != nil {
+		appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	}
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Liveness != nil {
+		appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	}
+	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Readiness != nil {
+		appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	}
 }
 
 // Converts a file name into a lowercase word separated string
