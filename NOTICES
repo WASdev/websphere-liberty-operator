@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.5.1
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.5.2
 Copyright 2023 - 2025 IBM Corporation and others
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 TABLE OF CONTENTS
@@ -13,7 +13,8 @@ EPL V2
 ISC
 MPL-2.0
 MIT
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 APACHE SOFTWARE LICENSE 2.0
 
@@ -29,22 +30,26 @@ cloud.google.com/go/pubsub
 cloud.google.com/go/storage
 contrib.go.opencensus.io/exporter/ocagent
 contrib.go.opencensus.io/exporter/prometheus
-github.com/OneOfOne/xxhash
 github.com/application-stacks/runtime-component-operator
 github.com/census-instrumentation/opencensus-proto
 github.com/cert-manager/cert-manager
+github.com/containerd/errdefs
+github.com/containerd/log
+github.com/distribution/reference
+github.com/docker/distribution
+github.com/docker/go-connections
+github.com/docker/go-metrics
+github.com/docker/libtrust
 github.com/cncf/udpa/go
 github.com/cncf/xds/go
 github.com/envoyproxy/go-control-plane
 github.com/envoyproxy/protoc-gen-validate
-github.com/go-logr/logr
-github.com/go-logr/zapr
-github.com/go-openapi/jsonpointer
-github.com/go-openapi/jsonreference
-github.com/go-openapi/swag
 github.com/golang/glog
 github.com/golang/groupcache
 github.com/golang/mock
+github.com/go-logr/logr
+github.com/go-logr/stdr
+github.com/go-logr/zapr
 github.com/google/btree
 github.com/google/gnostic
 github.com/google/gnostic-models
@@ -53,44 +58,71 @@ github.com/google/gofuzz
 github.com/google/martian
 github.com/google/martian/v3
 github.com/google/pprof
+github.com/google/shlex
 github.com/google/renameio
+github.com/go-openapi/jsonpointer
+github.com/go-openapi/jsonreference
+github.com/go-openapi/swag
+github.com/inconshreveable/mousetrap
+github.com/klauspost/compress
+github.com/kylelemons/godebug
 github.com/matttproud/golang_protobuf_extensions
 github.com/moby/spdystream
+github.com/moby/term
 github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 github.com/mwitkow/go-conntrack
+github.com/OneOfOne/xxhash
 github.com/opencontainers/go-digest
+github.com/opencontainers/image-spec
 github.com/openshift/api
 github.com/openshift/library-go
-github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
 github.com/prometheus/client_golang
 github.com/prometheus/client_model
 github.com/prometheus/common
 github.com/prometheus/procfs
 github.com/prometheus/statsd_exporter
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/spf13/cobra
 github.com/xeipuuv/gojsonpointer
 github.com/xeipuuv/gojsonreference
 github.com/xeipuuv/gojsonschema
+go.opentelemetry.io/auto/sdk
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
+go.opentelemetry.io/otel
+go.opentelemetry.io/otel/metric
+go.opentelemetry.io/otel/sdk
+go.opentelemetry.io/otel/sdk/metric
+go.opentelemetry.io/otel/trace
+go.yaml.in/yaml/v2
+go.yaml.in/yaml/v3
 go.opencensus.io
 go.opentelemetry.io/proto/otlp
 gomodules.xyz/jsonpatch/v2
-googleapis/api
-googleapis/rpc
 google.golang.org/appengine
 google.golang.org/genproto
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/rpc
 google.golang.org/grpc
 google.golang.org/grpc/cmd/protoc-gen-go-grpc
+googleapis/api
+googleapis/rpc
 gopkg.in/yaml.v2
 gopkg.in/yaml.v3
+gotest.tools/v3
 k8s.io/api
 k8s.io/apiextensions-apiserver
 k8s.io/apimachinery
+k8s.io/apiserver
 k8s.io/client-go
+k8s.io/cli-runtime
 k8s.io/component-base
+k8s.io/component-helpers
+k8s.io/controller-manager
 k8s.io/klog/v2
+k8s.io/kubectl
 k8s.io/kube-openapi
+k8s.io/kubernetes
 k8s.io/utils
 knative.dev/networking
 knative.dev/pkg
@@ -98,6 +130,9 @@ knative.dev/serving
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/gateway-api
 sigs.k8s.io/json
+sigs.k8s.io/kustomize/api
+sigs.k8s.io/kustomize/kyaml
+sigs.k8s.io/randfill
 sigs.k8s.io/structured-merge-diff/v4
 sigs.k8s.io/yaml
 
@@ -347,6 +382,7 @@ github.com/gogo/protobuf | Copyright 2010 The Go Authors.  All rights reserved.
 github.com/golang/protobuf | Copyright 2010 The Go Authors.  All rights reserved.
 github.com/golang/snappy | Copyright (c) 2011 The Snappy-Go Authors. All rights reserved.
 github.com/google/go-cmp | Copyright (c) 2017 The Go Authors. All rights reserved.
+github.com/gorilla/mux | Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 github.com/google/uuid | Copyright (c) 2009,2014 Google Inc. All rights reserved.
 github.com/googleapis/gax-go/v2 | Copyright 2016 And Google Inc.
 github.com/grpc-ecosystem/grpc-gateway | Copyright (c) 2015 And Gengo And Inc.
@@ -355,6 +391,7 @@ github.com/ianlancetaylor/demangle | Copyright (c) 2015 The Go Authors. All righ
 github.com/imdario/mergo | Copyright (c) 2013 Dario Castañé. All rights reserved.Copyright (c) 2012 The Go Authors. All rights reserved.
 github.com/jessevdk/go-flags | Copyright (c) 2012 Jesse van den Kieboom. All rights reserved.
 github.com/julienschmidt/httprouter | Copyright (c) 2013 And Julien Schmidt
+github.com/klauspost/compress| Copyright (c) 2011 The Snappy-Go Authors. All rights reserved.
 github.com/liggitt/tabwriter | Copyright (c) 2009 The Go Authors. All rights reserved.
 github.com/munnerz/goautoneg | Copyright (c) 2011 And Open Knowledge Foundation Ltd.
 github.com/mxk/go-flowrate | Copyright (c) 2014 The Go-FlowRate Authors. All rights reserved.
@@ -385,6 +422,7 @@ gopkg.in/evanphx/json-patch.v4 | Copyright (c) 2014, Evan Phoenix. All rights re
 gopkg.in/errgo.v2 | Copyright © 2013 And Roger Peppe
 gopkg.in/inf.v0 | Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go
 gopkg.in/tomb.v1 | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>
+gotest.tools/v3 | Copyright (c) Copyright 2018 gotest.tools authors
 rsc.io/binaryregexp | Copyright (c) 2009 The Go Authors. All rights reserved.
 rsc.io/quote/v3 | Copyright (c) 2009 The Go Authors. All rights reserved.
 rsc.io/sampler | Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -494,6 +532,7 @@ github.com/benbjohnson/clock | Copyright (c) 2014 Ben Johnson
 github.com/beorn7/perks | Copyright (C) 2013 Blake Mizerany
 github.com/blang/semver | Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
 github.com/buger/jsonparser | Copyright (c) 2016 Leonid Bugaev
+github.com/cert-manager/cert-manager| Copyright (c)
 github.com/creack/pty  | Copyright (c) 2011 Keith Rarick
 github.com/cespare/xxhash | Copyright (c) 2016 Caleb Spare
 github.com/cespare/xxhash/v2 | Copyright (c) 2016 Caleb Spare
@@ -505,6 +544,7 @@ github.com/docopt/docopt-go | Copyright (c) 2013 Keith Batten Copyright (c) 2016
 github.com/emicklei/go-restful/v3 | Copyright (c) 2012,2013 Ernest Micklei
 github.com/exponent-io/jsonpath | Copyright (c) 2015 Exponent Labs LLC
 github.com/fatih/camelCase | Copyright (c) 2015 Fatih Arslan
+github.com/felixge/httpsnoop|  Copyright (c) 2016 Felix Geisendörfer (felix@debuggable.com)
 github.com/flowstack/go-jsonschema | Copyright (c) 2018 Alexander Staubo
 github.com/fvbommel/sortorder | Copyright (c) 2015 Frits van Bommel
 github.com/fxamacker/cbor/v2 | Copyright (c) 2019-present Faye Amacker
@@ -525,6 +565,7 @@ github.com/konsorten/go-windows-terminal-sequences | Copyright (c) 2017 marvin +
 github.com/kr/pretty | Copyright 2012 Keith Rarick
 github.com/kr/pty | Copyright 2012 Keith Rarick
 github.com/kr/text | Copyright 2012 Keith Rarick
+GitHub.com/lithamme/dedent| Copyright (c) 2018 Peter Lithammer
 github.com/mailru/easyjson | Copyright (c) 2016 Mail.Ru Group
 github.com/MakeNowJust/heredoc | Copyright (c) 2014-2019 TSUYUSATO Kitsune.
 github.com/mitchellh/go-wordwrap | Copyright (c) 2014 Mitchell Hashimoto
@@ -546,6 +587,7 @@ go.uber.org/atomic | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/goleak | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/multierr | Copyright (c) 2016 Uber Technologies And Inc.
 go.uber.org/zap | Copyright (c) 2016 Uber Technologies And Inc.
+go.yaml.in/yaml/v3| Copyright (c) 2006-2010 Kirill Simonov
 gopkg.in/alecthomas/kingpin.v2 | Copyright (C) 2014 Alec Thomas
 gopkg.in/yaml.v2 | (Copyright not found)
 gopkg.in/yaml.v3 | (Copyright not found)
@@ -578,7 +620,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 END OF MIT LICENSE NOTICES AND INFORMATION
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.5.1 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.5.2 NOTICES FILE CONSISTS OF THE FOLLOWING 
 
 SECTIONS:
 
