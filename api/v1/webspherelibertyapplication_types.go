@@ -929,6 +929,16 @@ func (cr *WebSphereLibertyApplication) GetManageTLS() *bool {
 	return cr.Spec.ManageTLS
 }
 
+func (cr *WebSphereLibertyApplication) GetManagedPort() int {
+	if cr.GetService() != nil && cr.GetService().GetPort() != 0 {
+		return int(cr.GetService().GetPort())
+	}
+	if cr.GetManageTLS() == nil || *cr.GetManageTLS() {
+		return 9443
+	}
+	return 9080
+}
+
 // GetEnv returns slice of environment variables
 func (cr *WebSphereLibertyApplication) GetEnv() []corev1.EnvVar {
 	return cr.Spec.Env
@@ -1452,12 +1462,7 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 	}
 
 	if cr.Spec.Service.Port == 0 {
-		if cr.Spec.ManageTLS == nil || *cr.Spec.ManageTLS {
-			cr.Spec.Service.Port = 9443
-
-		} else {
-			cr.Spec.Service.Port = 9080
-		}
+		cr.Spec.Service.Port = int32(cr.GetManagedPort())
 	}
 
 	// If TargetPorts on Serviceports are not set, default them to the Port value in the CR
