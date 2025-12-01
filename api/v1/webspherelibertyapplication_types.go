@@ -939,6 +939,13 @@ func (cr *WebSphereLibertyApplication) GetManagedPort() int {
 	return 9080
 }
 
+func (cr *WebSphereLibertyApplication) GetManagedScheme() corev1.URIScheme {
+	if cr.GetManageTLS() == nil || *cr.GetManageTLS() {
+		return corev1.URISchemeHTTPS
+	}
+	return corev1.URISchemeHTTP
+}
+
 // GetEnv returns slice of environment variables
 func (cr *WebSphereLibertyApplication) GetEnv() []corev1.EnvVar {
 	return cr.Spec.Env
