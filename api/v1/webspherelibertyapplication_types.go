@@ -929,6 +929,7 @@ func (cr *WebSphereLibertyApplication) GetManageTLS() *bool {
 	return cr.Spec.ManageTLS
 }
 
+// GetManagedPort returns the application's CR managed port
 func (cr *WebSphereLibertyApplication) GetManagedPort() int {
 	if cr.GetService() != nil && cr.GetService().GetPort() != 0 {
 		return int(cr.GetService().GetPort())
@@ -939,6 +940,7 @@ func (cr *WebSphereLibertyApplication) GetManagedPort() int {
 	return 9080
 }
 
+// GetManagedScheme returns the application's CR managed scheme
 func (cr *WebSphereLibertyApplication) GetManagedScheme() corev1.URIScheme {
 	if cr.GetManageTLS() == nil || *cr.GetManageTLS() {
 		return corev1.URISchemeHTTPS
