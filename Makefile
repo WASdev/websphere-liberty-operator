@@ -170,11 +170,11 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: setup
 setup: ## Ensure Operator SDK is installed.
-	${SCRIPT_PATH}/scripts/installers/install-operator-sdk.sh ${OPERATOR_SDK_RELEASE_VERSION}
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/installers/install-operator-sdk.sh ${OPERATOR_SDK_RELEASE_VERSION}
 
 .PHONY: setup-go
 setup-go: ## Ensure Go is installed.
-	${SCRIPT_PATH}/scripts/installers/install-go.sh ${GO_RELEASE_VERSION}
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/installers/install-go.sh ${GO_RELEASE_VERSION}
 
 ##@ Development
 
@@ -321,29 +321,29 @@ rm -rf $$TMP_DIR ;\
 endef
 
 kind-e2e-test:
-	${SCRIPT_PATH}/scripts/test/e2e-kind.sh --test-tag "${BUILD_NUMBER}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/test/e2e-kind.sh --test-tag "${BUILD_NUMBER}"
 
 build-manifest:
-	${SCRIPT_PATH}/scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/build/build-manifest.sh --registry "${PUBLISH_REGISTRY}" --image "${OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-operator-pipeline:
-	${SCRIPT_PATH}/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/build/build-operator.sh --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --go-version "${GO_VERSION}"
 
 build-manifest-pipeline:
-	${SCRIPT_PATH}/scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/build/build-manifest.sh --registry "${REGISTRY}" --image "${IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-bundle-pipeline:
-	${SCRIPT_PATH}/scripts/build/build-bundle.sh --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/build/build-bundle.sh --prod-image "${PIPELINE_PRODUCTION_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}"
 
 build-catalog-pipeline:
-	${SCRIPT_PATH}/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}"
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/build/build-catalog.sh --prod-image "${OPERATOR_IMAGE}" --registry "${REGISTRY}" --image "${PIPELINE_OPERATOR_IMAGE}" --tag "${RELEASE_TARGET}" --version "${VERSION}"
 
 test-e2e:
-	${SCRIPT_PATH}/scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/e2e-release.sh --registry-name default-route --registry-namespace openshift-image-registry \
                      --test-tag "${BUILD_NUMBER}" --target "${RELEASE_TARGET}"
 
 test-pipeline-e2e:
-	${SCRIPT_PATH}/scripts/test/e2e-ocp.sh --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
+	/Users/leo/git/websphere-operators-sps/websphere-liberty-operator-sps-config/scripts/test/e2e-ocp.sh --cluster-url "${CLUSTER_URL}" --cluster-user "${CLUSTER_USER}" --cluster-token "${CLUSTER_TOKEN}" \
                                             --test-tag "${BUILD_NUMBER}" --install-mode "${INSTALL_MODE}" --channel "${DEFAULT_CHANNEL}" \
                                             --architecture "${ARCHITECTURE}" --digest "${DIGEST}" --version "${VERSION}"
 
