@@ -111,9 +111,6 @@ var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
 const StartupProbeFileBasedScriptName = "startupHealthCheck.sh"
 const LivenessProbeFileBasedScriptName = "livenessHealthCheck.sh"
 const ReadinessProbeFileBasedScriptName = "readinessHealthCheck.sh"
-const StartupProbeFileName = "started"
-const LivenessProbeFileName = "live"
-const ReadinessProbeFileName = "ready"
 
 type LTPAMetadata struct {
 	Kind       string
@@ -1115,7 +1112,7 @@ func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func configureFileBasedProbeExec(probe *corev1.Probe, scriptName string, probeFile string) {
+func configureFileBasedProbeExec(probe *corev1.Probe, scriptName string) {
 	probe = getProbeWithoutHandlers(probe) // remove any preset handlers configured to this probe
 	cmdList := []string{scriptName}
 	if scriptName == StartupProbeFileBasedScriptName {
@@ -1151,13 +1148,13 @@ func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
+func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string) *corev1.Probe {
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
 	isExecConfigured := instanceProbe.Exec != nil // this flag allows the user to override the ExecAction object to bring their own custom file-based health check
 	instanceProbe = common.CustomizeProbeDefaults(instanceProbe, defaultProbe)
 	if !isExecConfigured {
-		configureFileBasedProbeExec(instanceProbe, scriptName, probeFile)
+		configureFileBasedProbeExec(instanceProbe, scriptName)
 	}
 	return instanceProbe
 }
@@ -1190,13 +1187,13 @@ func customizeFileBasedProbes(appContainer *corev1.Container, instance *wlv1.Web
 	}
 	probes := instance.Spec.Probes.WebSphereLibertyApplicationProbes
 	if probes.Startup != nil {
-		appContainer.StartupProbe = patchFileBasedProbe(probes.GetDefaultStartupProbe(instance), probes.GetStartupProbe(), StartupProbeFileBasedScriptName, StartupProbeFileName)
+		appContainer.StartupProbe = patchFileBasedProbe(probes.GetDefaultStartupProbe(instance), probes.GetStartupProbe(), StartupProbeFileBasedScriptName)
 	}
 	if probes.Liveness != nil {
-		appContainer.LivenessProbe = patchFileBasedProbe(probes.GetDefaultLivenessProbe(instance), probes.GetLivenessProbe(), LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+		appContainer.LivenessProbe = patchFileBasedProbe(probes.GetDefaultLivenessProbe(instance), probes.GetLivenessProbe(), LivenessProbeFileBasedScriptName)
 	}
 	if probes.Readiness != nil {
-		appContainer.ReadinessProbe = patchFileBasedProbe(probes.GetDefaultReadinessProbe(instance), probes.GetReadinessProbe(), ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+		appContainer.ReadinessProbe = patchFileBasedProbe(probes.GetDefaultReadinessProbe(instance), probes.GetReadinessProbe(), ReadinessProbeFileBasedScriptName)
 	}
 }
 
