@@ -188,7 +188,7 @@ type WebSphereLibertyApplicationSpec struct {
 
 	// The list of hosts and IPs that will be inejcted into the application pod's hosts file
 	// +operator-sdk:csv:customresourcedefinitions:order=37,type=spec,displayName="Host Aliases"
-	HostAliases []corev1.HostAlias `json:"hostAliases,omitempty"`
+	HostAliases *[]corev1.HostAlias `json:"hostAliases,omitempty"`
 }
 
 // Defines the DNS
@@ -1421,7 +1421,7 @@ func (d *WebSphereLibertyApplicationDNS) GetConfig() *corev1.PodDNSConfig {
 	return d.PodDNSConfig
 }
 
-func (cr *WebSphereLibertyApplication) GetHostAliases() []corev1.HostAlias {
+func (cr *WebSphereLibertyApplication) GetHostAliases() *[]corev1.HostAlias {
 	return cr.Spec.HostAliases
 }
 
