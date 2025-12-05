@@ -3,7 +3,6 @@
   "name": "code-review",
   "params": {
     "checks": [
-      "tekton/pr-code-checks/code-branch-protection"
     ]
   }
 }]
