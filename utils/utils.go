@@ -28,6 +28,8 @@ import (
 
 	"math/rand/v2"
 
+	"github.com/application-stacks/runtime-component-operator/common"
+
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	rcoutils "github.com/application-stacks/runtime-component-operator/utils"
 	routev1 "github.com/openshift/api/route/v1"
@@ -109,9 +111,6 @@ var entitlementCloudPakID = map[wlv1.LicenseEntitlement]string{
 const StartupProbeFileBasedScriptName = "startupHealthCheck.sh"
 const LivenessProbeFileBasedScriptName = "livenessHealthCheck.sh"
 const ReadinessProbeFileBasedScriptName = "readinessHealthCheck.sh"
-const StartupProbeFileName = "started"
-const LivenessProbeFileName = "live"
-const ReadinessProbeFileName = "ready"
 
 type LTPAMetadata struct {
 	Kind       string
@@ -1113,7 +1112,7 @@ func clearFileBasedProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func configureFileBasedProbeExec(probe *corev1.Probe, scriptName string, probeFile string) {
+func configureFileBasedProbeExec(probe *corev1.Probe, scriptName string) {
 	probe = getProbeWithoutHandlers(probe) // remove any preset handlers configured to this probe
 	cmdList := []string{scriptName}
 	if scriptName == StartupProbeFileBasedScriptName {
@@ -1149,13 +1148,13 @@ func getOrInitProbe(probe *corev1.Probe) *corev1.Probe {
 	return probe
 }
 
-func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string, probeFile string) *corev1.Probe {
+func patchFileBasedProbe(defaultProbe *corev1.Probe, instanceProbe *corev1.Probe, scriptName string) *corev1.Probe {
 	defaultProbe = getOrInitProbe(defaultProbe)
 	instanceProbe = getOrInitProbe(instanceProbe)
 	isExecConfigured := instanceProbe.Exec != nil // this flag allows the user to override the ExecAction object to bring their own custom file-based health check
-	instanceProbe = rcoutils.CustomizeProbeDefaults(instanceProbe, defaultProbe)
+	instanceProbe = common.CustomizeProbeDefaults(instanceProbe, defaultProbe)
 	if !isExecConfigured {
-		configureFileBasedProbeExec(instanceProbe, scriptName, probeFile)
+		configureFileBasedProbeExec(instanceProbe, scriptName)
 	}
 	return instanceProbe
 }
@@ -1186,14 +1185,15 @@ func customizeFileBasedProbes(appContainer *corev1.Container, instance *wlv1.Web
 	if appContainer == nil {
 		return
 	}
-	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Startup != nil {
-		appContainer.StartupProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultStartupProbe(instance), instance.Spec.Probes.Startup, StartupProbeFileBasedScriptName, StartupProbeFileName)
+	probes := instance.Spec.Probes.WebSphereLibertyApplicationProbes
+	if probes.Startup != nil {
+		appContainer.StartupProbe = patchFileBasedProbe(probes.GetDefaultStartupProbe(instance), probes.GetStartupProbe(), StartupProbeFileBasedScriptName)
 	}
-	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Liveness != nil {
-		appContainer.LivenessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultLivenessProbe(instance), instance.Spec.Probes.Liveness, LivenessProbeFileBasedScriptName, LivenessProbeFileName)
+	if probes.Liveness != nil {
+		appContainer.LivenessProbe = patchFileBasedProbe(probes.GetDefaultLivenessProbe(instance), probes.GetLivenessProbe(), LivenessProbeFileBasedScriptName)
 	}
-	if instance.Spec.Probes.WebSphereLibertyApplicationProbes.Readiness != nil {
-		appContainer.ReadinessProbe = patchFileBasedProbe(instance.Spec.Probes.WebSphereLibertyApplicationProbes.GetDefaultReadinessProbe(instance), instance.Spec.Probes.Readiness, ReadinessProbeFileBasedScriptName, ReadinessProbeFileName)
+	if probes.Readiness != nil {
+		appContainer.ReadinessProbe = patchFileBasedProbe(probes.GetDefaultReadinessProbe(instance), probes.GetReadinessProbe(), ReadinessProbeFileBasedScriptName)
 	}
 }
 
