@@ -67,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2025-12-03T04:52:57Z"
+    createdAt: "2025-12-04T21:43:47Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.2'
@@ -496,6 +496,10 @@ spec:
         path: affinity.nodeAffinity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:nodeAffinity
+      - description: The list of hosts and IPs that will be inejcted into the application
+          pod's hosts file
+        displayName: Host Aliases
+        path: hostAliases
       - description: Controls the nodes the pod are scheduled to run on, based on
           labels on the pods that are already running on the node.
         displayName: Pod Affinity
