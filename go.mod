@@ -119,7 +119,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/kubectl v0.33.3 // indirect
-	k8s.io/kubernetes v1.33.4 // indirect
+	k8s.io/kubernetes v1.33.6 // indirect
 	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	knative.dev/networking v0.0.0-20250716125000-edb1a4a0c863 // indirect
 	knative.dev/pkg v0.0.0-20250817152444-53ed1d53d232 // indirect
