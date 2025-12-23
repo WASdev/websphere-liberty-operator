@@ -83,3 +83,4 @@ linter-tool
 bundle/tests
 operators
 liberty/**
+wlo.secrets.baseline
