@@ -83,3 +83,5 @@ linter-tool
 bundle/tests
 operators
 liberty/**
+# To allow the file to be copied into this repo during a build
+wlo.secrets.baseline
