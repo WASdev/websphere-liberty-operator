@@ -221,11 +221,11 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAKeys(instance *wlv1.WebSphereLi
 }
 
 // Create or use an existing LTPA Secret identified by LTPA metadata for the WebSphereLibertyApplication instance
-func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, string, error) {
 	var err error
 	var ltpaXMLSecretName string
 	if r.isLTPAKeySharingEnabled(instance) {
-		ltpaXMLSecretName, err = r.generateLTPAConfig(instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
+		ltpaXMLSecretName, err = r.generateLTPAConfig(recCtx, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 		if err != nil {
 			return "Failed to generate the shared LTPA config Secret", ltpaXMLSecretName, err
 		}
@@ -324,11 +324,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 }
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
-func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, error) {
-	ltpaXMLSecret := &corev1.Secret{}
+func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, error) {
 	ltpaXMLSecretRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
-	ltpaXMLSecret.Name = ltpaXMLSecretRootName + ltpaConfigMetadata.Name
-	ltpaXMLSecret.Namespace = instance.GetNamespace()
+	ltpaXMLSecret, ltpaXMLSecretWaitGroup := common.NewWaitableSecret(recCtx, ltpaXMLSecretRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
 	ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
 
 	ltpaXMLMountSecret := &corev1.Secret{}
@@ -536,7 +534,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		return ltpaXMLSecret.Name, serverXMLSecretErr
 	}
 	// NOTE: Update is important here for compatibility with an operator upgrade from version 1,3,3 that did not use ltpaXMLMountSecret
-	if err := r.CreateOrUpdate(ltpaXMLSecret, nil, func() error {
+	if err := r.TrackedCreateOrUpdate(ltpaXMLSecret, nil, func() error {
 		// get the latest config rotation time, if it exists
 		var latestRotationTime int
 		lastRotationTime, err := strconv.Atoi(string(lastRotation))
@@ -555,7 +553,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		}
 		ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
 		return lutils.CustomizeLTPAServerXML(ltpaXMLSecret, instance, string(ltpaConfigSecret.Data["password"]))
-	}); err != nil {
+	}, ltpaXMLSecretWaitGroup); err != nil {
 		return ltpaXMLSecret.Name, err
 	}
 	return ltpaXMLSecret.Name, nil
