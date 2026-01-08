@@ -249,12 +249,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	ltpaXMLSecret.Namespace = instance.GetNamespace()
 	ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
 
-	ltpaXMLMountSecret := &corev1.Secret{}
-	ltpaXMLMountSecretRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
-	ltpaXMLMountSecret.Name = ltpaXMLMountSecretRootName + ltpaMetadata.Name
-	ltpaXMLMountSecret.Namespace = instance.GetNamespace()
-	ltpaXMLMountSecret.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLSecret.Name)
-
 	ltpaSecret := &corev1.Secret{}
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
 	ltpaSecret.Name = ltpaSecretRootName + ltpaMetadata.Name
@@ -329,11 +323,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, i
 	ltpaXMLSecret, ltpaXMLSecretWaitGroup := common.NewWaitableSecret(recCtx, ltpaXMLSecretRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
 	ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
 
-	ltpaXMLMountSecret := &corev1.Secret{}
-	ltpaXMLMountSecretRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
-	ltpaXMLMountSecret.Name = ltpaXMLMountSecretRootName + ltpaConfigMetadata.Name
-	ltpaXMLMountSecret.Namespace = instance.GetNamespace()
-	ltpaXMLMountSecret.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLSecret.Name)
+	ltpaMountXMLRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
+	ltpaMountXML, ltpaMountXMLWaitGroup := common.NewWaitableSecret(recCtx, ltpaMountXMLRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
+	ltpaMountXML.Labels = lutils.GetRequiredLabels(ltpaMountXMLRootName, ltpaXMLSecret.Name)
 
 	ltpaSecret := &corev1.Secret{}
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
@@ -517,14 +509,14 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, i
 
 	// Create/update the Secret to hold the server.xml that will import the LTPA keys into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/ltpaKeysMount.xml
-	serverXMLMountSecretErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLMountSecret.Name, Namespace: ltpaXMLMountSecret.Namespace}, ltpaXMLMountSecret)
+	serverXMLMountSecretErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaMountXML.Name, Namespace: ltpaMountXML.Namespace}, ltpaMountXML)
 	if serverXMLMountSecretErr != nil && !kerrors.IsNotFound(serverXMLMountSecretErr) {
 		return ltpaXMLSecret.Name, serverXMLMountSecretErr
 	}
-	if err := r.CreateOrUpdate(ltpaXMLMountSecret, nil, func() error {
+	if err := r.TrackedCreateOrUpdate(ltpaMountXML, nil, func() error {
 		mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.LTPAKeysXMLFileName, "/output", "${server.output.dir}", 1)
-		return lutils.CustomizeLibertyFileMountXML(ltpaXMLMountSecret, lutils.LTPAKeysMountXMLFileName, mountDir)
-	}); err != nil {
+		return lutils.CustomizeLibertyFileMountXML(ltpaMountXML, lutils.LTPAKeysMountXMLFileName, mountDir)
+	}, ltpaMountXMLWaitGroup); err != nil {
 		return ltpaXMLSecret.Name, err
 	}
 

@@ -26,9 +26,9 @@ import (
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
+	"github.com/application-stacks/runtime-component-operator/common"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -39,7 +39,7 @@ func init() {
 	lutils.LeaderTrackerMutexes.Store(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, &sync.Mutex{})
 }
 
-func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, string, error) {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
 		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, passwordEncryptionMetadata, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil && !kerrors.IsNotFound(err) {
@@ -60,7 +60,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 				// non-leaders should still be able to pass this process to return the encryption secret name
 				if thisInstanceIsLeader {
 					// Create the Liberty config that will mount into the pods
-					err := r.createPasswordEncryptionKeyLibertyConfig(instance, passwordEncryptionMetadata, encryptionKey)
+					err := r.createPasswordEncryptionKeyLibertyConfig(recCtx, instance, passwordEncryptionMetadata, encryptionKey)
 					if err != nil {
 						return "Failed to create Liberty resources to share the password encryption key", "", "", err
 					}
@@ -285,41 +285,33 @@ func (r *ReconcileWebSphereLiberty) getSecret(instance *wlv1.WebSphereLibertyApp
 }
 
 // Creates the Liberty XML to mount the password encryption keys Secret into the application pods
-func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey []byte) error {
+func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey []byte) error {
 	if len(encryptionKey) == 0 {
 		return fmt.Errorf("a password encryption key was not specified")
 	}
 
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
-	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      encryptionXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(encryptionXMLSecretName, ""),
-		},
-	}
-	if err := r.CreateOrUpdate(encryptionXMLSecret, nil, func() error {
-		return lutils.CustomizeEncryptionKeyXML(encryptionXMLSecret, encryptionKey)
-	}); err != nil {
+	encryptionKeyXMLName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
+	encryptionKeyXML, encryptionKeyXMLWaitGroup := common.NewWaitableSecret(recCtx, encryptionKeyXMLName, instance.GetNamespace())
+	encryptionKeyXML.Labels = lutils.GetRequiredLabels(encryptionKeyXMLName, "")
+
+	if err := r.TrackedCreateOrUpdate(encryptionKeyXML, nil, func() error {
+		return lutils.CustomizeEncryptionKeyXML(encryptionKeyXML, encryptionKey)
+	}, encryptionKeyXMLWaitGroup); err != nil {
 		return err
 	}
 
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mountingXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(mountingXMLSecretName, ""),
-		},
-	}
-	if err := r.CreateOrUpdate(mountingXMLSecret, nil, func() error {
+	mountingXML, mountingXMLWaitGroup := common.NewWaitableSecret(recCtx, mountingXMLSecretName, instance.GetNamespace())
+	mountingXML.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
+
+	if err := r.TrackedCreateOrUpdate(mountingXML, nil, func() error {
 		mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
-		return lutils.CustomizeLibertyFileMountXML(mountingXMLSecret, lutils.EncryptionKeyMountXMLFileName, mountDir)
-	}); err != nil {
+		return lutils.CustomizeLibertyFileMountXML(mountingXML, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	}, mountingXMLWaitGroup); err != nil {
 		return err
 	}
 

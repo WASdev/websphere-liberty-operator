@@ -603,7 +603,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Manage the shared password encryption key Secret if it exists
-	message, encryptionSecretName, passwordEncryptionKeyLastRotation, err := r.reconcilePasswordEncryptionKey(instance, passwordEncryptionMetadata)
+	message, encryptionSecretName, passwordEncryptionKeyLastRotation, err := r.reconcilePasswordEncryptionKey(recCtx, instance, passwordEncryptionMetadata)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)

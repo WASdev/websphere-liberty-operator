@@ -1049,21 +1049,21 @@ func MountSecretAsVolume(pts *corev1.PodTemplateSpec, secretName string, volumeM
 	}
 }
 
-func CustomizeEncryptionKeyXML(managedEncryptionXMLSecret *corev1.Secret, encryptionKey []byte) error {
-	if managedEncryptionXMLSecret.Data == nil {
-		managedEncryptionXMLSecret.Data = make(map[string][]byte)
+func CustomizeEncryptionKeyXML(encryptionKeyXML *corev1.Secret, encryptionKey []byte) error {
+	if encryptionKeyXML.Data == nil {
+		encryptionKeyXML.Data = make(map[string][]byte)
 	}
 	serverXML, err := os.ReadFile("internal/controller/assets/encryption.xml")
 	if err != nil {
 		return err
 	}
 	serverXMLString := bytes.Replace(serverXML, []byte("WLP_PASSWORD_ENCRYPTION_KEY"), encryptionKey, 1)
-	managedEncryptionXMLSecret.Data[EncryptionKeyXMLFileName] = serverXMLString
+	encryptionKeyXML.Data[EncryptionKeyXMLFileName] = serverXMLString
 	return nil
 }
 
-func CustomizeLTPAServerXML(xmlSecret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) error {
-	xmlSecret.Data = make(map[string][]byte)
+func CustomizeLTPAServerXML(ltpaServerXML *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) error {
+	ltpaServerXML.Data = make(map[string][]byte)
 	managedLTPADir := strings.Replace(SecureMountPath, "/output", "${server.output.dir}", 1)
 	serverXML, err := os.ReadFile("internal/controller/assets/ltpa.xml")
 	if err != nil {
@@ -1071,20 +1071,20 @@ func CustomizeLTPAServerXML(xmlSecret *corev1.Secret, la *wlv1.WebSphereLibertyA
 	}
 	serverXMLString := bytes.Replace(serverXML, []byte("LTPA_KEYS_FILE_NAME"), []byte(managedLTPADir+"/"+LTPAKeysFileName), 1)
 	serverXMLString = bytes.Replace(serverXMLString, []byte("LTPA_KEYS_PASSWORD"), []byte(encryptedPassword), 1)
-	xmlSecret.Data[LTPAKeysXMLFileName] = serverXMLString
+	ltpaServerXML.Data[LTPAKeysXMLFileName] = serverXMLString
 	return nil
 }
 
-func CustomizeLibertyFileMountXML(mountingPasswordKeySecret *corev1.Secret, mountXMLFileName string, fileLocation string) error {
-	if mountingPasswordKeySecret.Data == nil {
-		mountingPasswordKeySecret.Data = make(map[string][]byte)
+func CustomizeLibertyFileMountXML(libertyFileMountXML *corev1.Secret, mountXMLFileName string, fileLocation string) error {
+	if libertyFileMountXML.Data == nil {
+		libertyFileMountXML.Data = make(map[string][]byte)
 	}
 	serverXML, err := os.ReadFile("internal/controller/assets/mount.xml")
 	if err != nil {
 		return err
 	}
 	serverXMLString := bytes.Replace(serverXML, []byte("MOUNT_LOCATION"), []byte(fileLocation), 1)
-	mountingPasswordKeySecret.Data[mountXMLFileName] = serverXMLString
+	libertyFileMountXML.Data[mountXMLFileName] = serverXMLString
 	return nil
 }
 
