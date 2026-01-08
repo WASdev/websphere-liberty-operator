@@ -177,20 +177,6 @@ func (ml PasswordEncryptionMetadataList) GetItems() []LeaderTrackerMetadata {
 	return ml.Items
 }
 
-type LTPAConfig struct {
-	Metadata                    *LTPAMetadata
-	SecretName                  string
-	SecretInstanceName          string
-	ConfigSecretName            string
-	ConfigSecretInstanceName    string
-	ServiceAccountName          string
-	JobRequestConfigMapName     string
-	ConfigMapName               string
-	FileName                    string
-	EncryptionKeySecretName     string
-	EncryptionKeySharingEnabled bool // true or false
-}
-
 type PodInjectorClient interface {
 	Connect() error
 	CloseConnection()
