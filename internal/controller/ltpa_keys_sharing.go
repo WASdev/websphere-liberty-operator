@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -178,17 +179,17 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 	// otherwise, generate a random suffix of length lutils.ResourceSuffixLength
 	randomSuffix := lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
 	suffixFoundInCluster := true // MUST check that the operator is not overriding another instance's untracked shared resource
-	for strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), randomSuffix) || suffixFoundInCluster {
+	for bytes.Contains(leaderTracker.Data[lutils.ResourcesKey], randomSuffix) || suffixFoundInCluster {
 		randomSuffix = lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
 		// create the unstructured object; parse and obtain the sharedResourceName via the internal/controller/assets/ltpa-signature.yaml
-		if sharedResource, sharedResourceName, err := lutils.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, randomSuffix); err == nil {
+		if sharedResource, sharedResourceName, err := lutils.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, string(randomSuffix)); err == nil {
 			err := r.GetClient().Get(context.TODO(), types.NamespacedName{Namespace: instance.GetNamespace(), Name: sharedResourceName}, sharedResource)
 			if err != nil && kerrors.IsNotFound(err) {
 				suffixFoundInCluster = false
 			}
 		}
 	}
-	return randomSuffix
+	return string(randomSuffix)
 }
 
 func hasLTPAKeyResourceSuffixesEnv(instance *wlv1.WebSphereLibertyApplication) (string, bool) {
@@ -277,21 +278,23 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 			return "", "", "", err
 		}
 
-		password := lutils.GetRandomAlphanumeric(15)
+		password := string(lutils.GetRandomAlphanumeric(15))
 		var currentPasswordEncryptionKey *string
 		if len(passwordEncryptionKey) > 0 {
 			currentPasswordEncryptionKey = &passwordEncryptionKey
 		} else {
 			currentPasswordEncryptionKey = nil
 		}
-		rawLTPAKeysStringData, err := createLTPAKeys(password, currentPasswordEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
+		ltpaKeysData, err := createLTPAKeys(password, currentPasswordEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 		if err != nil {
 			return "", "", "", err
 		}
-		ltpaKeysStringData, err := base64.StdEncoding.DecodeString(string(rawLTPAKeysStringData))
+		ltpaKeysDataDecoded := make([]byte, base64.StdEncoding.DecodedLen(len(ltpaKeysData)))
+		n, err := base64.StdEncoding.Decode(ltpaKeysDataDecoded, ltpaKeysData)
 		if err != nil {
 			return "", "", "", err
 		}
+		ltpaKeysDataDecoded = ltpaKeysDataDecoded[:n]
 
 		ltpaSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaMetadata.PathIndex
 		ltpaSecret.Data = make(map[string][]byte)
@@ -301,7 +304,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		lastRotation := strconv.FormatInt(time.Now().Unix(), 10)
 		ltpaSecret.Data["lastRotation"] = []byte(lastRotation)
 		ltpaSecret.Data["rawPassword"] = []byte(password)
-		ltpaSecret.Data[lutils.LTPAKeysFileName] = ltpaKeysStringData
+		ltpaSecret.Data[lutils.LTPAKeysFileName] = ltpaKeysDataDecoded
 
 		if err := r.CreateOrUpdate(ltpaSecret, nil, func() error {
 			return nil

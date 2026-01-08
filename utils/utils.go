@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
-	"math/rand/v2"
+	"crypto/rand"
 
 	"github.com/application-stacks/runtime-component-operator/common"
 
@@ -426,9 +427,9 @@ func CustomizeKnativeServiceLibertyEnv(ksvc *servingv1.Service, la *wlv1.WebSphe
 	return nil
 }
 
-func GetSecretLastRotationLabel(la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
-	secret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
+func GetSecretLastRotationLabel(recCtx context.Context, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
+	secret := common.NewSecret(recCtx, secretName, la.GetNamespace())
+	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
@@ -438,13 +439,13 @@ func GetSecretLastRotationLabel(la *wlv1.WebSphereLibertyApplication, client cli
 		return nil, fmt.Errorf("Secret %q does not have label key %q", secretName, labelKey)
 	}
 	return map[string]string{
-		labelKey: string(lastRotationLabel),
+		labelKey: lastRotationLabel,
 	}, nil
 }
 
-func GetSecretLastRotationAsLabelMap(la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
-	secret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
+func GetSecretLastRotationAsLabelMap(recCtx context.Context, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
+	secret := common.NewSecret(recCtx, secretName, la.GetNamespace())
+	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
@@ -453,9 +454,9 @@ func GetSecretLastRotationAsLabelMap(la *wlv1.WebSphereLibertyApplication, clien
 	}, nil
 }
 
-func AddSecretResourceVersionAsEnvVar(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
-	secret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: la.GetNamespace()}, secret)
+func AddSecretResourceVersionAsEnvVar(recCtx context.Context, pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
+	secret := common.NewSecret(recCtx, secretName, la.GetNamespace())
+	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
@@ -1048,42 +1049,42 @@ func MountSecretAsVolume(pts *corev1.PodTemplateSpec, secretName string, volumeM
 	}
 }
 
-func CustomizeEncryptionKeyXML(managedEncryptionXMLSecret *corev1.Secret, encryptionKey string) error {
-	if managedEncryptionXMLSecret.StringData == nil {
-		managedEncryptionXMLSecret.StringData = make(map[string]string)
+func CustomizeEncryptionKeyXML(managedEncryptionXMLSecret *corev1.Secret, encryptionKey []byte) error {
+	if managedEncryptionXMLSecret.Data == nil {
+		managedEncryptionXMLSecret.Data = make(map[string][]byte)
 	}
 	serverXML, err := os.ReadFile("internal/controller/assets/encryption.xml")
 	if err != nil {
 		return err
 	}
-	severXMLString := strings.Replace(string(serverXML), "WLP_PASSWORD_ENCRYPTION_KEY", encryptionKey, 1)
-	managedEncryptionXMLSecret.StringData[EncryptionKeyXMLFileName] = severXMLString
+	serverXMLString := bytes.Replace(serverXML, []byte("WLP_PASSWORD_ENCRYPTION_KEY"), encryptionKey, 1)
+	managedEncryptionXMLSecret.Data[EncryptionKeyXMLFileName] = serverXMLString
 	return nil
 }
 
 func CustomizeLTPAServerXML(xmlSecret *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) error {
-	xmlSecret.StringData = make(map[string]string)
+	xmlSecret.Data = make(map[string][]byte)
 	managedLTPADir := strings.Replace(SecureMountPath, "/output", "${server.output.dir}", 1)
 	serverXML, err := os.ReadFile("internal/controller/assets/ltpa.xml")
 	if err != nil {
 		return err
 	}
-	severXMLString := strings.Replace(string(serverXML), "LTPA_KEYS_FILE_NAME", managedLTPADir+"/"+LTPAKeysFileName, 1)
-	severXMLString = strings.Replace(severXMLString, "LTPA_KEYS_PASSWORD", encryptedPassword, 1)
-	xmlSecret.StringData[LTPAKeysXMLFileName] = severXMLString
+	serverXMLString := bytes.Replace(serverXML, []byte("LTPA_KEYS_FILE_NAME"), []byte(managedLTPADir+"/"+LTPAKeysFileName), 1)
+	serverXMLString = bytes.Replace(serverXMLString, []byte("LTPA_KEYS_PASSWORD"), []byte(encryptedPassword), 1)
+	xmlSecret.Data[LTPAKeysXMLFileName] = serverXMLString
 	return nil
 }
 
 func CustomizeLibertyFileMountXML(mountingPasswordKeySecret *corev1.Secret, mountXMLFileName string, fileLocation string) error {
-	if mountingPasswordKeySecret.StringData == nil {
-		mountingPasswordKeySecret.StringData = make(map[string]string)
+	if mountingPasswordKeySecret.Data == nil {
+		mountingPasswordKeySecret.Data = make(map[string][]byte)
 	}
 	serverXML, err := os.ReadFile("internal/controller/assets/mount.xml")
 	if err != nil {
 		return err
 	}
-	severXMLString := strings.Replace(string(serverXML), "MOUNT_LOCATION", fileLocation, 1)
-	mountingPasswordKeySecret.StringData[mountXMLFileName] = severXMLString
+	serverXMLString := bytes.Replace(serverXML, []byte("MOUNT_LOCATION"), []byte(fileLocation), 1)
+	mountingPasswordKeySecret.Data[mountXMLFileName] = serverXMLString
 	return nil
 }
 
@@ -1328,24 +1329,27 @@ func GetCommaSeparatedArray(stringList string) []string {
 	return []string{stringList}
 }
 
-var letterNums = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+var letterNums = []byte("abcdefghijklmnopqrstuvwxyz1234567890")
 
-var letterNums2 = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+var letterNums2 = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
-func GetRandomAlphanumeric(length int) string {
-	b := make([]rune, length)
+func GetRandomAlphanumeric(length int) []byte {
+	b := make([]byte, length)
 	for i := range b {
-		b[i] = letterNums2[rand.IntN(len(letterNums2))]
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterNums2))))
+		b[i] = letterNums2[n.Int64()]
 	}
-	return string(b)
+	return b
 }
 
-func GetRandomLowerAlphanumericSuffix(length int) string {
-	b := make([]rune, length)
+func GetRandomLowerAlphanumericSuffix(length int) []byte {
+	b := make([]byte, length+1)
+	copy(b, "-")
 	for i := range b {
-		b[i] = letterNums[rand.IntN(len(letterNums))]
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterNums2))))
+		b[i+1] = letterNums[n.Int64()]
 	}
-	return "-" + string(b)
+	return b
 }
 
 func IsLowerAlphanumericSuffix(suffix string) bool {

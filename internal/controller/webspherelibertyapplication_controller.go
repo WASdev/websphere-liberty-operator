@@ -113,6 +113,11 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		ns = r.watchNamespaces[0]
 	}
 
+	// This reconcile context is cancelled right before the Reconcile function terminates or when the parent context ctx is cancelled (such as in operator leader election), whichever happens first.
+	// Resources that require cleanup may use this context to hook into program execution before a function return.
+	recCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	configMap, err := r.GetOpConfigMap(OperatorName, ns)
 	if err != nil {
 		reqLogger.Info("Failed to get websphere-liberty-operator config map, error: " + err.Error())
@@ -313,7 +318,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		if serviceAccountName == "" {
 			serviceAccount := &corev1.ServiceAccount{ObjectMeta: defaultMeta}
 			err = r.CreateOrUpdate(serviceAccount, instance, func() error {
-				return oputils.CustomizeServiceAccount(serviceAccount, instance, r.GetClient())
+				return oputils.CustomizeServiceAccount(recCtx, serviceAccount, instance, r.GetClient())
 			})
 			if err != nil {
 				reqLogger.Error(err, "Failed to reconcile ServiceAccount")
@@ -331,7 +336,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 	// Check if the ServiceAccount has a valid pull secret before creating the deployment/statefulset
 	// or setting up knative. Otherwise the pods can go into an ImagePullBackOff loop
-	saErr := oputils.ServiceAccountPullSecretExists(instance, r.GetClient())
+	saErr := oputils.ServiceAccountPullSecretExists(recCtx, instance, r.GetClient())
 	if saErr != nil {
 		return r.ManageErrorWithWarnings(saErr, common.StatusConditionTypeReconciled, instance, warnings)
 	}
@@ -358,7 +363,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 		// Get liberty version if the reference is not set or if secondsSinceLastPull >= 60*imageVersionChecksRefreshIntervalMinutes
 		if libertyVersion == "" || int(float64(secondsSinceLastPull)/60) >= imageVersionChecksRefreshIntervalMinutes {
-			pulledManifestDigest, pulledLibertyVersion, err := r.pullLibertyVersionFromManifest(reqLogger, instance, instance.Spec.ApplicationImage, image, isTagNamespace)
+			pulledManifestDigest, pulledLibertyVersion, err := r.pullLibertyVersionFromManifest(recCtx, reqLogger, instance, instance.Spec.ApplicationImage, image, isTagNamespace)
 			if err != nil {
 				reqLogger.Error(err, "Failed to pull container image metadata; unauthorized or the image does not exist")
 				instance.Status.SetReference(lutils.StatusReferenceLibertyVersion, libertyimage.NilLibertyVersion)
@@ -440,7 +445,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// Otherwise, delete the Semeru Compiler deployment and service.
 	message := "Start Semeru Compiler reconcile"
 	reqDebugLogger.Info(message)
-	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(instance)
+	err, message, areCompletedSemeruInstancesMarkedToBeDeleted := r.reconcileSemeruCompiler(recCtx, instance)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
@@ -519,7 +524,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		}
 	}
 
-	useCertmanager, err := r.GenerateSvcCertSecret(ba, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
+	useCertmanager, err := r.GenerateSvcCertSecret(recCtx, ba, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 	if err != nil {
 		reqLogger.Error(err, "Failed to reconcile CertManager Certificate")
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
@@ -592,7 +597,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		r.deletePVC(reqLogger, instance.Name+"-serviceability", instance.Namespace)
 	}
 
-	err = r.ReconcileBindings(instance)
+	err = r.ReconcileBindings(recCtx, instance)
 	if err != nil {
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
@@ -659,7 +664,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 			statefulSet.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
 
-			if err := oputils.CustomizePodWithSVCCertificate(&statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
+			if err := oputils.CustomizePodWithSVCCertificate(recCtx, &statefulSet.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
@@ -678,7 +683,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
 					getSemeruCertVolumeMount(instance))
 				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
-				err := lutils.AddSecretResourceVersionAsEnvVar(&statefulSet.Spec.Template, instance, r.GetClient(),
+				err := lutils.AddSecretResourceVersionAsEnvVar(recCtx, &statefulSet.Spec.Template, instance, r.GetClient(),
 					semeruTLSSecretName, "SEMERU_TLS")
 				if err != nil {
 					return err
@@ -687,7 +692,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 			if r.isPasswordEncryptionKeySharingEnabled(instance) && len(encryptionSecretName) > 0 {
 				lutils.ConfigurePasswordEncryption(&statefulSet.Spec.Template, instance, OperatorShortName, passwordEncryptionMetadata)
-				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(instance, r.GetClient(), encryptionSecretName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(recCtx, instance, r.GetClient(), encryptionSecretName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
@@ -703,13 +708,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
 				lutils.ConfigureLTPAConfig(&statefulSet.Spec.Template, instance, OperatorShortName, ltpaSecretName, ltpaConfigMetadata.Name)
 				// add LTPA key last rotation annotation
-				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(instance, r.GetClient(), ltpaSecretName, LTPA_RESOURCE_SHARING_FILE_NAME)
+				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(recCtx, instance, r.GetClient(), ltpaSecretName, LTPA_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
 				lutils.AddPodTemplateSpecAnnotation(&statefulSet.Spec.Template, lastRotationAnnotation)
 				// add LTPA config last rotation annotation
-				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
+				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
@@ -756,7 +761,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			}
 			deploy.Spec.Template.Spec.Containers[0].Args = r.getSemeruJavaOptions(instance)
 
-			if err := oputils.CustomizePodWithSVCCertificate(&deploy.Spec.Template, instance, r.GetClient()); err != nil {
+			if err := oputils.CustomizePodWithSVCCertificate(recCtx, &deploy.Spec.Template, instance, r.GetClient()); err != nil {
 				return err
 			}
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
@@ -776,7 +781,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				deploy.Spec.Template.Spec.Containers[0].VolumeMounts = append(deploy.Spec.Template.Spec.Containers[0].VolumeMounts,
 					getSemeruCertVolumeMount(instance))
 				semeruTLSSecretName := instance.Status.SemeruCompiler.TLSSecretName
-				err := lutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, instance, r.GetClient(),
+				err := lutils.AddSecretResourceVersionAsEnvVar(recCtx, &deploy.Spec.Template, instance, r.GetClient(),
 					semeruTLSSecretName, "SEMERU_TLS")
 				if err != nil {
 					return err
@@ -785,7 +790,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 
 			if r.isPasswordEncryptionKeySharingEnabled(instance) && len(encryptionSecretName) > 0 {
 				lutils.ConfigurePasswordEncryption(&deploy.Spec.Template, instance, OperatorShortName, passwordEncryptionMetadata)
-				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(instance, r.GetClient(), encryptionSecretName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(recCtx, instance, r.GetClient(), encryptionSecretName, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
@@ -801,13 +806,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			if r.isLTPAKeySharingEnabled(instance) && len(ltpaSecretName) > 0 {
 				lutils.ConfigureLTPAConfig(&deploy.Spec.Template, instance, OperatorShortName, ltpaSecretName, ltpaConfigMetadata.Name)
 				// add LTPA key last rotation annotation
-				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(instance, r.GetClient(), ltpaSecretName, LTPA_RESOURCE_SHARING_FILE_NAME)
+				lastRotationAnnotation, err := lutils.GetSecretLastRotationAsLabelMap(recCtx, instance, r.GetClient(), ltpaSecretName, LTPA_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
 				lutils.AddPodTemplateSpecAnnotation(&deploy.Spec.Template, lastRotationAnnotation)
 				// add LTPA config last rotation annotation
-				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
+				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
@@ -918,7 +923,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	} else if ok {
 		if instance.Spec.Monitoring != nil && (instance.Spec.CreateKnativeService == nil || !*instance.Spec.CreateKnativeService) {
 			// Validate the monitoring endpoints' configuration before creating/updating the ServiceMonitor
-			if err := oputils.ValidatePrometheusMonitoringEndpoints(instance, r.GetClient(), instance.GetNamespace()); err != nil {
+			if err := oputils.ValidatePrometheusMonitoringEndpoints(recCtx, instance, r.GetClient(), instance.GetNamespace()); err != nil {
 				return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 			}
 			sm := &prometheusv1.ServiceMonitor{ObjectMeta: defaultMeta}
@@ -1126,12 +1131,12 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 	}
 }
 
-func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
+func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(recCtx context.Context, reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
 	wlappSecrets := []corev1.Secret{}
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
-		pullSecret = &corev1.Secret{}
-		if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: *wlapp.GetPullSecret(), Namespace: wlapp.GetNamespace()}, pullSecret); err != nil {
+		pullSecret = common.NewSecret(recCtx, *wlapp.GetPullSecret(), wlapp.GetNamespace())
+		if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecret.Name, Namespace: pullSecret.Namespace}, pullSecret); err != nil {
 			if kerrors.IsNotFound(err) {
 				reqLogger.Info("The instance pull secret specified does not exist")
 				pullSecret = nil
@@ -1161,7 +1166,7 @@ func (r *ReconcileWebSphereLiberty) checkLibertyVersionGuards(instance *webspher
 	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) pullLibertyVersionFromManifest(reqLogger logr.Logger, instance *webspherelibertyv1.WebSphereLibertyApplication, applicationImage string, image imagev1.DockerImageReference, namespace string) (string, string, error) {
+func (r *ReconcileWebSphereLiberty) pullLibertyVersionFromManifest(recCtx context.Context, reqLogger logr.Logger, instance *webspherelibertyv1.WebSphereLibertyApplication, applicationImage string, image imagev1.DockerImageReference, namespace string) (string, string, error) {
 	name, id, hasID := imageutil.SplitImageStreamImage(applicationImage)
 	if !hasID {
 		noIdName, tag, hasTag := imageutil.SplitImageStreamTag(applicationImage)
@@ -1178,7 +1183,7 @@ func (r *ReconcileWebSphereLiberty) pullLibertyVersionFromManifest(reqLogger log
 	}
 	// To prevent leaking credentials, don't attempt to pull an image that is not namespace bounded
 	if namespace != "" {
-		idOrDigest, imageMetadata, err := r.getContainerImageMetadata(reqLogger, instance, image)
+		idOrDigest, imageMetadata, err := r.getContainerImageMetadata(recCtx, reqLogger, instance, image)
 		if err == nil {
 			// Get liberty version from the labels
 			libertyVersion := libertyimage.ParseLibertyVersionFromContainerImageMetadata(imageMetadata)

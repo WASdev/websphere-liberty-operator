@@ -56,7 +56,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 		encryptionSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
 		if err == nil {
 			// Is the password encryption key field in the Secret valid?
-			if encryptionKey := string(encryptionSecret.Data["passwordEncryptionKey"]); len(encryptionKey) > 0 {
+			if encryptionKey := encryptionSecret.Data["passwordEncryptionKey"]; len(encryptionKey) > 0 {
 				// non-leaders should still be able to pass this process to return the encryption secret name
 				if thisInstanceIsLeader {
 					// Create the Liberty config that will mount into the pods
@@ -285,7 +285,7 @@ func (r *ReconcileWebSphereLiberty) getSecret(instance *wlv1.WebSphereLibertyApp
 }
 
 // Creates the Liberty XML to mount the password encryption keys Secret into the application pods
-func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey string) error {
+func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey []byte) error {
 	if len(encryptionKey) == 0 {
 		return fmt.Errorf("a password encryption key was not specified")
 	}

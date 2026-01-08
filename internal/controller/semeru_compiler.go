@@ -49,7 +49,7 @@ const (
 )
 
 // Create the Deployment and Service objects for a Semeru Compiler used by a Websphere Liberty Application
-func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
+func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(recCtx context.Context, wlva *wlv1.WebSphereLibertyApplication) (error, string, bool) {
 	compilerMeta := metav1.ObjectMeta{
 		Name:      getSemeruCompilerNameWithGeneration(wlva),
 		Namespace: wlva.GetNamespace(),
@@ -88,11 +88,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 
 		//create certmanager issuer and certificate if necessary
 		if cmPresent {
-			err = r.GenerateCMIssuer(wlva.Namespace, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
+			err = r.GenerateCMIssuer(recCtx, wlva.Namespace, OperatorShortName, "WebSphere Liberty Operator", OperatorName)
 			if err != nil {
 				return err, "Failed to reconcile Certificate Issuer", false
 			}
-			err = r.reconcileSemeruCMCertificate(wlva)
+			err = r.reconcileSemeruCMCertificate(recCtx, wlva)
 			if err != nil {
 				return err, "Failed to reconcile Semeru Compiler Certificate", false
 			}
@@ -110,7 +110,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		//Deployment
 		semeruDeployment := &appsv1.Deployment{ObjectMeta: compilerMeta}
 		err = r.CreateOrUpdate(semeruDeployment, wlva, func() error {
-			r.reconcileSemeruDeployment(wlva, semeruDeployment)
+			r.reconcileSemeruDeployment(recCtx, wlva, semeruDeployment)
 			return nil
 		})
 		if err != nil {
@@ -254,7 +254,7 @@ func (r *ReconcileWebSphereLiberty) deleteCompletedSemeruInstances(wlva *wlv1.We
 	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
+func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(recCtx context.Context, wlva *wlv1.WebSphereLibertyApplication, deploy *appsv1.Deployment) {
 	deploy.Labels = getLabels(wlva)
 	deploy.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
 
@@ -408,7 +408,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	// Copy the securityContext from the WebSphereLibertyApplcation CR
 	deploy.Spec.Template.Spec.Containers[0].SecurityContext = utils.GetSecurityContext(wlva)
 
-	wlutils.AddSecretResourceVersionAsEnvVar(&deploy.Spec.Template, wlva, r.GetClient(), wlva.Status.SemeruCompiler.TLSSecretName, "TLS")
+	wlutils.AddSecretResourceVersionAsEnvVar(recCtx, &deploy.Spec.Template, wlva, r.GetClient(), wlva.Status.SemeruCompiler.TLSSecretName, "TLS")
 }
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
@@ -437,7 +437,7 @@ func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyAppl
 
 }
 
-func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebSphereLibertyApplication) error {
+func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(recCtx context.Context, wlva *wlv1.WebSphereLibertyApplication) error {
 	svcCert := &certmanagerv1.Certificate{}
 	svcCert.Name = getSemeruCompilerNameWithGeneration(wlva)
 	svcCert.Namespace = wlva.GetNamespace()
@@ -465,7 +465,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 			svcCert.Spec.IssuerRef.Name = customIssuer.Name
 		}
 
-		rVersion, _ := utils.GetIssuerResourceVersion(r.GetClient(), svcCert)
+		rVersion, _ := utils.GetIssuerResourceVersion(recCtx, r.GetClient(), svcCert)
 		if svcCert.Spec.SecretTemplate == nil {
 			svcCert.Spec.SecretTemplate = &certmanagerv1.CertificateSecretTemplate{
 				Annotations: map[string]string{},
