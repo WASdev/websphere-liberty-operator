@@ -746,17 +746,17 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 
 	ssoEnv := []corev1.EnvVar{}
 
-	var secretKeys []string
+	var ssoKeys []string
 	for k := range ssoSecret.Data { //ranging over a map returns it's keys.
 		if strings.Contains(k, autoregFragment) { // skip -autoreg-
 			continue
 		}
-		secretKeys = append(secretKeys, k)
+		ssoKeys = append(ssoKeys, k)
 	}
-	sort.Strings(secretKeys)
+	sort.Strings(ssoKeys)
 
 	// append all the values in the secret into the env vars.
-	for _, k := range secretKeys {
+	for _, k := range ssoKeys {
 		ssoEnv = append(ssoEnv, corev1.EnvVar{
 			Name: ssoEnvVarPrefix + normalizeEnvVariableName(k),
 			ValueFrom: &corev1.EnvVarSource{
