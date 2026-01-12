@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"strings"
 	"sync"
@@ -47,13 +48,13 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(recCtx contex
 		}
 		if thisInstanceIsLeader {
 			// Is there a password encryption key to duplicate for internal use?
-			if err := r.mirrorEncryptionKeySecretState(instance, passwordEncryptionMetadata); err != nil {
+			if err := r.mirrorEncryptionKeySecretState(recCtx, instance, passwordEncryptionMetadata); err != nil {
 				return "Failed to process the password encryption key Secret", "", "", err
 			}
 		}
 
 		// Does the namespace already have a password encryption key sharing Secret?
-		encryptionSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		encryptionSecret, _, err := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 		if err == nil {
 			// Is the password encryption key field in the Secret valid?
 			if encryptionKey := encryptionSecret.Data["passwordEncryptionKey"]; len(encryptionKey) > 0 {
@@ -66,7 +67,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(recCtx contex
 					}
 				} else {
 					// non-leaders should yield for the password encryption leader to mirror the encryption key's state
-					if !r.encryptionKeySecretMirrored(instance, passwordEncryptionMetadata) {
+					if !r.encryptionKeySecretMirrored(recCtx, instance, passwordEncryptionMetadata) {
 						return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key Secret for the namespace '%s'.", leaderName, instance.Namespace)
 					}
 				}
@@ -160,65 +161,64 @@ func (r *ReconcileWebSphereLiberty) isPasswordEncryptionKeySharingEnabled(instan
 	return instance.GetManagePasswordEncryption() != nil && *instance.GetManagePasswordEncryption()
 }
 
-func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
+func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		_, err := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		_, err := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 		return err == nil
 	}
 	return false
 }
 
-func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, bool, error) {
+func (r *ReconcileWebSphereLiberty) getInternalPasswordEncryptionKeyState(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) ([]byte, []byte, bool, error) {
 	if !r.isPasswordEncryptionKeySharingEnabled(instance) {
-		return "", "", false, nil
+		return []byte{}, []byte{}, false, nil
 	}
-	secret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	internalEncryptionKey, _, err := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	if err != nil {
-		return "", "", true, err
+		return []byte{}, []byte{}, true, err
 	}
-	passwordEncryptionKey := ""
-	encryptionSecretLastRotation := ""
-	if key, found := secret.Data["passwordEncryptionKey"]; found {
-		passwordEncryptionKey = string(key)
+	passwordEncryptionKey, passwordEncryptionKeyFound := internalEncryptionKey.Data["passwordEncryptionKey"]
+	if !passwordEncryptionKeyFound {
+		return []byte{}, []byte{}, true, fmt.Errorf("The internal password encryption key is missing field 'passwordEncryptionKey'")
 	}
-	if lastRotation, found := secret.Data["lastRotation"]; found {
-		encryptionSecretLastRotation = string(lastRotation)
+	encryptionSecretLastRotation, encryptionSecretLastRotationFound := internalEncryptionKey.Data["lastRotation"]
+	if !encryptionSecretLastRotationFound {
+		return []byte{}, []byte{}, true, fmt.Errorf("The internal password encryption key is missing field 'lastRotation'")
 	}
-	// TODO: cover when secret does not contain data key-value pairs
 	return passwordEncryptionKey, encryptionSecretLastRotation, true, nil
 }
 
 // Returns the Secret that contains the password encryption key used internally by the operator
-func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
-	return r.getSecret(instance, lutils.LocalPasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name+"-internal")
+func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, *sync.WaitGroup, error) {
+	return r.getWaitableSecret(recCtx, instance, lutils.LocalPasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name+"-internal")
 }
 
 // Returns the Secret that contains the password encryption key provided by the user
-func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
-	return r.getSecret(instance, lutils.PasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name)
+func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, error) {
+	return r.getSecret(recCtx, instance, lutils.PasswordEncryptionKeyRootName+passwordEncryptionMetadata.Name)
 }
 
-func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
-	userEncryptionSecret, err := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
+	userEncryptionSecret, err := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
 	}
-	internalEncryptionSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	internalEncryptionSecret, _, err := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
 	}
-	internalPasswordEncryptionKey := string(internalEncryptionSecret.Data["passwordEncryptionKey"])
-	userPasswordEncryptionKey := string(userEncryptionSecret.Data["passwordEncryptionKey"])
-	return userPasswordEncryptionKey != "" && internalPasswordEncryptionKey == userPasswordEncryptionKey
+	internalPasswordEncryptionKey := internalEncryptionSecret.Data["passwordEncryptionKey"]
+	userPasswordEncryptionKey := userEncryptionSecret.Data["passwordEncryptionKey"]
+	return len(userPasswordEncryptionKey) > 0 && subtle.ConstantTimeCompare(internalPasswordEncryptionKey, userPasswordEncryptionKey) == 1
 }
 
-func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
-	userEncryptionSecret, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
+	userEncryptionSecret, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the userEncryptionSecret
 	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
 		return userEncryptionSecretErr
 	}
-	internalEncryptionSecret, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	internalEncryptionSecret, internalEncryptionSecretWaitGroup, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the internalEncryptionSecret
 	if internalEncryptionSecretErr != nil && !kerrors.IsNotFound(internalEncryptionSecretErr) {
 		return internalEncryptionSecretErr
@@ -237,7 +237,7 @@ func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv
 
 	// Case 2: user encryption secret exists, no internal secret: Create internalEncryptionSecret
 	// Case 3: user encryption secret exists, internal secret exists: Update internalEncryptionSecret
-	return r.CreateOrUpdate(internalEncryptionSecret, nil, func() error {
+	return r.TrackedCreateOrUpdate(internalEncryptionSecret, nil, func() error {
 		if internalEncryptionSecret.Data == nil {
 			internalEncryptionSecret.Data = make(map[string][]byte)
 		}
@@ -246,22 +246,30 @@ func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv
 		}
 		internalPasswordEncryptionKey := internalEncryptionSecret.Data["passwordEncryptionKey"]
 		userPasswordEncryptionKey := userEncryptionSecret.Data["passwordEncryptionKey"]
-		if string(internalPasswordEncryptionKey) != string(userPasswordEncryptionKey) {
-			internalEncryptionSecret.Data["passwordEncryptionKey"] = userPasswordEncryptionKey
+		if subtle.ConstantTimeCompare(internalPasswordEncryptionKey, userPasswordEncryptionKey) != 1 {
+			if len(internalPasswordEncryptionKey) > 0 {
+				clear(internalEncryptionSecret.Data["passwordEncryptionKey"])
+			}
+			if len(internalEncryptionSecret.Data["lastRotation"]) > 0 {
+				clear(internalEncryptionSecret.Data["lastRotation"])
+			}
+			passwordEncryptionKey := make([]byte, len(userEncryptionSecret.Data["passwordEncryptionKey"]))
+			copy(passwordEncryptionKey, userEncryptionSecret.Data["passwordEncryptionKey"])
+			internalEncryptionSecret.Data["passwordEncryptionKey"] = passwordEncryptionKey
 			internalEncryptionSecret.Data["lastRotation"] = []byte(fmt.Sprint(time.Now().Unix()))
 		}
 		return nil
-	})
+	}, internalEncryptionSecretWaitGroup)
 }
 
 // Deletes the mirrored encryption key secret if the initial encryption key secret no longer exists
-func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
-	_, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
+	_, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the userEncryptionSecret
 	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
 		return userEncryptionSecretErr
 	}
-	internalEncryptionSecret, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	internalEncryptionSecret, _, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the internalEncryptionSecret
 	if internalEncryptionSecretErr != nil && !kerrors.IsNotFound(internalEncryptionSecretErr) {
 		return internalEncryptionSecretErr
@@ -275,10 +283,15 @@ func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(instance *
 	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) getSecret(instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, error) {
-	secret := &corev1.Secret{}
-	secret.Name = secretName
-	secret.Namespace = instance.GetNamespace()
+func (r *ReconcileWebSphereLiberty) getWaitableSecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, *sync.WaitGroup, error) {
+	secret, wg := common.NewWaitableSecret(recCtx, secretName, instance.GetNamespace())
+	secret.Labels = lutils.GetRequiredLabels(secret.Name, "")
+	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
+	return secret, wg, err
+}
+
+func (r *ReconcileWebSphereLiberty) getSecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, error) {
+	secret := common.NewSecret(recCtx, secretName, instance.GetNamespace())
 	secret.Labels = lutils.GetRequiredLabels(secret.Name, "")
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	return secret, err

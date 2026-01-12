@@ -215,7 +215,7 @@ func TestCustomizeEnvSSO(t *testing.T) {
 	}
 	wl := createWebSphereLibertyApp(name, namespace, spec)
 	oputils.CustomizePodSpec(pts, wl)
-	CustomizeEnvSSO(pts, wl, rb.GetClient(), false)
+	CustomizeEnvSSO(context.TODO(), pts, wl, rb.GetClient(), false)
 
 	podEnv := envSliceToMap(pts.Spec.Containers[0].Env, data, t)
 	tests := []Test{

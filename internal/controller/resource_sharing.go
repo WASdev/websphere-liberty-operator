@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -31,7 +32,7 @@ import (
 )
 
 // Validates the resource decision tree YAML and generates the leader tracking state (Secret) for maintaining multiple shared resources
-func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (lutils.LeaderTrackerMetadataList, error) {
+func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, leaderTrackerType string) (lutils.LeaderTrackerMetadataList, error) {
 	treeMap, replaceMap, err := tree.ParseDecisionTree(leaderTrackerType, nil)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func (r *ReconcileWebSphereLiberty) reconcileResourceTrackingState(instance *wlv
 
 	// return the metadata specific to the operator version, instance configuration, and shared resource being reconciled
 	if leaderTrackerType == LTPA_RESOURCE_SHARING_FILE_NAME {
-		ltpaMetadataList, err := r.reconcileLTPAMetadata(instance, treeMap, latestOperandVersion, nil)
+		ltpaMetadataList, err := r.reconcileLTPAMetadata(recCtx, instance, treeMap, latestOperandVersion, nil)
 		if err != nil {
 			return nil, err
 		}

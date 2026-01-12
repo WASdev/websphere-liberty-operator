@@ -22,12 +22,14 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	gherrors "github.com/pkg/errors"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	gherrors "github.com/pkg/errors"
 )
 
 type RegisterData struct {
@@ -37,19 +39,19 @@ type RegisterData struct {
 	ProviderId              string
 	Scopes                  string
 	GrantTypes              string
-	InitialAccessToken      string
-	InitialClientId         string
-	InitialClientSecret     string
+	InitialAccessToken      []byte
+	InitialClientId         []byte
+	InitialClientSecret     []byte
 	RegistrationURL         string
 	InsecureTLS             bool
 }
 
-func RegisterWithOidcProvider(regData RegisterData) (string, string, error) {
+func RegisterWithOidcProvider(regData RegisterData) ([]byte, []byte, error) {
 	return doRegister(regData)
 }
 
 // register with oidc provider and create a new client.  return the new client id and client secret, or an error.
-func doRegister(rdata RegisterData) (string, string, error) {
+func doRegister(rdata RegisterData) ([]byte, []byte, error) {
 	// process:
 	//  1) call the provider's discovery endpoint to find the token and registration urls.
 	//  2) If we do not have an initial access token,
@@ -58,26 +60,26 @@ func doRegister(rdata RegisterData) (string, string, error) {
 
 	registrationURL, tokenURL, err := getURLs(rdata.DiscoveryURL, rdata.InsecureTLS, rdata.ProviderId)
 	if err != nil {
-		return "", "", err
+		return []byte{}, []byte{}, err
 	}
 	if tokenURL == "" {
-		return "", "", gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain token endpoint from discovery endpoint.")
+		return []byte{}, []byte{}, gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain token endpoint from discovery endpoint.")
 	}
 
 	// ICI: if we don't have initial token, use client and secret to go get one.
 	var token = rdata.InitialAccessToken
-	if token == "" && (rdata.InitialClientId == "" || rdata.InitialClientSecret == "") {
+	if len(token) == 0 && (len(rdata.InitialClientId) == 0 || len(rdata.InitialClientSecret) == 0) {
 		id := rdata.ProviderId
-		return "", "", gherrors.New("Provider " + id + ": registration data for Single sign-on (SSO) is missing required fields," +
+		return []byte{}, []byte{}, gherrors.New("Provider " + id + ": registration data for Single sign-on (SSO) is missing required fields," +
 			" one or more of " + id + "-autoreg-initialAccessToken, " + id + "-autoreg-initialClientId, or " + id + "-autoreg-initialClientSecret.")
 	}
-	if token == "" {
+	if len(token) == 0 {
 		rtoken, err := requestAccessToken(rdata, tokenURL)
 		if err != nil {
-			return "", "", err
+			return []byte{}, []byte{}, err
 		}
-		if rtoken == "" {
-			return "", "", gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain access token for registration.")
+		if len(rtoken) == 0 {
+			return []byte{}, []byte{}, gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain access token for registration.")
 		}
 		rdata.InitialAccessToken = rtoken
 	}
@@ -87,62 +89,61 @@ func doRegister(rdata RegisterData) (string, string, error) {
 	}
 	// registrationURL should be in discovery data but allow it to be supplied manually if not.
 	if registrationURL == "" {
-		return "", "", gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain registration URL - specify registrationURL in registration data secret.")
+		return []byte{}, []byte{}, gherrors.New("Provider " + rdata.ProviderId + ": failed to obtain registration URL - specify registrationURL in registration data secret.")
 	}
 
 	registrationRequestJson := buildRegistrationRequestJson(rdata)
 
-	registrationResponse, err := sendHTTPRequest(registrationRequestJson, registrationURL, "POST", "", rdata.InitialAccessToken, rdata.InsecureTLS, rdata.ProviderId)
+	registrationResponse, err := sendHTTPRequest(registrationRequestJson, registrationURL, "POST", []byte{}, rdata.InitialAccessToken, rdata.InsecureTLS, rdata.ProviderId)
 	if err != nil {
-		return "", "", err
+		return []byte{}, []byte{}, err
 	}
 
 	// extract id and secret from body
 	id, secret, err := parseRegistrationResponseJson(registrationResponse, rdata.ProviderId)
 	if err != nil {
-		return "", "", err
+		return []byte{}, []byte{}, err
 	}
 	return id, secret, nil
 }
 
-func requestAccessToken(rdata RegisterData, tokenURL string) (string, error) {
+func requestAccessToken(rdata RegisterData, tokenURL string) ([]byte, error) {
 	tokenRequestContent := "grant_type=client_credentials&scope=" + getScopes(rdata)
 	tokenResponse, err := sendHTTPRequest(tokenRequestContent, tokenURL, "POST", rdata.InitialClientId, rdata.InitialClientSecret, rdata.InsecureTLS, rdata.ProviderId)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 	token, err := parseTokenResponse(tokenResponse, rdata.ProviderId)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 	return token, nil
-
 }
 
 // parse token response and return token
-func parseTokenResponse(respJson string, providerId string) (string, error) {
+func parseTokenResponse(respJson []byte, providerId string) ([]byte, error) {
 	type token struct {
-		Access_token string
+		Access_token json.RawMessage
 	}
 	var cdata token
-	err := json.Unmarshal([]byte(respJson), &cdata)
+	err := json.Unmarshal(respJson, &cdata)
 	if err != nil {
-		return "", errors.New("Provider " + providerId + ": error parsing token response: " + err.Error() + " Data: " + respJson)
+		return []byte{}, errors.New("Provider " + string(providerId) + ": error parsing token response: " + err.Error() + " Data: " + string(respJson))
 	}
 	return cdata.Access_token, nil
 }
 
 // parse the response and return the client id and client secret
-func parseRegistrationResponseJson(respJson string, providerId string) (string, string, error) {
+func parseRegistrationResponseJson(respJson []byte, providerId string) ([]byte, []byte, error) {
 	type idsecret struct {
-		Client_id     string
-		Client_secret string
+		Client_id     json.RawMessage
+		Client_secret json.RawMessage
 	}
 
 	var cdata idsecret
 	err := json.Unmarshal([]byte(respJson), &cdata)
 	if err != nil {
-		return "", "", errors.New("Provider " + providerId + ": error parsing registration response: " + err.Error() + " Data: " + respJson)
+		return []byte{}, []byte{}, errors.New("Provider " + providerId + ": error parsing registration response: " + err.Error() + " Data: " + string(respJson))
 	}
 	return cdata.Client_id, cdata.Client_secret, nil
 }
@@ -157,7 +158,7 @@ func buildRegistrationRequestJson(rdata RegisterData) string {
 
 	// IBM Security Verify needs some special things in the request.
 	isvAttribs := ""
-	if rdata.InitialClientId != "" {
+	if len(rdata.InitialClientId) > 0 {
 		isvAttribs = "\"enforce_pkce\":false," +
 			"\"all_users_entitled\":true," +
 			"\"consent_action\":\"never_prompt\","
@@ -212,7 +213,7 @@ func getRedirectUri(rdata RegisterData) string {
 // return an error if we don't get back two valid url's.
 // todo: more error checking needed to make that true?
 func getURLs(discoveryURL string, insecureTLS bool, providerId string) (string, string, error) {
-	discoveryResult, err := sendHTTPRequest("", discoveryURL, "GET", "", "", insecureTLS, providerId)
+	discoveryResult, err := sendHTTPRequest("", discoveryURL, "GET", []byte{}, []byte{}, insecureTLS, providerId)
 	if err != nil {
 		return "", "", err
 	}
@@ -227,13 +228,13 @@ func getURLs(discoveryURL string, insecureTLS bool, providerId string) (string, 
 
 	var regdata regEp
 	var tokendata tokenEp
-	err = json.Unmarshal([]byte(discoveryResult), &regdata)
+	err = json.Unmarshal(discoveryResult, &regdata)
 	if err != nil {
-		return "", "", errors.New("Provider " + providerId + ": error unmarshalling data from discovery endpoint: " + err.Error() + " Data: " + discoveryResult)
+		return "", "", errors.New("Provider " + string(providerId) + ": error unmarshalling data from discovery endpoint: " + err.Error() + " Data: " + string(discoveryResult))
 	}
-	err = json.Unmarshal([]byte(discoveryResult), &tokendata)
+	err = json.Unmarshal(discoveryResult, &tokendata)
 	if err != nil {
-		return "", "", errors.New("Provider " + providerId + ": error unmarshalling data from discovery endpoint: " + err.Error() + " Data: " + discoveryResult)
+		return "", "", errors.New("Provider " + string(providerId) + ": error unmarshalling data from discovery endpoint: " + err.Error() + " Data: " + string(discoveryResult))
 	}
 
 	return regdata.Registration_endpoint, tokendata.Token_endpoint, nil
@@ -243,17 +244,16 @@ func getURLs(discoveryURL string, insecureTLS bool, providerId string) (string, 
 // content to send can be an empty string. Json will be detected. Method should be GET or POST.
 // if id is set, send id and passwordOrToken as basic auth header, otherwise send token as bearer auth header.
 // If error occurs, body will be "error".
-func sendHTTPRequest(content string, URL string, method string, id string, passwordOrToken string, insecureTLS bool, providerId string) (string, error) {
-
+func sendHTTPRequest(content string, URL string, method string, id []byte, passwordOrToken []byte, insecureTLS bool, providerId string) ([]byte, error) {
 	rootCAPool, _ := x509.SystemCertPool()
 	if rootCAPool == nil {
 		rootCAPool = x509.NewCertPool()
 	}
 
 	if !insecureTLS {
-		cert, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt")
+		cert, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt")
 		if err != nil {
-			return "", errors.New("Error reading TLS certificates: " + err.Error())
+			return []byte{}, errors.New("Error reading TLS certificates: " + err.Error())
 		}
 		rootCAPool.AppendCertsFromPEM(cert)
 	}
@@ -278,15 +278,15 @@ func sendHTTPRequest(content string, URL string, method string, id string, passw
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	}
 
-	if id != "" {
-		request.SetBasicAuth(id, passwordOrToken)
+	if len(id) > 0 {
+		request.SetBasicAuth(string(id), string(passwordOrToken))
 	} else {
-		if passwordOrToken != "" {
-			request.Header.Set("Authorization", "Bearer "+passwordOrToken)
+		if len(passwordOrToken) > 0 {
+			request.Header.Set("Authorization", "Bearer "+string(passwordOrToken))
 		}
 	}
 
-	const errorStr = "error"
+	errorStr := []byte("error")
 	var errorMsgPreamble = "Provider " + providerId + ": error occurred communicating with OIDC provider.  URL: " + URL + ": "
 	if err != nil {
 		return errorStr, errors.New(errorMsgPreamble + err.Error())
@@ -302,15 +302,14 @@ func sendHTTPRequest(content string, URL string, method string, id string, passw
 		return errorStr, errors.New(errorMsgPreamble + err.Error()) // timeout, conn reset, etc.
 	}
 
-	respBytes, err := ioutil.ReadAll(response.Body)
+	respBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return errorStr, errors.New(errorMsgPreamble + err.Error())
 	}
-	respString := string(respBytes)
 
 	// a successful registration usually has a 201 response code.
 	if response.StatusCode != 200 && response.StatusCode != 201 {
-		return errorStr, errors.New(errorMsgPreamble + response.Status + ". " + respString + ". Data sent was: " + content)
+		return errorStr, errors.New(errorMsgPreamble + response.Status + ". " + string(respBytes) + ". Data sent was: " + content)
 	}
-	return respString, nil
+	return respBytes, nil
 }

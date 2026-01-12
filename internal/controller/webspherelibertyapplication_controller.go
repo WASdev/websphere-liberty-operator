@@ -400,7 +400,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	var ltpaMetadataList *lutils.LTPAMetadataList
 	var ltpaKeysMetadata, ltpaConfigMetadata *lutils.LTPAMetadata
 	if r.isLTPAKeySharingEnabled(instance) {
-		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
+		leaderMetadataList, err := r.reconcileResourceTrackingState(recCtx, instance, LTPA_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
 			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
@@ -413,8 +413,8 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// Reconciles the shared password encryption key state for the instance namespace only if the shared key already exists
 	var passwordEncryptionMetadataList *lutils.PasswordEncryptionMetadataList
 	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{}
-	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
-		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+	if r.isUsingPasswordEncryptionKeySharing(recCtx, instance, passwordEncryptionMetadata) {
+		leaderMetadataList, err := r.reconcileResourceTrackingState(recCtx, instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
 			return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 		}
@@ -610,7 +610,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Create and manage the shared LTPA keys Secret if the feature is enabled
-	message, ltpaSecretName, ltpaKeysLastRotation, err := r.reconcileLTPAKeys(instance, ltpaKeysMetadata)
+	message, ltpaSecretName, ltpaKeysLastRotation, err := r.reconcileLTPAKeys(recCtx, instance, ltpaKeysMetadata)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
@@ -624,7 +624,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Using the LTPA keys and config metadata, create and manage the shared LTPA Liberty server XML if the feature is enabled
-	message, ltpaXMLSecretName, err := r.reconcileLTPAConfig(recCtx, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
+	message, ltpaXMLName, err := r.reconcileLTPAConfig(recCtx, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
@@ -670,7 +670,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			lutils.CustomizeLibertyAnnotations(&statefulSet.Spec.Template, instance)
 			lutils.CustomizeLicenseAnnotations(&statefulSet.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
-				err = lutils.CustomizeEnvSSO(&statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
+				err = lutils.CustomizeEnvSSO(recCtx, &statefulSet.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
 					reqLogger.Error(err, "Failed to reconcile Single sign-on configuration")
 					return err
@@ -714,7 +714,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 				lutils.AddPodTemplateSpecAnnotation(&statefulSet.Spec.Template, lastRotationAnnotation)
 				// add LTPA config last rotation annotation
-				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
+				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}
@@ -767,7 +767,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			lutils.CustomizeLibertyAnnotations(&deploy.Spec.Template, instance)
 			lutils.CustomizeLicenseAnnotations(&deploy.Spec.Template, instance)
 			if instance.Spec.SSO != nil {
-				err = lutils.CustomizeEnvSSO(&deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
+				err = lutils.CustomizeEnvSSO(recCtx, &deploy.Spec.Template, instance, r.GetClient(), r.IsOpenShift())
 				if err != nil {
 					reqLogger.Error(err, "Failed to reconcile Single sign-on configuration")
 					return err
@@ -812,7 +812,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				}
 				lutils.AddPodTemplateSpecAnnotation(&deploy.Spec.Template, lastRotationAnnotation)
 				// add LTPA config last rotation annotation
-				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLSecretName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
+				configLastRotationAnnotation, err := lutils.GetSecretLastRotationLabel(recCtx, instance, r.GetClient(), ltpaXMLName, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)
 				if err != nil {
 					return err
 				}

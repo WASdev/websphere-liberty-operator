@@ -720,12 +720,16 @@ func createEnvVarSSO(loginID string, envSuffix string, value interface{}) *corev
 	}
 }
 
-func writeSSOSecretIfNeeded(client client.Client, ssoSecret *corev1.Secret, ssoSecretUpdates map[string][]byte) error {
+func writeSSOSecretIfNeeded(client client.Client, sso *corev1.Secret, ssoUpdates map[string][]byte, ssoWaitGroup *sync.WaitGroup) error {
 	var err error = nil
-	if len(ssoSecretUpdates) > 0 {
-		_, err = controllerutil.CreateOrUpdate(context.TODO(), client, ssoSecret, func() error {
-			for key, value := range ssoSecretUpdates {
-				ssoSecret.Data[key] = value
+	if len(ssoUpdates) > 0 {
+		if ssoWaitGroup != nil {
+			ssoWaitGroup.Add(1)
+			defer ssoWaitGroup.Done()
+		}
+		_, err = controllerutil.CreateOrUpdate(context.TODO(), client, sso, func() error {
+			for key, value := range ssoUpdates {
+				sso.Data[key] = value
 			}
 			return nil
 		})
@@ -734,12 +738,12 @@ func writeSSOSecretIfNeeded(client client.Client, ssoSecret *corev1.Secret, ssoS
 }
 
 // CustomizeEnvSSO Process the configuration for SSO login providers
-func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication, client client.Client, isOpenShift bool) error {
+func CustomizeEnvSSO(recCtx context.Context, pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibertyApplication, client client.Client, isOpenShift bool) error {
 	const ssoSecretNameSuffix = "-wlapp-sso"
 	const autoregFragment = "-autoreg-"
 	secretName := instance.GetName() + ssoSecretNameSuffix
-	ssoSecret := &corev1.Secret{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: instance.GetNamespace()}, ssoSecret)
+	ssoSecret, ssoSecretWaitGroup := common.NewWaitableSecret(recCtx, secretName, instance.GetNamespace())
+	err := client.Get(context.TODO(), types.NamespacedName{Name: ssoSecret.Name, Namespace: ssoSecret.Namespace}, ssoSecret)
 	if err != nil {
 		return errors.Wrapf(err, "Secret for Single sign-on (SSO) was not found. Create a secret named %q in namespace %q with the credentials for the login providers you selected in application image.", secretName, instance.GetNamespace())
 	}
@@ -784,7 +788,7 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 		ssoEnv = append(ssoEnv, *createEnvVarSSO("", "GITHUB_HOSTNAME", sso.Github.Hostname))
 	}
 
-	ssoSecretUpdates := make(map[string][]byte)
+	ssoUpdates := make(map[string][]byte)
 	for _, oidcClient := range sso.OIDC {
 		id := strings.ToUpper(oidcClient.ID)
 		if id == "" {
@@ -823,10 +827,10 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 			clientName = "oidc"
 		}
 		// if no clientId specified for this provider, try auto-registration
-		clientId := string(ssoSecret.Data[clientName+"-clientId"])
-		clientSecret := string(ssoSecret.Data[clientName+"-clientSecret"])
+		clientId := ssoSecret.Data[clientName+"-clientId"]
+		clientSecret := ssoSecret.Data[clientName+"-clientSecret"]
 
-		if isOpenShift && clientId == "" {
+		if isOpenShift && len(clientId) == 0 {
 			logf.Log.WithName("utils").Info("Processing OIDC registration for id :" + clientName)
 			theRoute := &routev1.Route{}
 			err = client.Get(context.TODO(), types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, theRoute)
@@ -847,9 +851,9 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 				DiscoveryURL:            oidcClient.DiscoveryEndpoint,
 				RouteURL:                "https://" + theRoute.Spec.Host,
 				RedirectToRPHostAndPort: sso.RedirectToRPHostAndPort,
-				InitialAccessToken:      string(ssoSecret.Data[prefix+"initialAccessToken"]),
-				InitialClientId:         string(ssoSecret.Data[prefix+"initialClientId"]),
-				InitialClientSecret:     string(ssoSecret.Data[prefix+"initialClientSecret"]),
+				InitialAccessToken:      ssoSecret.Data[prefix+"initialAccessToken"],
+				InitialClientId:         ssoSecret.Data[prefix+"initialClientId"],
+				InitialClientSecret:     ssoSecret.Data[prefix+"initialClientSecret"],
 				GrantTypes:              string(ssoSecret.Data[prefix+"grantTypes"]),
 				Scopes:                  string(ssoSecret.Data[prefix+"scopes"]),
 				InsecureTLS:             insecure,
@@ -858,20 +862,28 @@ func CustomizeEnvSSO(pts *corev1.PodTemplateSpec, instance *wlv1.WebSphereLibert
 
 			clientId, clientSecret, err = RegisterWithOidcProvider(regData)
 			if err != nil {
-				writeSSOSecretIfNeeded(client, ssoSecret, ssoSecretUpdates) // preserve any registrations that succeeded
+				writeSSOSecretIfNeeded(client, ssoSecret, ssoUpdates, ssoSecretWaitGroup) // preserve any registrations that succeeded
 				return errors.Wrapf(err, "Error occured during registration with OIDC for provider %s", clientName)
 			}
-			logf.Log.WithName("utils").Info("OIDC registration for id: " + clientName + " successful, obtained clientId: " + clientId)
-			ssoSecretUpdates[clientName+autoregFragment+"RegisteredOidcClientId"] = []byte(clientId)
-			ssoSecretUpdates[clientName+autoregFragment+"RegisteredOidcSecret"] = []byte(clientSecret)
-			ssoSecretUpdates[clientName+"-clientId"] = []byte(clientId)
-			ssoSecretUpdates[clientName+"-clientSecret"] = []byte(clientSecret)
+			logf.Log.WithName("utils").Info(fmt.Sprintf("OIDC registration for id: %s successful, obtained clientId: %s", clientName, clientId))
+			ssoRegisteredOIDCClientID := make([]byte, len(clientId))
+			copy(ssoRegisteredOIDCClientID, clientId)
+			ssoRegisteredOIDCSecret := make([]byte, len(clientSecret))
+			copy(ssoRegisteredOIDCSecret, clientSecret)
+			ssoClientID := make([]byte, len(clientId))
+			copy(ssoClientID, clientId)
+			ssoClientSecret := make([]byte, len(clientSecret))
+			copy(ssoClientSecret, clientSecret)
+			ssoUpdates[clientName+autoregFragment+"RegisteredOidcClientId"] = ssoRegisteredOIDCClientID
+			ssoUpdates[clientName+autoregFragment+"RegisteredOidcSecret"] = ssoRegisteredOIDCSecret
+			ssoUpdates[clientName+"-clientId"] = ssoClientID
+			ssoUpdates[clientName+"-clientSecret"] = ssoClientSecret
 
 			b := true
 			instance.Status.RouteAvailable = &b
 		} // end auto-reg
 	} // end for
-	err = writeSSOSecretIfNeeded(client, ssoSecret, ssoSecretUpdates)
+	err = writeSSOSecretIfNeeded(client, ssoSecret, ssoUpdates, ssoSecretWaitGroup)
 
 	if err != nil {
 		return errors.Wrapf(err, "Error occured when updating SSO secret")
@@ -1048,7 +1060,7 @@ func CustomizeEncryptionKeyXML(encryptionKeyXML *corev1.Secret, encryptionKey []
 	return nil
 }
 
-func CustomizeLTPAServerXML(ltpaServerXML *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword string) error {
+func CustomizeLTPAServerXML(ltpaServerXML *corev1.Secret, la *wlv1.WebSphereLibertyApplication, encryptedPassword []byte) error {
 	ltpaServerXML.Data = make(map[string][]byte)
 	managedLTPADir := strings.Replace(SecureMountPath, "/output", "${server.output.dir}", 1)
 	serverXML, err := os.ReadFile("internal/controller/assets/ltpa.xml")
@@ -1056,7 +1068,7 @@ func CustomizeLTPAServerXML(ltpaServerXML *corev1.Secret, la *wlv1.WebSphereLibe
 		return err
 	}
 	serverXMLString := bytes.Replace(serverXML, []byte("LTPA_KEYS_FILE_NAME"), []byte(managedLTPADir+"/"+LTPAKeysFileName), 1)
-	serverXMLString = bytes.Replace(serverXMLString, []byte("LTPA_KEYS_PASSWORD"), []byte(encryptedPassword), 1)
+	serverXMLString = bytes.Replace(serverXMLString, []byte("LTPA_KEYS_PASSWORD"), encryptedPassword, 1)
 	ltpaServerXML.Data[LTPAKeysXMLFileName] = serverXMLString
 	return nil
 }
