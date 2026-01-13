@@ -203,63 +203,63 @@ func (r *ReconcileWebSphereLiberty) encryptionKeySecretMirrored(recCtx context.C
 	if err != nil {
 		return false
 	}
-	internalEncryptionSecret, _, err := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
+	internalEncryption, _, err := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
 	}
-	internalPasswordEncryptionKey := internalEncryptionSecret.Data["passwordEncryptionKey"]
+	internalPasswordEncryptionKey := internalEncryption.Data["passwordEncryptionKey"]
 	userPasswordEncryptionKey := userEncryptionSecret.Data["passwordEncryptionKey"]
 	return len(userPasswordEncryptionKey) > 0 && subtle.ConstantTimeCompare(internalPasswordEncryptionKey, userPasswordEncryptionKey) == 1
 }
 
 func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) error {
-	userEncryptionSecret, userEncryptionSecretErr := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
+	userEncryption, userEncryptionErr := r.hasUserEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
 	// Error if there was an issue getting the userEncryptionSecret
-	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
-		return userEncryptionSecretErr
+	if userEncryptionErr != nil && !kerrors.IsNotFound(userEncryptionErr) {
+		return userEncryptionErr
 	}
-	internalEncryptionSecret, internalEncryptionSecretWaitGroup, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
-	// Error if there was an issue getting the internalEncryptionSecret
-	if internalEncryptionSecretErr != nil && !kerrors.IsNotFound(internalEncryptionSecretErr) {
-		return internalEncryptionSecretErr
+	internalEncryption, internalEncryptionWaitGroup, internalEncryptionErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
+	// Error if there was an issue getting the internalEncryption
+	if internalEncryptionErr != nil && !kerrors.IsNotFound(internalEncryptionErr) {
+		return internalEncryptionErr
 	}
 	// Case 0: no user encryption secret, no internal encryption secret: secrets already mirrored
-	// Case 1: no user encryption secret, internal encryption secret exists: so delete internalEncryptionSecret
-	if kerrors.IsNotFound(userEncryptionSecretErr) {
-		if kerrors.IsNotFound(internalEncryptionSecretErr) {
+	// Case 1: no user encryption secret, internal encryption secret exists: so delete internalEncryption
+	if kerrors.IsNotFound(userEncryptionErr) {
+		if kerrors.IsNotFound(internalEncryptionErr) {
 			return nil
 		} else {
-			if err := r.DeleteResource(internalEncryptionSecret); err != nil {
+			if err := r.DeleteResource(internalEncryption); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Case 2: user encryption secret exists, no internal secret: Create internalEncryptionSecret
-	// Case 3: user encryption secret exists, internal secret exists: Update internalEncryptionSecret
-	return r.TrackedCreateOrUpdate(internalEncryptionSecret, nil, func() error {
-		if internalEncryptionSecret.Data == nil {
-			internalEncryptionSecret.Data = make(map[string][]byte)
+	// Case 2: user encryption secret exists, no internal secret: Create internalEncryption
+	// Case 3: user encryption secret exists, internal secret exists: Update internalEncryption
+	return r.TrackedCreateOrUpdate(internalEncryption, nil, func() error {
+		if internalEncryption.Data == nil {
+			internalEncryption.Data = make(map[string][]byte)
 		}
-		if userEncryptionSecret.Data == nil {
-			userEncryptionSecret.Data = make(map[string][]byte)
+		if userEncryption.Data == nil {
+			userEncryption.Data = make(map[string][]byte)
 		}
-		internalPasswordEncryptionKey := internalEncryptionSecret.Data["passwordEncryptionKey"]
-		userPasswordEncryptionKey := userEncryptionSecret.Data["passwordEncryptionKey"]
+		internalPasswordEncryptionKey := internalEncryption.Data["passwordEncryptionKey"]
+		userPasswordEncryptionKey := userEncryption.Data["passwordEncryptionKey"]
 		if subtle.ConstantTimeCompare(internalPasswordEncryptionKey, userPasswordEncryptionKey) != 1 {
 			if len(internalPasswordEncryptionKey) > 0 {
-				clear(internalEncryptionSecret.Data["passwordEncryptionKey"])
+				clear(internalEncryption.Data["passwordEncryptionKey"])
 			}
-			if len(internalEncryptionSecret.Data["lastRotation"]) > 0 {
-				clear(internalEncryptionSecret.Data["lastRotation"])
+			if len(internalEncryption.Data["lastRotation"]) > 0 {
+				clear(internalEncryption.Data["lastRotation"])
 			}
-			passwordEncryptionKey := make([]byte, len(userEncryptionSecret.Data["passwordEncryptionKey"]))
-			copy(passwordEncryptionKey, userEncryptionSecret.Data["passwordEncryptionKey"])
-			internalEncryptionSecret.Data["passwordEncryptionKey"] = passwordEncryptionKey
-			internalEncryptionSecret.Data["lastRotation"] = []byte(fmt.Sprint(time.Now().Unix()))
+			passwordEncryptionKey := make([]byte, len(userEncryption.Data["passwordEncryptionKey"]))
+			copy(passwordEncryptionKey, userEncryption.Data["passwordEncryptionKey"])
+			internalEncryption.Data["passwordEncryptionKey"] = passwordEncryptionKey
+			internalEncryption.Data["lastRotation"] = []byte(fmt.Sprint(time.Now().Unix()))
 		}
 		return nil
-	}, internalEncryptionSecretWaitGroup)
+	}, internalEncryptionWaitGroup)
 }
 
 // Deletes the mirrored encryption key secret if the initial encryption key secret no longer exists
@@ -269,14 +269,14 @@ func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(recCtx con
 	if userEncryptionSecretErr != nil && !kerrors.IsNotFound(userEncryptionSecretErr) {
 		return userEncryptionSecretErr
 	}
-	internalEncryptionSecret, _, internalEncryptionSecretErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
-	// Error if there was an issue getting the internalEncryptionSecret
-	if internalEncryptionSecretErr != nil && !kerrors.IsNotFound(internalEncryptionSecretErr) {
-		return internalEncryptionSecretErr
+	internalEncryption, _, internalEncryptionErr := r.hasInternalEncryptionKeySecret(recCtx, instance, passwordEncryptionMetadata)
+	// Error if there was an issue getting the internalEncryption
+	if internalEncryptionErr != nil && !kerrors.IsNotFound(internalEncryptionErr) {
+		return internalEncryptionErr
 	}
-	// Case 1: no user encryption secret, internal encryption secret exists: so delete internalEncryptionSecret
-	if kerrors.IsNotFound(userEncryptionSecretErr) && !kerrors.IsNotFound(internalEncryptionSecretErr) {
-		if err := r.DeleteResource(internalEncryptionSecret); err != nil {
+	// Case 1: no user encryption secret, internal encryption secret exists: so delete internalEncryption
+	if kerrors.IsNotFound(userEncryptionSecretErr) && !kerrors.IsNotFound(internalEncryptionErr) {
+		if err := r.DeleteResource(internalEncryption); err != nil {
 			return err
 		}
 	}
