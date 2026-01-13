@@ -244,19 +244,11 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 	// Initialize LTPA resources
 	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{Name: ""}
 
-	ltpaXMLSecret := &corev1.Secret{}
-	ltpaXMLSecretRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
-	ltpaXMLSecret.Name = ltpaXMLSecretRootName + ltpaMetadata.Name
-	ltpaXMLSecret.Namespace = instance.GetNamespace()
-	ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
-
-	ltpaSecret := &corev1.Secret{}
-	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
-	ltpaSecret.Name = ltpaSecretRootName + ltpaMetadata.Name
-	ltpaSecret.Namespace = instance.GetNamespace()
-	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecretRootName, ltpaSecret.Name)
+	ltpaRootName := OperatorShortName + "-managed-ltpa"
+	ltpa, ltpaWaitGroup := common.NewWaitableSecret(recCtx, ltpaRootName+ltpaMetadata.Name, instance.GetNamespace())
+	ltpa.Labels = lutils.GetRequiredLabels(ltpaRootName, ltpa.Name)
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
-	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
+	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpa.Name, Namespace: ltpa.Namespace}, ltpa)
 	if err != nil && kerrors.IsNotFound(err) {
 		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
@@ -294,22 +286,22 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 		}
 		ltpaKeysDataDecoded = ltpaKeysDataDecoded[:n]
 
-		ltpaSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaMetadata.PathIndex
-		ltpaSecret.Data = make(map[string][]byte)
+		ltpa.Labels[lutils.ResourcePathIndexLabel] = ltpaMetadata.PathIndex
+		ltpa.Data = make(map[string][]byte)
 		if len(passwordEncryptionKey) > 0 && len(encryptionSecretLastRotation) > 0 {
-			ltpaSecret.Data["encryptionSecretLastRotation"] = encryptionSecretLastRotation
+			ltpa.Data["encryptionSecretLastRotation"] = encryptionSecretLastRotation
 		}
 		lastRotation := strconv.FormatInt(time.Now().Unix(), 10)
-		ltpaSecret.Data["lastRotation"] = []byte(lastRotation)
-		ltpaSecret.Data["rawPassword"] = []byte(password)
-		ltpaSecret.Data[lutils.LTPAKeysFileName] = ltpaKeysDataDecoded
+		ltpa.Data["lastRotation"] = []byte(lastRotation)
+		ltpa.Data["rawPassword"] = []byte(password)
+		ltpa.Data[lutils.LTPAKeysFileName] = ltpaKeysDataDecoded
 
-		if err := r.CreateOrUpdate(ltpaSecret, nil, func() error {
+		if err := r.TrackedCreateOrUpdate(ltpa, nil, func() error {
 			return nil
-		}); err != nil {
+		}, ltpaWaitGroup); err != nil {
 			return "", "", "", err
 		}
-		return ltpaSecret.Name, lastRotation, leaderName, nil
+		return ltpa.Name, lastRotation, leaderName, nil
 	} else if err != nil {
 		return "", "", "", err
 	}
@@ -317,8 +309,8 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 	if err != nil {
 		return "", "", leaderName, err
 	}
-	lastRotation := string(ltpaSecret.Data["lastRotation"])
-	return ltpaSecret.Name, lastRotation, leaderName, nil
+	lastRotation := string(ltpa.Data["lastRotation"])
+	return ltpa.Name, lastRotation, leaderName, nil
 }
 
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
