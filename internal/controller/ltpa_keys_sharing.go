@@ -265,17 +265,17 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 			return "", "", "", err
 		}
 
-		var passwordEncryptionKeyStringPtr *string
-		var passwordEncryptionKeyString string
+		var passEncryptionKeyStringPtr *string
+		var passEncryptionKeyString string
 		if len(passwordEncryptionKey) > 0 {
-			passwordEncryptionKeyString = string(passwordEncryptionKey)
-			passwordEncryptionKeyStringPtr = &passwordEncryptionKeyString
+			passEncryptionKeyString = string(passwordEncryptionKey)
+			passEncryptionKeyStringPtr = &passEncryptionKeyString
 		} else {
-			passwordEncryptionKeyStringPtr = nil
+			passEncryptionKeyStringPtr = nil
 		}
 
 		password := lutils.GetRandomAlphanumeric(15)
-		ltpaKeysData, err := createLTPAKeys(string(password), passwordEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
+		ltpaKeysData, err := createLTPAKeys(string(password), passEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 		if err != nil {
 			return "", "", "", err
 		}
@@ -434,16 +434,16 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, i
 			if encryptionKeySharingEnabled && err != nil {
 				return "", err
 			}
-			var passwordEncryptionKeyStringPtr *string
-			var passwordEncryptionKeyString string
+			var passEncryptionKeyStringPtr *string
+			var passEncryptionKeyString string
 			if len(passwordEncryptionKey) > 0 {
-				passwordEncryptionKeyString = string(passwordEncryptionKey)
-				passwordEncryptionKeyStringPtr = &passwordEncryptionKeyString
+				passEncryptionKeyString = string(passwordEncryptionKey)
+				passEncryptionKeyStringPtr = &passEncryptionKeyString
 			} else {
-				passwordEncryptionKeyStringPtr = nil
+				passEncryptionKeyStringPtr = nil
 			}
 
-			encodedPassword, err := encode(string(password), passwordEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
+			encodedPassword, err := encode(string(password), passEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 			if err != nil {
 				return "", err
 			}
