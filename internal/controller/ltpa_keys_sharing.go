@@ -265,17 +265,17 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 			return "", "", "", err
 		}
 
-		var passwordEncryptionKeyStringPtr *string
-		var passwordEncryptionKeyString string
+		var keyStringPtr *string
+		var keyString string
 		if len(passwordEncryptionKey) > 0 {
-			passwordEncryptionKeyString = string(passwordEncryptionKey)
-			passwordEncryptionKeyStringPtr = &passwordEncryptionKeyString
+			keyString = string(passwordEncryptionKey)
+			keyStringPtr = &keyString
 		} else {
-			passwordEncryptionKeyStringPtr = nil
+			keyStringPtr = nil
 		}
 
 		password := lutils.GetRandomAlphanumeric(15)
-		ltpaKeysData, err := createLTPAKeys(string(password), passwordEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
+		ltpaKeysData, err := createLTPAKeys(string(password), keyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 		if err != nil {
 			return "", "", "", err
 		}
@@ -434,16 +434,16 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, i
 			if encryptionKeySharingEnabled && err != nil {
 				return "", err
 			}
-			var passwordEncryptionKeyStringPtr *string
-			var passwordEncryptionKeyString string
+			var keyStringPtr *string
+			var keyString string
 			if len(passwordEncryptionKey) > 0 {
-				passwordEncryptionKeyString = string(passwordEncryptionKey)
-				passwordEncryptionKeyStringPtr = &passwordEncryptionKeyString
+				keyString = string(passwordEncryptionKey)
+				keyStringPtr = &keyString
 			} else {
-				passwordEncryptionKeyStringPtr = nil
+				keyStringPtr = nil
 			}
 
-			encodedPassword, err := encode(string(password), passwordEncryptionKeyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
+			encodedPassword, err := encode(string(password), keyStringPtr, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
 			if err != nil {
 				return "", err
 			}
