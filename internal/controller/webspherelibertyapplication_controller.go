@@ -609,12 +609,14 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
 
+	r.Log.Info("reconcileLTPAKeys (enter)")
 	// Create and manage the shared LTPA keys Secret if the feature is enabled
 	message, ltpaSecretName, ltpaKeysLastRotation, err := r.reconcileLTPAKeys(recCtx, instance, ltpaKeysMetadata)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
+	r.Log.Info("reconcileLTPAKeys (exit)")
 
 	// get the last key-related rotation time as a string to be used by reconcileLTPAConfig for non-leaders to yield (blocking) to the LTPA config leader
 	lastKeyRelatedRotation, err := lutils.GetMaxTime(passwordEncryptionKeyLastRotation, ltpaKeysLastRotation)
@@ -624,11 +626,13 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	}
 
 	// Using the LTPA keys and config metadata, create and manage the shared LTPA Liberty server XML if the feature is enabled
+	r.Log.Info("reconcileLTPAConfig (enter)")
 	message, ltpaXMLName, err := r.reconcileLTPAConfig(recCtx, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 	if err != nil {
 		reqLogger.Error(err, message)
 		return r.ManageErrorWithWarnings(err, common.StatusConditionTypeReconciled, instance, warnings)
 	}
+	r.Log.Info("reconcileLTPAConfig (exit)")
 
 	if instance.Spec.StatefulSet != nil {
 		// Delete Deployment if exists
