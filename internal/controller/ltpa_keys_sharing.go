@@ -206,9 +206,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAKeys(recCtx context.Context, in
 	ltpaSecretName := ""
 	ltpaKeysLastRotation := ""
 	if r.isLTPAKeySharingEnabled(instance) {
-		r.Log.Info("reconcileLTPAKeys.generateLTPAKeys (enter)")
 		ltpaSecretNameTemp, ltpaKeysLastRotationTemp, _, err := r.generateLTPAKeys(recCtx, instance, ltpaKeysMetadata)
-		r.Log.Info("reconcileLTPAKeys.generateLTPAKeys (exit)")
 		ltpaKeysLastRotation = ltpaKeysLastRotationTemp
 		ltpaSecretName = ltpaSecretNameTemp
 		if err != nil {
@@ -228,12 +226,10 @@ func (r *ReconcileWebSphereLiberty) reconcileLTPAConfig(recCtx context.Context, 
 	var err error
 	var ltpaXMLName string
 	if r.isLTPAKeySharingEnabled(instance) {
-		r.Log.Info("reconcileLTPAKeys.generateLTPAConfig (enter)")
 		ltpaXMLName, err = r.generateLTPAConfig(recCtx, instance, ltpaKeysMetadata, ltpaConfigMetadata, passwordEncryptionMetadata, ltpaKeysLastRotation, lastKeyRelatedRotation)
 		if err != nil {
 			return "Failed to generate the shared LTPA config Secret", ltpaXMLName, err
 		}
-		r.Log.Info("reconcileLTPAKeys.generateLTPAConfig (exit)")
 	} else {
 		err := r.RemoveLeaderTrackerReference(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
 		if err != nil {
