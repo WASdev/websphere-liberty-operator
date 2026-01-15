@@ -1343,7 +1343,7 @@ func GetRandomAlphanumeric(length int) []byte {
 func GetRandomLowerAlphanumericSuffix(length int) []byte {
 	b := make([]byte, length+1)
 	copy(b, "-")
-	for i := range len(b) - 1 {
+	for i := range length {
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterNums2))))
 		b[i+1] = letterNums[n.Int64()]
 	}
