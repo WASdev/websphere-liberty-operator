@@ -223,21 +223,25 @@ func init() {
 	DefaultLibertyOpConfig.Store(OpConfigPasswordEncodingType, "aes")
 }
 
-func NewMockSecret(recCtx context.Context, name, namespace string) *corev1.Secret {
+func NewMockSecret(recCtx context.Context, name, namespace string, cleanup bool) *corev1.Secret {
 	secretResource := common.NewSecretResource(name, namespace)
-	// go func() {
-	// 	<-recCtx.Done()
-	// 	secretResource.Clear(nil)
-	// }()
+	if cleanup {
+		go func() {
+			<-recCtx.Done()
+			secretResource.Clear(nil)
+		}()
+	}
 	return secretResource.GetSecret()
 }
 
-func NewMockWaitableSecret(recCtx context.Context, name, namespace string) (*corev1.Secret, *sync.WaitGroup) {
+func NewMockWaitableSecret(recCtx context.Context, name, namespace string, cleanup bool) (*corev1.Secret, *sync.WaitGroup) {
 	waitableSecretResource := common.NewWaitableSecretResource(name, namespace)
-	// go func() {
-	// 	<-recCtx.Done()
-	// 	waitableSecretResource.Clear(waitableSecretResource.GetWaitGroup())
-	// }()
+	if cleanup {
+		go func() {
+			<-recCtx.Done()
+			waitableSecretResource.Clear(waitableSecretResource.GetWaitGroup())
+		}()
+	}
 	return waitableSecretResource.GetSecret(), waitableSecretResource.GetWaitGroup()
 }
 
@@ -432,7 +436,7 @@ func CustomizeKnativeServiceLibertyEnv(ksvc *servingv1.Service, la *wlv1.WebSphe
 }
 
 func GetSecretLastRotationLabel(recCtx context.Context, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
-	secret := NewMockSecret(recCtx, secretName, la.GetNamespace())
+	secret := NewMockSecret(recCtx, secretName, la.GetNamespace(), la.GetManageCleanup())
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
@@ -448,7 +452,7 @@ func GetSecretLastRotationLabel(recCtx context.Context, la *wlv1.WebSphereLibert
 }
 
 func GetSecretLastRotationAsLabelMap(recCtx context.Context, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, sharedResourceName string) (map[string]string, error) {
-	secret := NewMockSecret(recCtx, secretName, la.GetNamespace())
+	secret := NewMockSecret(recCtx, secretName, la.GetNamespace(), la.GetManageCleanup())
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
@@ -459,7 +463,7 @@ func GetSecretLastRotationAsLabelMap(recCtx context.Context, la *wlv1.WebSphereL
 }
 
 func AddSecretResourceVersionAsEnvVar(recCtx context.Context, pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLibertyApplication, client client.Client, secretName string, envNamePrefix string) error {
-	secret := NewMockSecret(recCtx, secretName, la.GetNamespace())
+	secret := NewMockSecret(recCtx, secretName, la.GetNamespace(), la.GetManageCleanup())
 	err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	if err != nil {
 		return errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
@@ -760,7 +764,7 @@ func CustomizeEnvSSO(recCtx context.Context, pts *corev1.PodTemplateSpec, instan
 	const ssoSecretNameSuffix = "-wlapp-sso"
 	const autoregFragment = "-autoreg-"
 	secretName := instance.GetName() + ssoSecretNameSuffix
-	ssoSecret, ssoSecretWaitGroup := NewMockWaitableSecret(recCtx, secretName, instance.GetNamespace())
+	ssoSecret, ssoSecretWaitGroup := NewMockWaitableSecret(recCtx, secretName, instance.GetNamespace(), instance.GetManageCleanup())
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ssoSecret.Name, Namespace: ssoSecret.Namespace}, ssoSecret)
 	if err != nil {
 		return errors.Wrapf(err, "Secret for Single sign-on (SSO) was not found. Create a secret named %q in namespace %q with the credentials for the login providers you selected in application image.", secretName, instance.GetNamespace())

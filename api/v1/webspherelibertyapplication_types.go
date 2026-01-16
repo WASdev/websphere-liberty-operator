@@ -80,6 +80,8 @@ type WebSphereLibertyApplicationSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:order=9,type=spec,displayName="Manage Password Encryption",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	ManagePasswordEncryption *bool `json:"managePasswordEncryption,omitempty"`
 
+	ManageCleanup *bool `json:"manageCleanup,omitempty"`
+
 	// Enable management of LTPA key sharing amongst Liberty containers. Defaults to false.
 	// +operator-sdk:csv:customresourcedefinitions:order=10,type=spec,displayName="Manage LTPA",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
 	ManageLTPA *bool `json:"manageLTPA,omitempty"`
@@ -922,6 +924,13 @@ func (cr *WebSphereLibertyApplication) GetManagePasswordEncryption() *bool {
 // GetManageLTPA returns the LTPA key sharing status
 func (cr *WebSphereLibertyApplication) GetManageLTPA() *bool {
 	return cr.Spec.ManageLTPA
+}
+
+func (cr *WebSphereLibertyApplication) GetManageCleanup() bool {
+	if cr.Spec.ManageCleanup == nil {
+		return false
+	}
+	return *cr.Spec.ManageCleanup
 }
 
 // GetManageTLS returns deployment's node and pod affinity settings

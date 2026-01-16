@@ -1135,7 +1135,7 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(recCtx context.Con
 	wlappSecrets := []corev1.Secret{}
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
-		pullSecret = lutils.NewMockSecret(recCtx, *wlapp.GetPullSecret(), wlapp.GetNamespace())
+		pullSecret = lutils.NewMockSecret(recCtx, *wlapp.GetPullSecret(), wlapp.GetNamespace(), wlapp.GetManageCleanup())
 		if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecret.Name, Namespace: pullSecret.Namespace}, pullSecret); err != nil {
 			if kerrors.IsNotFound(err) {
 				reqLogger.Info("The instance pull secret specified does not exist")

@@ -283,14 +283,14 @@ func (r *ReconcileWebSphereLiberty) deleteMirroredEncryptionKeySecret(recCtx con
 }
 
 func (r *ReconcileWebSphereLiberty) getWaitableSecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, *sync.WaitGroup, error) {
-	secret, wg := lutils.NewMockWaitableSecret(recCtx, secretName, instance.GetNamespace())
+	secret, wg := lutils.NewMockWaitableSecret(recCtx, secretName, instance.GetNamespace(), instance.GetManageCleanup())
 	secret.Labels = lutils.GetRequiredLabels(secret.Name, "")
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	return secret, wg, err
 }
 
 func (r *ReconcileWebSphereLiberty) getSecret(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, error) {
-	secret := lutils.NewMockSecret(recCtx, secretName, instance.GetNamespace())
+	secret := lutils.NewMockSecret(recCtx, secretName, instance.GetNamespace(), instance.GetManageCleanup())
 	secret.Labels = lutils.GetRequiredLabels(secret.Name, "")
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
 	return secret, err
@@ -305,7 +305,7 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(rec
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionKeyXMLName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionKeyXML, encryptionKeyXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, encryptionKeyXMLName, instance.GetNamespace())
+	encryptionKeyXML, encryptionKeyXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, encryptionKeyXMLName, instance.GetNamespace(), instance.GetManageCleanup())
 	encryptionKeyXML.Labels = lutils.GetRequiredLabels(encryptionKeyXMLName, "")
 
 	if err := r.TrackedCreateOrUpdate(encryptionKeyXML, nil, func() error {
@@ -317,7 +317,7 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(rec
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXML, mountingXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, mountingXMLSecretName, instance.GetNamespace())
+	mountingXML, mountingXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, mountingXMLSecretName, instance.GetNamespace(), instance.GetManageCleanup())
 	mountingXML.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
 
 	if err := r.TrackedCreateOrUpdate(mountingXML, nil, func() error {

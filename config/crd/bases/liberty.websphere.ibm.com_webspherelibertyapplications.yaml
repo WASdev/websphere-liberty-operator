@@ -3463,6 +3463,8 @@ spec:
                 required:
                 - accept
                 type: object
+              manageCleanup:
+                type: boolean
               manageLTPA:
                 description: Enable management of LTPA key sharing amongst Liberty
                   containers. Defaults to false.
