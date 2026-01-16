@@ -245,7 +245,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{Name: ""}
 
 	ltpaRootName := OperatorShortName + "-managed-ltpa"
-	ltpa, ltpaWaitGroup := common.NewWaitableSecret(recCtx, ltpaRootName+ltpaMetadata.Name, instance.GetNamespace())
+	ltpa, ltpaWaitGroup := lutils.NewMockWaitableSecret(recCtx, ltpaRootName+ltpaMetadata.Name, instance.GetNamespace())
 	ltpa.Labels = lutils.GetRequiredLabels(ltpaRootName, ltpa.Name)
 	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpa.Name, Namespace: ltpa.Namespace}, ltpa)
@@ -316,15 +316,15 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(recCtx context.Context, ins
 // Generates the LTPA keys file and returns the name of the Secret storing its metadata
 func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, instance *wlv1.WebSphereLibertyApplication, ltpaKeysMetadata *lutils.LTPAMetadata, ltpaConfigMetadata *lutils.LTPAMetadata, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, ltpaKeysLastRotation string, lastKeyRelatedRotation string) (string, error) {
 	ltpaXMLRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
-	ltpaXML, ltpaXMLWaitGroup := common.NewWaitableSecret(recCtx, ltpaXMLRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
+	ltpaXML, ltpaXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, ltpaXMLRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
 	ltpaXML.Labels = lutils.GetRequiredLabels(ltpaXMLRootName, ltpaXML.Name)
 
 	ltpaMountXMLRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
-	ltpaMountXML, ltpaMountXMLWaitGroup := common.NewWaitableSecret(recCtx, ltpaMountXMLRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
+	ltpaMountXML, ltpaMountXMLWaitGroup := lutils.NewMockWaitableSecret(recCtx, ltpaMountXMLRootName+ltpaConfigMetadata.Name, instance.GetNamespace())
 	ltpaMountXML.Labels = lutils.GetRequiredLabels(ltpaMountXMLRootName, ltpaXML.Name)
 
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
-	ltpaSecret := common.NewSecret(recCtx, ltpaSecretRootName+ltpaKeysMetadata.Name, instance.GetNamespace())
+	ltpaSecret := lutils.NewMockSecret(recCtx, ltpaSecretRootName+ltpaKeysMetadata.Name, instance.GetNamespace())
 	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecretRootName, ltpaSecret.Name)
 	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil {
@@ -382,7 +382,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(recCtx context.Context, i
 		ltpaConfigRootName += "-password"
 		ltpaConfigName = ltpaConfigRootName + ltpaConfigMetadata.Name
 	}
-	ltpaConfig, ltpaConfigWaitGroup := common.NewWaitableSecret(recCtx, ltpaConfigName, instance.GetNamespace())
+	ltpaConfig, ltpaConfigWaitGroup := lutils.NewMockWaitableSecret(recCtx, ltpaConfigName, instance.GetNamespace())
 	ltpaConfig.Namespace = instance.GetNamespace()
 	ltpaConfig.Labels = lutils.GetRequiredLabels(ltpaConfigRootName, ltpaConfig.Name)
 	// If the LTPA password Secret does not exist, run the Kubernetes Job to generate the LTPA password Secret
