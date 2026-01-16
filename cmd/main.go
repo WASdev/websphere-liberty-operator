@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -33,6 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/OpenLiberty/open-liberty-operator/utils/socket"
 	"github.com/application-stacks/runtime-component-operator/common"
@@ -69,6 +73,10 @@ func init() {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string

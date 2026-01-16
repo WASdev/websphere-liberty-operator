@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: websphere-liberty-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: controller-manager-profile-service
+  namespace: system
+spec:
+  ports:
+    - name: http
+      port: 6060
+      protocol: TCP
+      targetPort: 6060
+  selector:
+    control-plane: controller-manager
