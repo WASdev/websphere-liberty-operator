@@ -3,8 +3,8 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.25
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20251124214343-4fee1b0d8d1e
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20251120112423-05f65c81aa36
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260211182028-07ecb2e20f8d
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260211145838-70e7fbd8c119
 	github.com/cert-manager/cert-manager v1.16.5
 	github.com/go-logr/logr v1.4.3
 	github.com/openshift/api v0.0.0-20250710004639-926605d3338b
@@ -65,6 +65,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -88,6 +89,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
+	github.com/zeebo/blake3 v0.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
