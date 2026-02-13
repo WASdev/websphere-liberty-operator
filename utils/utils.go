@@ -446,6 +446,9 @@ func AddSecretHashAsAnnotation(pts *corev1.PodTemplateSpec, la *wlv1.WebSphereLi
 	if err != nil {
 		return errors.Wrapf(err, "Secret %q was not found in namespace %q", secretName, la.GetNamespace())
 	}
+	if pts.ObjectMeta.Annotations == nil {
+		pts.ObjectMeta.Annotations = make(map[string]string)
+	}
 	pts.ObjectMeta.Annotations[la.GetGroupName()+"/secret-"+secretName] = rcoutils.HashData(secret.Data)
 	return nil
 }
