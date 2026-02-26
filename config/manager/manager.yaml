@@ -87,6 +87,7 @@ spec:
               - ALL
           seccompProfile:
             type: RuntimeDefault
+        ports: []
         resources:
           limits:
             cpu: 400m
