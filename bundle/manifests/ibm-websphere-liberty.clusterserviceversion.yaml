@@ -67,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2026-03-02T21:43:53Z"
+    createdAt: "2026-03-02T22:54:19Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.5.2'
@@ -386,9 +386,9 @@ spec:
           compilation requests from the application.
         displayName: Semeru Cloud Compiler
         path: semeruCloudCompiler
-      - description: Disables topology routing annotations from being added to the
-          Service. Defaults to false.
-        displayName: Disable Topology
+      - description: Disable topology aware routing annotations from being added to
+          the Service. Defaults to false.
+        displayName: Disable Topology Routing
         path: service.disableTopologyRouting
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
