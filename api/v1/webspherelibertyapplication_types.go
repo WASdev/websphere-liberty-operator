@@ -420,6 +420,10 @@ type WebSphereLibertyApplicationService struct {
 	// Configure service session affinity.
 	// +operator-sdk:csv:customresourcedefinitions:order=19,type=spec
 	SessionAffinity *WebSphereLibertyApplicationServiceSessionAffinity `json:"sessionAffinity,omitempty"`
+
+	// Disable topology aware routing annotations from being added to the Service. Defaults to false.
+	// +operator-sdk:csv:customresourcedefinitions:order=20,type=spec,displayName="Disable Topology Routing",xDescriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	DisableTopologyRouting *bool `json:"disableTopologyRouting,omitempty"`
 }
 
 // Configure service session affinity
@@ -928,6 +932,14 @@ func (cr *WebSphereLibertyApplication) GetManageLTPA() *bool {
 // GetManageTLS returns deployment's node and pod affinity settings
 func (cr *WebSphereLibertyApplication) GetManageTLS() *bool {
 	return cr.Spec.ManageTLS
+}
+
+// GetDisableTopologyRouting returns whether topology aware routing annotations are disabled for the service
+func (cr *WebSphereLibertyApplication) GetDisableTopologyRouting() *bool {
+	if cr.Spec.Service != nil {
+		return cr.Spec.Service.DisableTopologyRouting
+	}
+	return nil
 }
 
 // GetEnv returns slice of environment variables
