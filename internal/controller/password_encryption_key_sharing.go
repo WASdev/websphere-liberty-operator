@@ -104,7 +104,7 @@ func (r *ReconcileWebSphereLiberty) reconcileAESEncryptionKey(instance *wlv1.Web
 			} else {
 				// non-leaders should yield for the password encryption leader to mirror the encryption key's state
 				if !r.isSecretMirrored(instance, passwordEncryptionMetadata, r.hasUserAESEncryptionKeySecret, r.hasInternalAESEncryptionKeySecret, AESEncryptionKey) {
-					return "", "", "", fmt.Errorf("Waiting for OpenLibertyApplication instance '%s' to mirror the shared Password Encryption Key (aes) Secret for the namespace '%s'.", leaderName, instance.Namespace)
+					return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key (aes) Secret for the namespace '%s'.", leaderName, instance.Namespace)
 				}
 			}
 			return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
@@ -133,7 +133,7 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 			} else {
 				// non-leaders should yield for the password encryption leader to mirror the encryption key's state
 				if !r.isSecretMirrored(instance, passwordEncryptionMetadata, r.hasUserEncryptionKeySecret, r.hasInternalEncryptionKeySecret, PasswordEncryptionKey) {
-					return "", "", "", fmt.Errorf("Waiting for OpenLibertyApplication instance '%s' to mirror the shared Password Encryption Key (password) Secret for the namespace '%s'.", leaderName, instance.Namespace)
+					return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key (password) Secret for the namespace '%s'.", leaderName, instance.Namespace)
 				}
 			}
 			return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
