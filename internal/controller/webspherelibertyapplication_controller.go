@@ -366,7 +366,7 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 				r.AddStatusWarning(oputils.StatusWarning{
 					GetCondition: func(ba common.BaseComponent) bool {
 						libVersion := ba.GetStatus().GetReferences()[lutils.StatusReferenceLibertyVersion]
-						return libVersion == libertyimage.NilLibertyVersion || libVersion == ""
+						return libVersion == libertyimage.NilLibertyVersion
 					},
 					Message: failedToPullContainerMessage,
 				})
