@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260306042107-9a3cb814041b
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260306040218-27cdcb5746cc
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260309174614-fa19f6a6e988
 	github.com/cert-manager/cert-manager v1.19.4
 	github.com/go-logr/logr v1.4.3
 	github.com/openshift/api v0.0.0-20260304172252-b0658d22beea
@@ -65,7 +65,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -124,7 +123,6 @@ require (
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
 	knative.dev/networking v0.0.0-20260120131110-a7cdca238a0d // indirect
 	knative.dev/pkg v0.0.0-20260120122510-4a022ed9999a // indirect
-	lukechampine.com/blake3 v1.4.1 // indirect
 	sigs.k8s.io/gateway-api v1.4.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kustomize/api v0.20.1 // indirect
