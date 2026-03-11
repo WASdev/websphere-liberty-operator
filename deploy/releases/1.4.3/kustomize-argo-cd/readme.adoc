@@ -1,0 +1,9 @@
+= Installing the WebSphere Liberty Operator using kustomize with Argo CD
+
+The WebSphere Liberty Operator can be installed using kustomize with Argo CD to:
+
+* watch own namespace
+* watch another namespace
+* watch all namespaces in the cluster
+
+Follow the instructions in the link:++https://ibm.biz/wlo-install-kustomize-argo-cd++[documentation].
