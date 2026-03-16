@@ -1160,7 +1160,7 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 	wlappSecrets := []corev1.Secret{}
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
-		pullSecretString := *wlapp.GetPullSecret()
+		pullSecretString := strings.TrimSpace(*wlapp.GetPullSecret())
 		pullSecretNames := []string{}
 		if strings.Contains(pullSecretString, ",") {
 			pullSecretNames = strings.Split(pullSecretString, ",")
@@ -1168,17 +1168,20 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 			pullSecretNames = append(pullSecretNames, pullSecretString)
 		}
 		for _, pullSecretName := range pullSecretNames {
+			pullSecretName = strings.TrimSpace(pullSecretName)
 			pullSecret = &corev1.Secret{}
 			if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecretName, Namespace: wlapp.GetNamespace()}, pullSecret); err != nil {
 				if kerrors.IsNotFound(err) {
-					reqLogger.Info("The instance pull secret specified does not exist")
+					reqLogger.Info(fmt.Sprintf("The instance pull secret %s does not exist", pullSecretName))
 					pullSecret = nil
 				} else {
-					reqLogger.Error(err, "Failed to get the instance pull secret")
+					reqLogger.Error(err, fmt.Sprintf("Failed to get the instance pull secret %s", pullSecretName))
 					return "", nil, fmt.Errorf("Failed to get the instance pull secret: %v", err)
 				}
 			}
-			wlappSecrets = append(wlappSecrets, *pullSecret)
+			if pullSecret != nil {
+				wlappSecrets = append(wlappSecrets, *pullSecret)
+			}
 		}
 	}
 	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetContainerImageMetadata(context.TODO(), imageRef, pullSecret, false)
