@@ -1,11 +1,10 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.5.2
-Copyright 2023 - 2025 IBM Corporation and others
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.6.0
+Copyright 2023 - 2026 IBM Corporation and others
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 TABLE OF CONTENTS
 
 THIS IBM NOTICES FILE CONSISTS OF THE FOLLOWING SECTIONS:
-
 Apache-2.0
 BSD-2-Clause
 BSD-3-Clause
@@ -58,11 +57,11 @@ github.com/google/gofuzz
 github.com/google/martian
 github.com/google/martian/v3
 github.com/google/pprof
-github.com/google/shlex
 github.com/google/renameio
 github.com/go-openapi/jsonpointer
 github.com/go-openapi/jsonreference
 github.com/go-openapi/swag
+github.com/go-openapi/swag/jsonname
 github.com/inconshreveable/mousetrap
 github.com/klauspost/compress
 github.com/kylelemons/godebug
@@ -329,7 +328,7 @@ obtained under the BSD-2-Clause License:
 
 github.com/gorilla/websocket | Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 github.com/pkg/errors | Copyright (c) 2015 And Dave Cheney <dave@cheney.net>
-github.com/russross/blackfriday/v2
+github.com/russross/blackfriday/v2  Copyright © 2011 Russ Ross. All rights reserved.
 gopkg.in/check.v1 | Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>
 
 
@@ -400,9 +399,7 @@ github.com/rogpeppe/fastuuid | Copyright © 2014 And Roger Peppe
 github.com/rogpeppe/go-internal | Copyright (c) 2018 The Go Authors. All rights reserved.
 github.com/spaolacci/murmur3 | Copyright 2013 And Sébastien Paolacci.
 github.com/spf13/pflag | Copyright (c) 2012 Alex Ogier. All rights reserved.Copyright (c) 2012 The Go Authors. All rights reserved.
-go.starlark.net/| Copyright (c) 2017 The Bazel Authors.  All rights reserved.
 golang.org/x/crypto | Copyright (c) 2009 The Go Authors. All rights reserved.
-golang.org/x/exp | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/image | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/lint | Copyright (c) 2009 The Go Authors. All rights reserved.
 golang.org/x/mobile | Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -460,7 +457,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 END OF BSD 3-CLAUSE LICENSE NOTICES AND INFORMATION
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ECLIPSE PUBLIC LICENSE, VERSION 2
@@ -471,7 +467,6 @@ under the ECLIPSE PUBLIC LICENSE, VERSION 2:
 github.com/OpenLiberty/open-liberty-operator (https://github.com/OpenLiberty/open-liberty-operator/blob)
 
 END OF ECLIPSE PUBLIC LICENSE, VERSION 2 NOTICES AND INFORMATION
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ISC LICENSE
@@ -501,7 +496,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 END OF ISC LICENSE NOTICES AND INFORMATION
-
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 MOZILLA PUBLIC LICENSE, VERSION 2.0
@@ -532,7 +526,6 @@ github.com/benbjohnson/clock | Copyright (c) 2014 Ben Johnson
 github.com/beorn7/perks | Copyright (C) 2013 Blake Mizerany
 github.com/blang/semver | Copyright (c) 2014 Benedikt Lang <github at benediktlang.de>
 github.com/buger/jsonparser | Copyright (c) 2016 Leonid Bugaev
-github.com/cert-manager/cert-manager| Copyright (c)
 github.com/creack/pty  | Copyright (c) 2011 Keith Rarick
 github.com/cespare/xxhash | Copyright (c) 2016 Caleb Spare
 github.com/cespare/xxhash/v2 | Copyright (c) 2016 Caleb Spare
@@ -559,6 +552,7 @@ github.com/jpillora/backoff | Copyright (c) 2017 Jaime Pillora
 github.com/json-iterator/go | Copyright (c) 2016 json-iterator
 github.com/jstemmer/go-junit-report | Copyright (c) 2012 Joel Stemmer
 github.com/klauspost/compress | Copyright (c) 2019 Klaus Post. All rights reserved.
+github.com/klauspost/cpuid/v2 | Copyright (c) 2015 Klaus Post
 github.com/kisielk/errcheck | Copyright (c) 2013 Kamil Kisiel
 github.com/kisielk/gotool | Copyright (c) 2013 Kamil Kisiel
 github.com/konsorten/go-windows-terminal-sequences | Copyright (c) 2017 marvin + konsorten GmbH (open-source@konsorten.de)
@@ -592,6 +586,7 @@ gopkg.in/alecthomas/kingpin.v2 | Copyright (C) 2014 Alec Thomas
 gopkg.in/yaml.v2 | (Copyright not found)
 gopkg.in/yaml.v3 | (Copyright not found)
 honnef.co/go/tools | Copyright © 2018 And Michael Stapelberg and contributors
+lukechampine.com/blake3 | Copyright (c) 2020 Luke Champine
 sigs.k8s.io/yaml | Copyright (c) 2014 Sam Ghods
 
 
@@ -620,7 +615,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 END OF MIT LICENSE NOTICES AND INFORMATION
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.5.2 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.6.0 NOTICES FILE CONSISTS OF THE FOLLOWING 
 
 SECTIONS:
 
@@ -629,7 +624,6 @@ TABLE OF CONTENTS
 CC-BY-3.0  
 CC-BY-4.0  
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 CREATIVE COMMONS ATTRIBUTION 3.0
 
@@ -691,9 +685,6 @@ END OF CREATIVE COMMONS ATTRIBUTION 4.0 NON-IBM-LICENSE INFORMATION
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 END OF WEBSPHERE LIBERTY OPERATOR NON-IBM-LICENSE INFORMATION
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-END OF NOTICES FILE
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 END OF WEBSPHERE LIBERTY OPERATOR NOTICES AND INFORMATION
