@@ -1170,7 +1170,7 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 		if err == nil {
 			wlappSecrets = append(wlappSecrets, *globalPullSecret)
 		} else if !kerrors.IsNotFound(err) {
-			return "", nil, fmt.Errorf("Failed to get the global OpenShift pull secret: %v", err)
+			return "", nil, fmt.Errorf("Failed to get the OpenShift global pull secret: %v", err)
 		}
 	}
 
