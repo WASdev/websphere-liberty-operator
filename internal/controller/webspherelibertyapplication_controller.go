@@ -1160,15 +1160,8 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 	wlappSecrets := []corev1.Secret{}
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
-		pullSecretString := strings.TrimSpace(*wlapp.GetPullSecret())
-		pullSecretNames := []string{}
-		if strings.Contains(pullSecretString, ",") {
-			pullSecretNames = strings.Split(pullSecretString, ",")
-		} else {
-			pullSecretNames = append(pullSecretNames, pullSecretString)
-		}
+		pullSecretNames := oputils.DecodeStringToList(*wlapp.GetPullSecret())
 		for _, pullSecretName := range pullSecretNames {
-			pullSecretName = strings.TrimSpace(pullSecretName)
 			pullSecret = &corev1.Secret{}
 			if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecretName, Namespace: wlapp.GetNamespace()}, pullSecret); err != nil {
 				if kerrors.IsNotFound(err) {
