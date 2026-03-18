@@ -1158,6 +1158,23 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 
 func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
 	wlappSecrets := []corev1.Secret{}
+
+	// check the OpenShift global pull secret for inclusion
+	if len(r.watchNamespaces) == 0 && r.IsOpenShift() {
+		globalPullSecretName := "pull-secret"
+		globalPullSecretNamespace := "openshift-config"
+		globalPullSecret := &corev1.Secret{}
+		globalPullSecret.Name = globalPullSecretName
+		globalPullSecret.Namespace = globalPullSecretNamespace
+		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: globalPullSecretName, Namespace: globalPullSecretNamespace}, globalPullSecret)
+		if err == nil {
+			wlappSecrets = append(wlappSecrets, *globalPullSecret)
+		} else if !kerrors.IsNotFound(err) {
+			return "", nil, fmt.Errorf("Failed to get the global OpenShift pull secret: %v", err)
+		}
+	}
+
+	// check the CR-configured pull secrets
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
 		pullSecretNames := oputils.DecodeStringToList(*wlapp.GetPullSecret())
