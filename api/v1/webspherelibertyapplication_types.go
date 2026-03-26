@@ -190,6 +190,14 @@ type WebSphereLibertyApplicationSpec struct {
 	// The list of hostnames and IPs that will be injected into the application pod's hosts file
 	// +operator-sdk:csv:customresourcedefinitions:order=37,type=spec,displayName="Host Aliases"
 	HostAliases []corev1.HostAlias `json:"hostAliases,omitempty"`
+
+	Containers *WebSphereLibertyApplicationContainers `json:"containers,omitempty"`
+}
+
+// Defines the Containers
+type WebSphereLibertyApplicationContainers struct {
+	Args    []string `json:"args,omitempty"`
+	Command []string `json:"command,omitempty"`
 }
 
 // Defines the DNS
@@ -825,6 +833,18 @@ type GithubLogin struct {
 
 func init() {
 	SchemeBuilder.Register(&WebSphereLibertyApplication{}, &WebSphereLibertyApplicationList{})
+}
+
+func (cr *WebSphereLibertyApplication) GetContainer() *WebSphereLibertyApplicationContainers {
+	return cr.Spec.Containers
+}
+
+func (sc *WebSphereLibertyApplicationContainers) GetContainerArgs() []string {
+	return sc.Args
+}
+
+func (sc *WebSphereLibertyApplicationContainers) GetContainerCommand() []string {
+	return sc.Command
 }
 
 // GetApplicationImage returns application image
