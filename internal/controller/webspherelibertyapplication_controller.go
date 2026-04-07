@@ -1177,7 +1177,7 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 			}
 		}
 	}
-	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetContainerImageMetadata(context.TODO(), imageRef, pullSecret, false)
+	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetContainerImageMetadata(context.TODO(), imageRef, false)
 }
 
 func (r *ReconcileWebSphereLiberty) checkLibertyVersionGuards(instance *webspherelibertyv1.WebSphereLibertyApplication) error {

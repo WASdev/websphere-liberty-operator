@@ -25,7 +25,7 @@ import (
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/application-stacks/runtime-component-operator/common"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -76,7 +76,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLeader(instance *wlv1.WebSphereLibe
 	return r.reconcileLeaderWithState(instance, leaderTracker, leaderTrackers, leaderMetadata, shouldElectNewLeader, leaderTrackerType)
 }
 
-func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebSphereLibertyApplication, leaderTracker *corev1.Secret, leaderTrackers *[]lutils.LeaderTracker, leaderMetadata lutils.LeaderTrackerMetadata, shouldElectNewLeader bool, leaderTrackerType string) (string, bool, string, error) {
+func (r *ReconcileWebSphereLiberty) reconcileLeaderWithState(instance *wlv1.WebSphereLibertyApplication, leaderTracker *common.LockedBufferSecret, leaderTrackers *[]lutils.LeaderTracker, leaderMetadata lutils.LeaderTrackerMetadata, shouldElectNewLeader bool, leaderTrackerType string) (string, bool, string, error) {
 	initialLeaderIndex := -1
 	for i, tracker := range *leaderTrackers {
 		if tracker.Name == leaderMetadata.GetName() {
@@ -225,7 +225,7 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderTracker(instance *wlv1.WebSph
 	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) SaveLeaderTracker(leaderTracker *corev1.Secret, trackerList *[]lutils.LeaderTracker, leaderTrackerType string) error {
+func (r *ReconcileWebSphereLiberty) SaveLeaderTracker(leaderTracker *common.LockedBufferSecret, trackerList *[]lutils.LeaderTracker, leaderTrackerType string) error {
 	leaderMutex, mutexFound := lutils.LeaderTrackerMutexes.Load(leaderTrackerType)
 	if !mutexFound {
 		return fmt.Errorf("Could not get %s leader tracker's mutex when attempting to save. Exiting.", leaderTrackerType)
@@ -233,24 +233,28 @@ func (r *ReconcileWebSphereLiberty) SaveLeaderTracker(leaderTracker *corev1.Secr
 	leaderMutex.(*sync.Mutex).Lock()
 	defer leaderMutex.(*sync.Mutex).Unlock()
 
-	return r.CreateOrUpdate(leaderTracker, nil, func() error {
-		lutils.CustomizeLeaderTracker(leaderTracker, trackerList)
-		return nil
-	})
+	lutils.CustomizeLeaderTracker(leaderTracker, trackerList)
+
+	objCleanup, err := r.CreateOrUpdateSecret(leaderTracker, nil, func() error { return nil })
+	defer objCleanup()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *ReconcileWebSphereLiberty) DeleteLeaderTracker(leaderTracker *corev1.Secret, leaderTrackerType string) error {
+func (r *ReconcileWebSphereLiberty) DeleteLeaderTracker(leaderTracker *common.LockedBufferSecret, leaderTrackerType string) error {
 	leaderMutex, mutexFound := lutils.LeaderTrackerMutexes.Load(leaderTrackerType)
 	if !mutexFound {
 		return fmt.Errorf("Could not get %s leader tracker's mutex when attempting to delete. Exiting.", leaderTrackerType)
 	}
 	leaderMutex.(*sync.Mutex).Lock()
 	defer leaderMutex.(*sync.Mutex).Unlock()
-	return r.DeleteResource(leaderTracker)
+	return r.DeleteSecretResource(leaderTracker)
 }
 
 // Removes the instance as leader if instance is the leader and if no leaders are being tracked then delete the leader tracking Secret
-func (r *ReconcileWebSphereLiberty) RemoveLeader(instance *wlv1.WebSphereLibertyApplication, leaderTracker *corev1.Secret, leaderTrackers *[]lutils.LeaderTracker, leaderTrackerType string) error {
+func (r *ReconcileWebSphereLiberty) RemoveLeader(instance *wlv1.WebSphereLibertyApplication, leaderTracker *common.LockedBufferSecret, leaderTrackers *[]lutils.LeaderTracker, leaderTrackerType string) error {
 	changeDetected := false
 	noOwners := true
 	// If the instance is being tracked, remove it

@@ -133,11 +133,15 @@ func (r *ReconcileWebSphereLiberty) getLTPAPathOptionsAndChoices(instance *wlv1.
 	return pathOptionsList, pathChoicesList
 }
 
-func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphereLibertyApplication, leaderTracker *corev1.Secret, validSubPath string, assetsFolder *string, ltpaResourceType LTPAResource) string {
+func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphereLibertyApplication, leaderTracker *common.LockedBufferSecret, validSubPath string, assetsFolder *string, ltpaResourceType LTPAResource) string {
 	// if an existing resource name (suffix) for this key combination already exists, use it
-	loc := lutils.CommaSeparatedStringContains(string(leaderTracker.Data[lutils.ResourcePathsKey]), validSubPath)
+	resourcePathsBytes, _ := leaderTracker.LockedData.Get(lutils.ResourcePathsKey)
+	resourcesBytes, _ := leaderTracker.LockedData.Get(lutils.ResourcesKey)
+	resourcePaths := string(resourcePathsBytes)
+	resources := string(resourcesBytes)
+	loc := lutils.CommaSeparatedStringContains(resourcePaths, validSubPath)
 	if loc != -1 {
-		suffix, _ := lutils.GetCommaSeparatedString(string(leaderTracker.Data[lutils.ResourcesKey]), loc)
+		suffix, _ := lutils.GetCommaSeparatedString(resources, loc)
 		return suffix
 	}
 
@@ -152,7 +156,7 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 		if predeterminedSuffixes, hasEnv := hasLTPAKeyResourceSuffixesEnv(instance); hasEnv {
 			predeterminedSuffixesArray := lutils.GetCommaSeparatedArray(predeterminedSuffixes)
 			for _, suffix := range predeterminedSuffixesArray {
-				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), suffix) {
+				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(resources, suffix) {
 					return "-" + suffix
 				}
 			}
@@ -168,7 +172,7 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 		if predeterminedSuffixes, hasEnv := hasLTPAConfigResourceSuffixesEnv(instance); hasEnv {
 			predeterminedSuffixesArray := lutils.GetCommaSeparatedArray(predeterminedSuffixes)
 			for _, suffix := range predeterminedSuffixesArray {
-				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), suffix) {
+				if len(suffix) == lutils.ResourceSuffixLength && lutils.IsLowerAlphanumericSuffix(suffix) && !strings.Contains(resources, suffix) {
 					return "-" + suffix
 				}
 			}
@@ -178,7 +182,7 @@ func (r *ReconcileWebSphereLiberty) getLTPAMetadataName(instance *wlv1.WebSphere
 	// otherwise, generate a random suffix of length lutils.ResourceSuffixLength
 	randomSuffix := lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
 	suffixFoundInCluster := true // MUST check that the operator is not overriding another instance's untracked shared resource
-	for strings.Contains(string(leaderTracker.Data[lutils.ResourcesKey]), randomSuffix) || suffixFoundInCluster {
+	for strings.Contains(resources, randomSuffix) || suffixFoundInCluster {
 		randomSuffix = lutils.GetRandomLowerAlphanumericSuffix(lutils.ResourceSuffixLength)
 		// create the unstructured object; parse and obtain the sharedResourceName via the internal/controller/assets/ltpa-signature.yaml
 		if sharedResource, sharedResourceName, err := lutils.CreateUnstructuredResourceFromSignature(LTPA_RESOURCE_SHARING_FILE_NAME, assetsFolder, OperatorShortName, randomSuffix); err == nil {
@@ -540,46 +544,63 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 
 	// Create/update the Secret to hold the server.xml that will import the LTPA keys into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/ltpaKeysMount.xml
-	serverXMLMountSecretErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLMountSecret.Name, Namespace: ltpaXMLMountSecret.Namespace}, ltpaXMLMountSecret)
-	if serverXMLMountSecretErr != nil && !kerrors.IsNotFound(serverXMLMountSecretErr) {
-		return ltpaXMLSecret.Name, serverXMLMountSecretErr
+	ltpaXMLMountSecretName := ltpaXMLMountSecret.Name
+	ltpaXMLMountSecretLocked, err := common.GetSecret(r.GetClient(), ltpaXMLMountSecretName, instance.GetNamespace())
+	defer ltpaXMLMountSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return ltpaXMLSecret.Name, err
 	}
-	if err := r.CreateOrUpdate(ltpaXMLMountSecret, nil, func() error {
-		mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.LTPAKeysXMLFileName, "/output", "${server.output.dir}", 1)
-		return lutils.CustomizeLibertyFileMountXML(ltpaXMLMountSecret, lutils.LTPAKeysMountXMLFileName, mountDir)
-	}); err != nil {
+	ltpaXMLMountSecretLocked.Labels = ltpaXMLMountSecret.Labels
+
+	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.LTPAKeysXMLFileName, "/output", "${server.output.dir}", 1)
+	err = lutils.CustomizeLibertyFileMountXML(ltpaXMLMountSecretLocked, lutils.LTPAKeysMountXMLFileName, mountDir)
+	if err != nil {
+		return ltpaXMLSecret.Name, err
+	}
+	objCleanup, err := r.CreateOrUpdateSecret(ltpaXMLMountSecretLocked, nil, func() error { return nil })
+	defer objCleanup()
+	if err != nil {
 		return ltpaXMLSecret.Name, err
 	}
 
 	// Create/update the Liberty Server XML Secret
-	serverXMLSecretErr := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaXMLSecret.Name, Namespace: ltpaXMLSecret.Namespace}, ltpaXMLSecret)
-	if serverXMLSecretErr != nil && !kerrors.IsNotFound(serverXMLSecretErr) {
-		return ltpaXMLSecret.Name, serverXMLSecretErr
+	ltpaXMLSecretName := ltpaXMLSecret.Name
+	ltpaXMLSecretLocked, err := common.GetSecret(r.GetClient(), ltpaXMLSecretName, instance.GetNamespace())
+	defer ltpaXMLSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return ltpaXMLSecretName, err
 	}
-	// NOTE: Update is important here for compatibility with an operator upgrade from version 1,3,3 that did not use ltpaXMLMountSecret
-	if err := r.CreateOrUpdate(ltpaXMLSecret, nil, func() error {
-		// get the latest config rotation time, if it exists
-		var latestRotationTime int
-		lastRotationTime, err := strconv.Atoi(string(lastRotation))
+	ltpaXMLSecretLocked.Labels = ltpaXMLSecret.Labels
+
+	// get the latest config rotation time, if it exists
+	var latestRotationTime int
+	lastRotationTime, err := strconv.Atoi(string(lastRotation))
+	if err != nil {
+		return ltpaXMLSecretName, fmt.Errorf("failed to convert last rotation time from string to integer")
+	}
+	latestRotationTime = lastRotationTime
+	if encryptionKeyLastRotation, found := ltpaConfigSecret.Data["encryptionKeyLastRotation"]; found {
+		encryptionKeyLastRotationTime, err := strconv.Atoi(string(encryptionKeyLastRotation))
 		if err != nil {
-			return fmt.Errorf("failed to convert last rotation time from string to integer")
+			return ltpaXMLSecretName, fmt.Errorf("failed to convert encryption key last rotation time from string to integer")
 		}
-		latestRotationTime = lastRotationTime
-		if encryptionKeyLastRotation, found := ltpaConfigSecret.Data["encryptionKeyLastRotation"]; found {
-			encryptionKeyLastRotationTime, err := strconv.Atoi(string(encryptionKeyLastRotation))
-			if err != nil {
-				return fmt.Errorf("failed to convert encryption key last rotation time from string to integer")
-			}
-			if encryptionKeyLastRotationTime >= latestRotationTime {
-				latestRotationTime = encryptionKeyLastRotationTime
-			}
+		if encryptionKeyLastRotationTime >= latestRotationTime {
+			latestRotationTime = encryptionKeyLastRotationTime
 		}
-		ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
-		return lutils.CustomizeLTPAServerXML(ltpaXMLSecret, instance, string(ltpaConfigSecret.Data["password"]))
-	}); err != nil {
-		return ltpaXMLSecret.Name, err
 	}
-	return ltpaXMLSecret.Name, nil
+	ltpaXMLSecretLocked.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
+
+	password := ltpaConfigSecret.Data["password"]
+	err = lutils.CustomizeLTPAServerXML(ltpaXMLSecretLocked, password)
+	if err != nil {
+		return ltpaXMLSecretName, err
+	}
+	objCleanup2, err := r.CreateOrUpdateSecret(ltpaXMLSecretLocked, nil, func() error { return nil })
+	defer objCleanup2()
+	if err != nil {
+		return ltpaXMLSecretName, err
+	}
+	return ltpaXMLSecretName, nil
 }
 
 func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *wlv1.WebSphereLibertyApplication) bool {

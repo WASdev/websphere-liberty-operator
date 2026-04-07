@@ -26,6 +26,7 @@ import (
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
+	"github.com/application-stacks/runtime-component-operator/common"
 	oputils "github.com/application-stacks/runtime-component-operator/utils"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -164,6 +165,9 @@ func TestLTPALeaderTracker(t *testing.T) {
 	}
 
 	leaderTracker, _, err = lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject := &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData := map[string][]byte{}
 	expectedLeaderTrackerData[lutils.ResourcesKey] = []byte("")
 	expectedLeaderTrackerData[lutils.ResourceOwnersKey] = []byte("")
@@ -172,7 +176,7 @@ func TestLTPALeaderTracker(t *testing.T) {
 	tests = []Test{
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 		{"get LTPA leader tracker error", nil, err},
 	}
@@ -218,6 +222,9 @@ func TestLTPALeaderTracker(t *testing.T) {
 
 	// Fourth, check that the leader tracker received the new LTPA state
 	leaderTracker, leaderTrackers, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject = &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData = map[string][]byte{
 		lutils.ResourcesKey:           []byte("-ab215"),
 		lutils.ResourceOwnersKey:      []byte(name),
@@ -227,7 +234,7 @@ func TestLTPALeaderTracker(t *testing.T) {
 	tests = []Test{
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 		{"get LTPA leader tracker error", nil, err},
 	}
@@ -264,6 +271,9 @@ func TestLTPALeaderTracker(t *testing.T) {
 
 	// Sixth, check that the LTPA leader tracker was updated
 	leaderTracker, _, err = lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject = &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData = map[string][]byte{
 		lutils.ResourcesKey:           []byte("-ab215,-cd123"),
 		lutils.ResourceOwnersKey:      []byte(fmt.Sprintf("%s,%s", instance.Name, instance.Name)),
@@ -273,7 +283,7 @@ func TestLTPALeaderTracker(t *testing.T) {
 	tests = []Test{
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 		{"get LTPA leader tracker error", nil, err},
 	}
@@ -364,6 +374,9 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExist(t *testing.T) {
 
 	// Lastly, check that the LTPA leader tracker processes the two LTPA Secrets created
 	leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject := &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData := map[string][]byte{
 		lutils.ResourcesKey:           []byte("-b12g1,-bazc1"),
 		lutils.ResourceOwnersKey:      []byte(","), // no owners associated with the LTPA Secrets because this decision tree (only for test) is not registered to use with the operator
@@ -374,7 +387,7 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExist(t *testing.T) {
 		{"get LTPA leader tracker error", nil, err},
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 	}
 	if err := verifyTests(tests); err != nil {
@@ -442,6 +455,9 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithUpgrade(t *testing.T) {
 
 	// Lastly, check that the LTPA leader tracker upgraded the two LTPA Secrets created
 	leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject := &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData := map[string][]byte{
 		lutils.ResourcesKey:           []byte("-b12g1,-bazc1"),
 		lutils.ResourceOwnersKey:      []byte(","),                                       // no owners associated with the LTPA Secrets because this decision tree (only for test) is not registered to use with the operator
@@ -451,7 +467,7 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithUpgrade(t *testing.T) {
 	tests = []Test{
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 		{"get LTPA leader tracker error", nil, err},
 	}
@@ -532,6 +548,9 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithMultipleUpgradesAndDowngr
 
 	// Thirdly, check that the LTPA leader tracker upgraded the two LTPA Secrets created
 	leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject := &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData := map[string][]byte{
 		lutils.ResourcesKey:           []byte("-b12g1,-bazc1,-ccccc"),
 		lutils.ResourceOwnersKey:      []byte(",,"),                                                        // no owners associated with the LTPA Secrets because this decision tree (only for test) is not registered to use with the operator
@@ -541,7 +560,7 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithMultipleUpgradesAndDowngr
 	tests = []Test{
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 		{"get LTPA leader tracker error", nil, err},
 	}
@@ -561,6 +580,9 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithMultipleUpgradesAndDowngr
 	r.reconcileLeaderTracker(instance, treeMap, replaceMap, latestOperandVersion, LTPA_RESOURCE_SHARING_FILE_NAME, &assetsFolder)
 
 	leaderTracker, _, err = lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
+	leaderTrackerObject = &corev1.Secret{}
+	common.CopySecret(leaderTracker, leaderTrackerObject)
+
 	expectedLeaderTrackerData = map[string][]byte{
 		lutils.ResourcesKey:           []byte("-b12g1,-bazc1,-ccccc"),
 		lutils.ResourceOwnersKey:      []byte(",,"),                                             // no owners associated with the LTPA Secrets because this decision tree (only for test) is not registered to use with the operator
@@ -571,7 +593,7 @@ func TestReconcileLeaderTrackerWhenLTPASecretsExistWithMultipleUpgradesAndDowngr
 		{"get LTPA leader tracker error", nil, err},
 		{"get LTPA leader tracker name", "wlo-managed-leader-tracking-ltpa", leaderTracker.Name},
 		{"get LTPA leader tracker namespace", namespace, leaderTracker.Namespace},
-		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTracker.Data},
+		{"get LTPA leader tracker data", expectedLeaderTrackerData, leaderTrackerObject.Data},
 		{"get LTPA leader tracker label", latestOperandVersion, leaderTracker.Labels[lutils.LeaderVersionLabel]},
 	}
 	if err := verifyTests(tests); err != nil {

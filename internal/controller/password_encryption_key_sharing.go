@@ -26,9 +26,9 @@ import (
 	tree "github.com/OpenLiberty/open-liberty-operator/utils/tree"
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
+	"github.com/application-stacks/runtime-component-operator/common"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -451,33 +451,41 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      encryptionXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(encryptionXMLSecretName, ""),
-		},
+	encryptionXMLSecretLocked, err := common.GetSecret(r.GetClient(), encryptionXMLSecretName, instance.GetNamespace())
+	defer encryptionXMLSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
-	if err := r.CreateOrUpdate(encryptionXMLSecret, nil, func() error {
-		return lutils.CustomizePasswordEncryptionKeyXML(encryptionXMLSecret, encryptionKey)
-	}); err != nil {
+	encryptionXMLSecretLocked.Labels = lutils.GetRequiredLabels(encryptionXMLSecretName, "")
+
+	err = lutils.CustomizePasswordEncryptionKeyXML(encryptionXMLSecretLocked, []byte(encryptionKey))
+	if err != nil {
+		return err
+	}
+	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecretLocked, nil, func() error { return nil })
+	defer objCleanup()
+	if err != nil {
 		return err
 	}
 
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mountingXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(mountingXMLSecretName, ""),
-		},
+	mountingXMLSecretLocked, err := common.GetSecret(r.GetClient(), mountingXMLSecretName, instance.GetNamespace())
+	defer mountingXMLSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
-	if err := r.CreateOrUpdate(mountingXMLSecret, nil, func() error {
-		mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
-		return lutils.CustomizeLibertyFileMountXML(mountingXMLSecret, lutils.EncryptionKeyMountXMLFileName, mountDir)
-	}); err != nil {
+	mountingXMLSecretLocked.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
+
+	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
+	err = lutils.CustomizeLibertyFileMountXML(mountingXMLSecretLocked, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	if err != nil {
+		return err
+	}
+	objCleanup2, err := r.CreateOrUpdateSecret(mountingXMLSecretLocked, nil, func() error { return nil })
+	defer objCleanup2()
+	if err != nil {
 		return err
 	}
 
@@ -493,33 +501,41 @@ func (r *ReconcileWebSphereLiberty) createAESEncryptionKeyLibertyConfig(instance
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      encryptionXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(encryptionXMLSecretName, ""),
-		},
+	encryptionXMLSecretLocked, err := common.GetSecret(r.GetClient(), encryptionXMLSecretName, instance.GetNamespace())
+	defer encryptionXMLSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
-	if err := r.CreateOrUpdate(encryptionXMLSecret, nil, func() error {
-		return lutils.CustomizeAESEncryptionKeyXML(encryptionXMLSecret, encryptionKey)
-	}); err != nil {
+	encryptionXMLSecretLocked.Labels = lutils.GetRequiredLabels(encryptionXMLSecretName, "")
+
+	err = lutils.CustomizeAESEncryptionKeyXML(encryptionXMLSecretLocked, []byte(encryptionKey))
+	if err != nil {
+		return err
+	}
+	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecretLocked, nil, func() error { return nil })
+	defer objCleanup()
+	if err != nil {
 		return err
 	}
 
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXMLSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mountingXMLSecretName,
-			Namespace: instance.GetNamespace(),
-			Labels:    lutils.GetRequiredLabels(mountingXMLSecretName, ""),
-		},
+	mountingXMLSecretLocked, err := common.GetSecret(r.GetClient(), mountingXMLSecretName, instance.GetNamespace())
+	defer mountingXMLSecretLocked.Destroy()
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
-	if err := r.CreateOrUpdate(mountingXMLSecret, nil, func() error {
-		mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
-		return lutils.CustomizeLibertyFileMountXML(mountingXMLSecret, lutils.EncryptionKeyMountXMLFileName, mountDir)
-	}); err != nil {
+	mountingXMLSecretLocked.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
+
+	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
+	err = lutils.CustomizeLibertyFileMountXML(mountingXMLSecretLocked, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	if err != nil {
+		return err
+	}
+	objCleanup2, err := r.CreateOrUpdateSecret(mountingXMLSecretLocked, nil, func() error { return nil })
+	defer objCleanup2()
+	if err != nil {
 		return err
 	}
 
