@@ -3,8 +3,8 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.26
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260318201118-3f77d7f796bd
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260318200009-fac1f4fd75a7
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260407233048-dd22cc8a1349
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260331144835-accd4bddb3cc
 	github.com/cert-manager/cert-manager v1.19.4
 	github.com/go-logr/logr v1.4.3
 	github.com/openshift/api v0.0.0-20260304172252-b0658d22beea
@@ -22,6 +22,8 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
+	github.com/awnumar/memcall v0.4.0 // indirect
+	github.com/awnumar/memguard v0.23.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
@@ -99,6 +101,7 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
