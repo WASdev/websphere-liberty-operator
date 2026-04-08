@@ -2,8 +2,6 @@ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
-github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260407143831-3d7a7a46bfbb h1:5l5avrThAJg9Pyh/9LjirZA/c2uh50QQQlCi3hkdSPw=
-github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260407143831-3d7a7a46bfbb/go.mod h1:3XZ7NiVPrHnz4o7HgAsAsRTa32GXzYT6X3QTaQQiHWk=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260407233048-dd22cc8a1349 h1:GLY9dH+2w5bsThk9Ef15Dp5ZVNrWMlyJ/DJDx8YE3oI=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260407233048-dd22cc8a1349/go.mod h1:3XZ7NiVPrHnz4o7HgAsAsRTa32GXzYT6X3QTaQQiHWk=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

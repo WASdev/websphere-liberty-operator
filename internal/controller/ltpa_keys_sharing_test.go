@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"reflect"
@@ -125,7 +126,7 @@ func TestLTPALeaderTracker(t *testing.T) {
 	// First, get the LTPA leader tracker which is not initialized
 	leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
 
-	emptyLeaderTracker := &corev1.Secret{
+	emptyLeaderTracker := &common.LockedBufferSecret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "wlo-managed-leader-tracking-ltpa",
 			Namespace: namespace,
@@ -295,12 +296,12 @@ func TestLTPALeaderTracker(t *testing.T) {
 	err1 = r.RemoveLeaderTrackerReference(instance, LTPA_RESOURCE_SHARING_FILE_NAME)
 	err2 = r.RemoveLeader(instance, leaderTracker, leaderTrackers, LTPA_RESOURCE_SHARING_FILE_NAME)
 	_, leaderTrackers, leaderTrackerErr := lutils.GetLeaderTracker(instance, OperatorShortName, LTPA_RESOURCE_SHARING_FILE_NAME, r.GetClient())
-	var nilLeaderTrackers *[]lutils.LeaderTracker
+	emptyLeaderTrackers := &[]lutils.LeaderTracker{}
 	tests = []Test{
 		{"remove LTPA - deleteLTPAKeysResource errors", nil, err1},
 		{"remove LTPA - RemoveLeader errors", nil, err2},
 		{"remove LTPA - GetLeaderTracker is not found", true, kerrors.IsNotFound(leaderTrackerErr)},
-		{"remove LTPA - leader trackers list is nil", nilLeaderTrackers, leaderTrackers},
+		{"remove LTPA - leader trackers list is empty", emptyLeaderTrackers, leaderTrackers},
 	}
 	if err := verifyTests(tests); err != nil {
 		t.Fatalf("%v", err)
@@ -621,9 +622,29 @@ func createWebSphereLibertyApp(n, ns string, spec wlv1.WebSphereLibertyApplicati
 	return app
 }
 
+func deepEqualWithByteSlices(actual, expected interface{}) bool {
+	actualMap, actualIsMap := actual.(map[string][]byte)
+	expectedMap, expectedIsMap := expected.(map[string][]byte)
+
+	if actualIsMap && expectedIsMap {
+		if len(actualMap) != len(expectedMap) {
+			return false
+		}
+		for key, expectedVal := range expectedMap {
+			actualVal, exists := actualMap[key]
+			if !exists || !bytes.Equal(actualVal, expectedVal) {
+				return false
+			}
+		}
+		return true
+	}
+
+	return reflect.DeepEqual(actual, expected)
+}
+
 func verifyTests(tests []Test) error {
 	for _, tt := range tests {
-		if !reflect.DeepEqual(tt.actual, tt.expected) {
+		if !deepEqualWithByteSlices(tt.actual, tt.expected) {
 			return fmt.Errorf("%s test expected: (%v) actual: (%v)", tt.test, tt.expected, tt.actual)
 		}
 	}
