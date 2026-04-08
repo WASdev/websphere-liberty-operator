@@ -425,8 +425,16 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 	// we should throw a warning if both the aes and password encryption key are defined
 	cannotUseBothKeysMessage := "cannot use both wlp-aes-encryption-key and wlp-password-encryption-key Secrets: choose one to prevent rotation conflicts"
 	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
-		_, passwordFound, _ := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
-		_, aesFound, _ := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		passwordSecret, _ := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		passwordFound := passwordSecret != nil
+		if passwordSecret != nil {
+			defer passwordSecret.Destroy()
+		}
+		aesSecret, _ := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		aesFound := aesSecret != nil
+		if aesSecret != nil {
+			defer aesSecret.Destroy()
+		}
 		if passwordFound && aesFound {
 			r.AddStatusWarning(oputils.StatusWarning{
 				GetCondition: func(ba common.BaseComponent) bool {

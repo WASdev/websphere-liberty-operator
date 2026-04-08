@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"strings"
 	"sync"
@@ -27,8 +28,8 @@ import (
 	wlv1 "github.com/WASdev/websphere-liberty-operator/api/v1"
 	lutils "github.com/WASdev/websphere-liberty-operator/utils"
 	"github.com/application-stacks/runtime-component-operator/common"
-	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -86,14 +87,15 @@ func (r *ReconcileWebSphereLiberty) reconcileEncryptionKey(instance *wlv1.WebSph
 
 func (r *ReconcileWebSphereLiberty) reconcileAESEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, thisInstanceIsLeader bool, leaderName string) (string, string, string, error) {
 	// Does the namespace already have a password encryption key sharing Secret?
-	encryptionSecret, _, err := r.hasInternalAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	encryptionSecret, err := r.hasInternalAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	defer encryptionSecret.Destroy()
 	if err == nil {
 		// Return err if the password encryption key does not exist
-		if _, found := encryptionSecret.Data[AESEncryptionKey]; !found {
+		if _, found := encryptionSecret.LockedData.Get(AESEncryptionKey); !found {
 			return "Failed to get the password encryption key Secret because " + AESEncryptionKey + " key is missing", "", "", err
 		}
 		// Is the password encryption key field in the Secret valid?
-		if encryptionKey := string(encryptionSecret.Data[AESEncryptionKey]); encryptionKey != "" {
+		if encryptionKey, _ := encryptionSecret.LockedData.Get(AESEncryptionKey); subtle.ConstantTimeCompare(encryptionKey, []byte{}) != 1 {
 			// non-leaders should still be able to pass this process to return the encryption secret name
 			if thisInstanceIsLeader {
 				// Create the Liberty config that will mount into the pods
@@ -107,7 +109,8 @@ func (r *ReconcileWebSphereLiberty) reconcileAESEncryptionKey(instance *wlv1.Web
 					return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key (aes) Secret for the namespace '%s'.", leaderName, instance.Namespace)
 				}
 			}
-			return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
+			lastRotation, _ := encryptionSecret.LockedData.Get("lastRotation")
+			return "", encryptionSecret.Name, string(lastRotation), nil
 		}
 	}
 	return "Failed to get the AES encryption key Secret", "", "", err
@@ -115,14 +118,15 @@ func (r *ReconcileWebSphereLiberty) reconcileAESEncryptionKey(instance *wlv1.Web
 
 func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, thisInstanceIsLeader bool, leaderName string) (string, string, string, error) {
 	// Does the namespace already have a password encryption key sharing Secret?
-	encryptionSecret, _, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	encryptionSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	defer encryptionSecret.Destroy()
 	if err == nil {
 		// Return err if the password encryption key does not exist
-		if _, found := encryptionSecret.Data[PasswordEncryptionKey]; !found {
+		if _, found := encryptionSecret.LockedData[PasswordEncryptionKey]; !found {
 			return "Failed to get the password encryption key Secret because " + PasswordEncryptionKey + " key is missing", "", "", err
 		}
 		// Is the password encryption key field in the Secret valid?
-		if encryptionKey := string(encryptionSecret.Data[PasswordEncryptionKey]); encryptionKey != "" {
+		if encryptionKey, _ := encryptionSecret.LockedData.Get(PasswordEncryptionKey); subtle.ConstantTimeCompare(encryptionKey, []byte{}) != 1 {
 			// non-leaders should still be able to pass this process to return the encryption secret name
 			if thisInstanceIsLeader {
 				// Create the Liberty config that will mount into the pods
@@ -136,7 +140,8 @@ func (r *ReconcileWebSphereLiberty) reconcilePasswordEncryptionKey(instance *wlv
 					return "", "", "", fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to mirror the shared Password Encryption Key (password) Secret for the namespace '%s'.", leaderName, instance.Namespace)
 				}
 			}
-			return "", encryptionSecret.Name, string(encryptionSecret.Data["lastRotation"]), nil
+			lastRotation, _ := encryptionSecret.LockedData.Get("lastRotation")
+			return "", encryptionSecret.Name, string(lastRotation), nil
 		}
 	}
 	return "Failed to get the password encryption key Secret", "", "", err
@@ -220,8 +225,8 @@ func (r *ReconcileWebSphereLiberty) isPasswordEncryptionKeySharingEnabled(instan
 
 func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		_, _, passwordErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
-		_, _, aesErr := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		_, passwordErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		_, aesErr := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
 		return passwordErr == nil || aesErr == nil
 	}
 	return false
@@ -229,7 +234,7 @@ func (r *ReconcileWebSphereLiberty) isUsingPasswordEncryptionKeySharing(instance
 
 func (r *ReconcileWebSphereLiberty) isUsingAESPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		_, _, aesErr := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		_, aesErr := r.hasUserAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
 		return aesErr == nil
 	}
 	return false
@@ -237,40 +242,45 @@ func (r *ReconcileWebSphereLiberty) isUsingAESPasswordEncryptionKeySharing(insta
 
 func (r *ReconcileWebSphereLiberty) isUsingPlainPasswordEncryptionKeySharing(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) bool {
 	if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		_, _, passwordErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
+		_, passwordErr := r.hasUserEncryptionKeySecret(instance, passwordEncryptionMetadata)
 		return passwordErr == nil
 	}
 	return false
 }
 
-func (r *ReconcileWebSphereLiberty) getEncryptionKeyData(encryptionSecret *corev1.Secret, matchedKey string) (string, string, bool) {
-	encryptionKey := ""
-	encryptionKeyLastRotation := ""
-	if key, found := encryptionSecret.Data[matchedKey]; found {
-		encryptionKey = string(key)
+func (r *ReconcileWebSphereLiberty) getEncryptionKeyData(encryptionSecret *common.LockedBufferSecret, matchedKey string) ([]byte, []byte, bool) {
+	encryptionKey := []byte{}
+	encryptionKeyLastRotation := []byte{}
+	if key, found := encryptionSecret.LockedData.Get(matchedKey); found {
+		encryptionKey = key
 	}
-	if lastRotation, found := encryptionSecret.Data["lastRotation"]; found {
-		encryptionKeyLastRotation = string(lastRotation)
+	if lastRotation, found := encryptionSecret.LockedData.Get("lastRotation"); found {
+		encryptionKeyLastRotation = lastRotation
 	}
-	if encryptionKey == "" || encryptionKeyLastRotation == "" {
+	if subtle.ConstantTimeCompare(encryptionKey, []byte{}) == 1 || subtle.ConstantTimeCompare(encryptionKeyLastRotation, []byte{}) == 1 {
 		// don't need to delete this misconfigured Secret because mirrorEncryptionKeySecretState will create/update it later
-		return "", "", false
+		return []byte{}, []byte{}, false
 	}
 	return encryptionKey, encryptionKeyLastRotation, true
 }
 
-func (r *ReconcileWebSphereLiberty) getValidInternalEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, bool, error) {
+func (r *ReconcileWebSphereLiberty) getValidInternalEncryptionKey(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, bool, bool, error) {
 	sharingEnabled := r.isPasswordEncryptionKeySharingEnabled(instance)
 	if !sharingEnabled {
 		return nil, sharingEnabled, false, nil
 	}
 
-	aesSecret, aesFound, err := r.hasInternalAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	aesSecret, err := r.hasInternalAESEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	aesFound := !kerrors.IsNotFound(err)
 	if aesFound && err != nil {
+		aesSecret.Destroy()
 		return nil, sharingEnabled, aesFound, err
 	}
-	passwordSecret, passwordFound, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	passwordSecret, err := r.hasInternalEncryptionKeySecret(instance, passwordEncryptionMetadata)
+	passwordFound := !kerrors.IsNotFound(err)
 	if passwordFound && err != nil {
+		aesSecret.Destroy()
+		passwordSecret.Destroy()
 		return nil, sharingEnabled, aesFound, err
 	}
 
@@ -279,29 +289,52 @@ func (r *ReconcileWebSphereLiberty) getValidInternalEncryptionKey(instance *wlv1
 
 	aesFoundAndValid := aesFound && aesValid
 	passwordFoundAndValid := passwordFound && passwordValid
+
 	if aesFoundAndValid {
-		// use AES
+		passwordSecret.Destroy()
 		return aesSecret, sharingEnabled, aesFound, nil
 	} else if passwordFoundAndValid {
-		// use password
+		aesSecret.Destroy()
 		return passwordSecret, sharingEnabled, aesFound, nil
 	}
 
 	// if aes/password were found but not valid then return a warning
 	if aesFound {
+		aesSecret.Destroy()
+		passwordSecret.Destroy()
 		return nil, sharingEnabled, aesFound, fmt.Errorf("the wlp-aes-encryption-key Secret was found but contained an invalid field")
 	} else if passwordFound {
+		aesSecret.Destroy()
+		passwordSecret.Destroy()
 		return nil, sharingEnabled, aesFound, fmt.Errorf("the wlp-password-encryption-key Secret was found but contained an invalid field")
 	}
-	// do not error if aes and password were not found
+
+	aesSecret.Destroy()
+	passwordSecret.Destroy()
 	return nil, sharingEnabled, aesFound, nil
 }
 
-func (r *ReconcileWebSphereLiberty) getInternalEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (string, string, bool, bool, error) {
+func (r *ReconcileWebSphereLiberty) getInternalEncryptionKeyState(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, bool, bool, error) {
 	encryptionSecret, sharingEnabled, usingAES, err := r.getValidInternalEncryptionKey(instance, passwordEncryptionMetadata)
+
 	if !sharingEnabled {
-		return "", "", sharingEnabled, false, nil
+		if encryptionSecret != nil {
+			encryptionSecret.Destroy()
+		}
+		return nil, sharingEnabled, false, nil
 	}
+
+	if err != nil {
+		if encryptionSecret != nil {
+			encryptionSecret.Destroy()
+		}
+		return nil, sharingEnabled, false, err
+	}
+
+	if encryptionSecret == nil {
+		return nil, sharingEnabled, false, fmt.Errorf("a password encryption key Secret was either not found or misconfigured")
+	}
+
 	matchedKey := ""
 	if usingAES {
 		matchedKey = AESEncryptionKey
@@ -309,11 +342,15 @@ func (r *ReconcileWebSphereLiberty) getInternalEncryptionKeyState(instance *wlv1
 		matchedKey = PasswordEncryptionKey
 	}
 
-	key, lastRotation, valid := r.getEncryptionKeyData(encryptionSecret, matchedKey)
-	if valid {
-		return key, lastRotation, sharingEnabled, usingAES, err
+	_, _, valid := r.getEncryptionKeyData(encryptionSecret, matchedKey)
+
+	if !valid {
+		encryptionSecret.Destroy()
+		return nil, sharingEnabled, false, fmt.Errorf("a password encryption key Secret was either not found or misconfigured")
 	}
-	return "", "", sharingEnabled, false, fmt.Errorf("a password encryption key Secret was either not found or misconfigured")
+
+	// Return the secret - caller is responsible for destroying it
+	return encryptionSecret, sharingEnabled, usingAES, err
 }
 
 func (r *ReconcileWebSphereLiberty) getEncryptionKeyNameFromRef(secretNameRef string, passwordEncryptionMetadataName string) (string, string) {
@@ -331,72 +368,76 @@ func (r *ReconcileWebSphereLiberty) getEncryptionKeyNameFromRef(secretNameRef st
 }
 
 // Returns the Secret that contains the aes encryption key used internally by the operator
-func (r *ReconcileWebSphereLiberty) hasInternalAESEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error) {
+func (r *ReconcileWebSphereLiberty) hasInternalAESEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error) {
 	metaName := ""
 	if passwordEncryptionMetadata != nil {
 		metaName = passwordEncryptionMetadata.Name
 	}
-	return r.getSecret(instance, lutils.LocalAESEncryptionKeyRootName+metaName+"-internal")
+	return common.GetSecret(r.GetClient(), lutils.LocalAESEncryptionKeyRootName+metaName+"-internal", instance.GetNamespace())
 }
 
 // Returns the Secret that contains the aes encryption key provided by the user
-func (r *ReconcileWebSphereLiberty) hasUserAESEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error) {
+func (r *ReconcileWebSphereLiberty) hasUserAESEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error) {
 	metaName := ""
 	if passwordEncryptionMetadata != nil {
 		metaName = passwordEncryptionMetadata.Name
 	}
-	return r.getSecret(instance, lutils.AESEncryptionKeyRootName+metaName)
+	return common.GetSecret(r.GetClient(), lutils.AESEncryptionKeyRootName+metaName, instance.GetNamespace())
 }
 
 // Returns the Secret that contains the password encryption key used internally by the operator
-func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error) {
+func (r *ReconcileWebSphereLiberty) hasInternalEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error) {
 	metaName := ""
 	if passwordEncryptionMetadata != nil {
 		metaName = passwordEncryptionMetadata.Name
 	}
-	return r.getSecret(instance, lutils.LocalPasswordEncryptionKeyRootName+metaName+"-internal")
+	return common.GetSecret(r.GetClient(), lutils.LocalPasswordEncryptionKeyRootName+metaName+"-internal", instance.GetNamespace())
 }
 
 // Returns the Secret that contains the password encryption key provided by the user
-func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error) {
+func (r *ReconcileWebSphereLiberty) hasUserEncryptionKeySecret(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error) {
 	metaName := ""
 	if passwordEncryptionMetadata != nil {
 		metaName = passwordEncryptionMetadata.Name
 	}
-	return r.getSecret(instance, lutils.PasswordEncryptionKeyRootName+metaName)
+	return common.GetSecret(r.GetClient(), lutils.PasswordEncryptionKeyRootName+metaName, instance.GetNamespace())
 }
 
 // Returns true if a user secret is mirrored to a corresponding "<user>-internal" secret
 func (r *ReconcileWebSphereLiberty) isSecretMirrored(instance *wlv1.WebSphereLibertyApplication,
 	passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata,
-	hasUserSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error),
-	hasInternalSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error),
+	hasUserSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error),
+	hasInternalSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error),
 	matchedKey string) bool {
-	userSecret, _, err := hasUserSecretFunc(instance, passwordEncryptionMetadata)
+	userSecret, err := hasUserSecretFunc(instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
 	}
-	internalSecret, _, err := hasInternalSecretFunc(instance, passwordEncryptionMetadata)
+	internalSecret, err := hasInternalSecretFunc(instance, passwordEncryptionMetadata)
 	if err != nil {
 		return false
 	}
-	internalKey := string(internalSecret.Data[matchedKey])
-	userKey := string(userSecret.Data[matchedKey])
-	return userKey != "" && internalKey == userKey
+	internalKey, _ := internalSecret.LockedData.Get(matchedKey)
+	userKey, _ := userSecret.LockedData.Get(matchedKey)
+	return subtle.ConstantTimeCompare(userKey, []byte{}) != 1 && subtle.ConstantTimeCompare(internalKey, userKey) == 1
 }
 
 // Mirrors an internal and user secret that syncs the value of syncedKey
 func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv1.WebSphereLibertyApplication,
 	passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata,
-	hasUserSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error),
-	hasInternalSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*corev1.Secret, bool, error),
+	hasUserSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error),
+	hasInternalSecretFunc func(*wlv1.WebSphereLibertyApplication, *lutils.PasswordEncryptionMetadata) (*common.LockedBufferSecret, error),
 	syncedKey string) error {
-	userEncryptionSecret, userEncryptionFound, userEncryptionSecretErr := hasUserSecretFunc(instance, passwordEncryptionMetadata)
+	userEncryptionSecret, userEncryptionSecretErr := hasUserSecretFunc(instance, passwordEncryptionMetadata)
+	defer userEncryptionSecret.Destroy()
+	userEncryptionFound := !kerrors.IsNotFound(userEncryptionSecretErr)
 	// Error if there was an issue getting the userEncryptionSecret
 	if userEncryptionFound && userEncryptionSecretErr != nil {
 		return userEncryptionSecretErr
 	}
-	internalEncryptionSecret, internalEncryptionFound, internalEncryptionSecretErr := hasInternalSecretFunc(instance, passwordEncryptionMetadata)
+	internalEncryptionSecret, internalEncryptionSecretErr := hasInternalSecretFunc(instance, passwordEncryptionMetadata)
+	defer internalEncryptionSecret.Destroy()
+	internalEncryptionFound := !kerrors.IsNotFound(internalEncryptionSecretErr)
 	// Error if there was an issue getting the internalEncryptionSecret
 	if internalEncryptionFound && internalEncryptionSecretErr != nil {
 		return internalEncryptionSecretErr
@@ -407,7 +448,7 @@ func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv
 		if !internalEncryptionFound {
 			return fmt.Errorf("failed to get internal encryption key secret")
 		} else {
-			if err := r.DeleteResource(internalEncryptionSecret); err != nil {
+			if err := r.DeleteSecretResource(internalEncryptionSecret); err != nil {
 				return err
 			}
 		}
@@ -416,34 +457,28 @@ func (r *ReconcileWebSphereLiberty) mirrorEncryptionKeySecretState(instance *wlv
 
 	// Case 2: user encryption secret exists, no internal secret: Create internalEncryptionSecret
 	// Case 3: user encryption secret exists, internal secret exists: Update internalEncryptionSecret
-	return r.CreateOrUpdate(internalEncryptionSecret, nil, func() error {
-		if internalEncryptionSecret.Data == nil {
-			internalEncryptionSecret.Data = make(map[string][]byte)
-		}
-		if userEncryptionSecret.Data == nil {
-			userEncryptionSecret.Data = make(map[string][]byte)
-		}
-		internalPasswordEncryptionKey := internalEncryptionSecret.Data[syncedKey]
-		userPasswordEncryptionKey := userEncryptionSecret.Data[syncedKey]
-		if string(internalPasswordEncryptionKey) != string(userPasswordEncryptionKey) {
-			internalEncryptionSecret.Data[syncedKey] = userPasswordEncryptionKey
-			internalEncryptionSecret.Data["lastRotation"] = []byte(fmt.Sprint(time.Now().Unix()))
-		}
-		return nil
-	})
-}
-
-func (r *ReconcileWebSphereLiberty) getSecret(instance *wlv1.WebSphereLibertyApplication, secretName string) (*corev1.Secret, bool, error) {
-	secret := &corev1.Secret{}
-	secret.Name = secretName
-	secret.Namespace = instance.GetNamespace()
-	secret.Labels = lutils.GetRequiredLabels(secret.Name, "")
-	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
-	return secret, !kerrors.IsNotFound(err), err
+	if internalEncryptionSecret.LockedData == nil {
+		internalEncryptionSecret.LockedData = make(common.SecretMap)
+	}
+	if userEncryptionSecret.LockedData == nil {
+		userEncryptionSecret.LockedData = make(common.SecretMap)
+	}
+	internalPasswordEncryptionKey, _ := internalEncryptionSecret.LockedData.Get(syncedKey) // it's possible the internal secret doesn't exist
+	userPasswordEncryptionKey, found := userEncryptionSecret.LockedData.Get(syncedKey)     // however, the user encryption must exist
+	if !found {
+		return fmt.Errorf("could not get user encryption key data for %s", syncedKey)
+	}
+	if subtle.ConstantTimeCompare(internalPasswordEncryptionKey, userPasswordEncryptionKey) != 1 {
+		internalEncryptionSecret.LockedData.SetCopy(syncedKey, userPasswordEncryptionKey)
+		internalEncryptionSecret.LockedData.Set("lastRotation", []byte(fmt.Sprint(time.Now().Unix())))
+	}
+	objCleanup, err := r.CreateOrUpdateSecret(internalEncryptionSecret, nil, func() error { return nil })
+	defer objCleanup()
+	return err
 }
 
 // Creates the Liberty XML to mount the password encryption keys Secret into the application pods
-func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey string) error {
+func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey []byte) error {
 	if len(encryptionKey) == 0 {
 		return fmt.Errorf("a password encryption key was not specified")
 	}
@@ -451,18 +486,17 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionXMLSecretLocked, err := common.GetSecret(r.GetClient(), encryptionXMLSecretName, instance.GetNamespace())
-	defer encryptionXMLSecretLocked.Destroy()
-	if err != nil && !kerrors.IsNotFound(err) {
+	encryptionXMLSecret := &common.LockedBufferSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      encryptionXMLSecretName,
+			Namespace: instance.GetNamespace(),
+			Labels:    lutils.GetRequiredLabels(encryptionXMLSecretName, ""),
+		},
+	}
+	if err := lutils.CustomizePasswordEncryptionKeyXML(encryptionXMLSecret, encryptionKey); err != nil {
 		return err
 	}
-	encryptionXMLSecretLocked.Labels = lutils.GetRequiredLabels(encryptionXMLSecretName, "")
-
-	err = lutils.CustomizePasswordEncryptionKeyXML(encryptionXMLSecretLocked, []byte(encryptionKey))
-	if err != nil {
-		return err
-	}
-	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecretLocked, nil, func() error { return nil })
+	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecret, nil, func() error { return nil })
 	defer objCleanup()
 	if err != nil {
 		return err
@@ -471,29 +505,26 @@ func (r *ReconcileWebSphereLiberty) createPasswordEncryptionKeyLibertyConfig(ins
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXMLSecretLocked, err := common.GetSecret(r.GetClient(), mountingXMLSecretName, instance.GetNamespace())
-	defer mountingXMLSecretLocked.Destroy()
-	if err != nil && !kerrors.IsNotFound(err) {
-		return err
+	mountingXMLSecret := &common.LockedBufferSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mountingXMLSecretName,
+			Namespace: instance.GetNamespace(),
+			Labels:    lutils.GetRequiredLabels(mountingXMLSecretName, ""),
+		},
 	}
-	mountingXMLSecretLocked.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
 
 	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
-	err = lutils.CustomizeLibertyFileMountXML(mountingXMLSecretLocked, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	lutils.CustomizeLibertyFileMountXML(mountingXMLSecret, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	objCleanup, err = r.CreateOrUpdateSecret(mountingXMLSecret, nil, func() error { return nil })
+	defer objCleanup()
 	if err != nil {
 		return err
 	}
-	objCleanup2, err := r.CreateOrUpdateSecret(mountingXMLSecretLocked, nil, func() error { return nil })
-	defer objCleanup2()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // Creates the Liberty XML to mount the aes encryption keys Secret into the application pods
-func (r *ReconcileWebSphereLiberty) createAESEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey string) error {
+func (r *ReconcileWebSphereLiberty) createAESEncryptionKeyLibertyConfig(instance *wlv1.WebSphereLibertyApplication, passwordEncryptionMetadata *lutils.PasswordEncryptionMetadata, encryptionKey []byte) error {
 	if len(encryptionKey) == 0 {
 		return fmt.Errorf("an AES encryption key was not specified")
 	}
@@ -501,18 +532,18 @@ func (r *ReconcileWebSphereLiberty) createAESEncryptionKeyLibertyConfig(instance
 	// The Secret to hold the server.xml that will override the password encryption key for the Liberty server
 	// This server.xml will be mounted in /output/liberty-operator/encryptionKey.xml
 	encryptionXMLSecretName := OperatorShortName + lutils.ManagedEncryptionServerXML + passwordEncryptionMetadata.Name
-	encryptionXMLSecretLocked, err := common.GetSecret(r.GetClient(), encryptionXMLSecretName, instance.GetNamespace())
-	defer encryptionXMLSecretLocked.Destroy()
-	if err != nil && !kerrors.IsNotFound(err) {
-		return err
+	encryptionXMLSecret := &common.LockedBufferSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      encryptionXMLSecretName,
+			Namespace: instance.GetNamespace(),
+			Labels:    lutils.GetRequiredLabels(encryptionXMLSecretName, ""),
+		},
 	}
-	encryptionXMLSecretLocked.Labels = lutils.GetRequiredLabels(encryptionXMLSecretName, "")
 
-	err = lutils.CustomizeAESEncryptionKeyXML(encryptionXMLSecretLocked, []byte(encryptionKey))
-	if err != nil {
+	if err := lutils.CustomizeAESEncryptionKeyXML(encryptionXMLSecret, encryptionKey); err != nil {
 		return err
 	}
-	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecretLocked, nil, func() error { return nil })
+	objCleanup, err := r.CreateOrUpdateSecret(encryptionXMLSecret, nil, func() error { return nil })
 	defer objCleanup()
 	if err != nil {
 		return err
@@ -521,24 +552,22 @@ func (r *ReconcileWebSphereLiberty) createAESEncryptionKeyLibertyConfig(instance
 	// The Secret to hold the server.xml that will import the password encryption key into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/encryptionKeyMount.xml
 	mountingXMLSecretName := OperatorShortName + lutils.ManagedEncryptionMountServerXML + passwordEncryptionMetadata.Name
-	mountingXMLSecretLocked, err := common.GetSecret(r.GetClient(), mountingXMLSecretName, instance.GetNamespace())
-	defer mountingXMLSecretLocked.Destroy()
-	if err != nil && !kerrors.IsNotFound(err) {
-		return err
+	mountingXMLSecret := &common.LockedBufferSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mountingXMLSecretName,
+			Namespace: instance.GetNamespace(),
+			Labels:    lutils.GetRequiredLabels(mountingXMLSecretName, ""),
+		},
 	}
-	mountingXMLSecretLocked.Labels = lutils.GetRequiredLabels(mountingXMLSecretName, "")
-
 	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.EncryptionKeyXMLFileName, "/output", "${server.output.dir}", 1)
-	err = lutils.CustomizeLibertyFileMountXML(mountingXMLSecretLocked, lutils.EncryptionKeyMountXMLFileName, mountDir)
+	if err := lutils.CustomizeLibertyFileMountXML(mountingXMLSecret, lutils.EncryptionKeyMountXMLFileName, mountDir); err != nil {
+		return err
+	}
+	objCleanup, err = r.CreateOrUpdateSecret(mountingXMLSecret, nil, func() error { return nil })
+	defer objCleanup()
 	if err != nil {
 		return err
 	}
-	objCleanup2, err := r.CreateOrUpdateSecret(mountingXMLSecretLocked, nil, func() error { return nil })
-	defer objCleanup2()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

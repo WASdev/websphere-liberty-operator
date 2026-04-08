@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -258,13 +259,13 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	ltpaXMLMountSecret.Namespace = instance.GetNamespace()
 	ltpaXMLMountSecret.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLSecret.Name)
 
-	ltpaSecret := &corev1.Secret{}
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
-	ltpaSecret.Name = ltpaSecretRootName + ltpaMetadata.Name
-	ltpaSecret.Namespace = instance.GetNamespace()
+	ltpaSecretName := ltpaSecretRootName + ltpaMetadata.Name
+
+	// If the LTPA Secret does not exist, generate the shared ltpa.keys file and Secret
+	ltpaSecret, err := common.GetSecret(r.GetClient(), ltpaSecretName, instance.GetNamespace())
+	defer ltpaSecret.Destroy()
 	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecretRootName, ltpaSecret.Name)
-	// If the LTPA Secret does not exist, run the Kubernetes Job to generate the shared ltpa.keys file and Secret
-	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil && kerrors.IsNotFound(err) {
 		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
@@ -276,24 +277,35 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		}
 
 		// Check the aes/password encryption key
-		encryptionKey, encryptionKeyLastRotation, encryptionKeySharingEnabled, usingAES, err := r.getInternalEncryptionKeyState(instance, passwordEncryptionMetadata)
+		encryptionSecret, encryptionKeySharingEnabled, usingAES, err := r.getInternalEncryptionKeyState(instance, passwordEncryptionMetadata)
+		defer func() {
+			if encryptionSecret != nil {
+				encryptionSecret.Destroy()
+			}
+		}()
 		if encryptionKeySharingEnabled && err != nil {
 			return "", "", "", err
 		}
 
-		keyExists := encryptionKey != ""
 		password := lutils.GetRandomAlphanumeric(15)
-		var currentPasswordEncryptionKey *string
-		if keyExists && !usingAES {
-			currentPasswordEncryptionKey = &encryptionKey
-		} else {
-			currentPasswordEncryptionKey = nil
-		}
-		var currentAESEncryptionKey *string
-		if keyExists && usingAES {
-			currentAESEncryptionKey = &encryptionKey
-		} else {
-			currentAESEncryptionKey = nil
+
+		var currentPasswordEncryptionKey *[]byte = nil
+		var currentAESEncryptionKey *[]byte = nil
+
+		if encryptionSecret != nil {
+			matchedKey := PasswordEncryptionKey
+			if usingAES {
+				matchedKey = AESEncryptionKey
+			}
+
+			encryptionKey, _ := encryptionSecret.LockedData.Get(matchedKey)
+			if subtle.ConstantTimeCompare(encryptionKey, []byte{}) != 1 {
+				if usingAES {
+					currentAESEncryptionKey = &encryptionKey
+				} else {
+					currentPasswordEncryptionKey = &encryptionKey
+				}
+			}
 		}
 
 		rawLTPAKeysStringData, err := createLTPAKeys(password, currentPasswordEncryptionKey, currentAESEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
@@ -306,18 +318,22 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 		}
 
 		ltpaSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaMetadata.PathIndex
-		ltpaSecret.Data = make(map[string][]byte)
-		if keyExists && encryptionKeyLastRotation != "" {
-			ltpaSecret.Data["encryptionKeyLastRotation"] = []byte(encryptionKeyLastRotation)
+		if ltpaSecret.LockedData == nil {
+			ltpaSecret.LockedData = make(common.SecretMap)
+		}
+		if encryptionSecret != nil {
+			if encryptionKeyLastRotation, found := encryptionSecret.LockedData.Get("lastRotation"); found && subtle.ConstantTimeCompare(encryptionKeyLastRotation, []byte{}) != 1 {
+				ltpaSecret.LockedData.SetCopy("encryptionKeyLastRotation", encryptionKeyLastRotation)
+			}
 		}
 		lastRotation := strconv.FormatInt(time.Now().Unix(), 10)
-		ltpaSecret.Data["lastRotation"] = []byte(lastRotation)
-		ltpaSecret.Data["rawPassword"] = []byte(password)
-		ltpaSecret.Data[lutils.LTPAKeysFileName] = ltpaKeysStringData
+		ltpaSecret.LockedData.Set("lastRotation", []byte(lastRotation))
+		ltpaSecret.LockedData.Set("rawPassword", []byte(password))
+		ltpaSecret.LockedData.Set(lutils.LTPAKeysFileName, ltpaKeysStringData)
 
-		if err := r.CreateOrUpdate(ltpaSecret, nil, func() error {
-			return nil
-		}); err != nil {
+		objCleanup, err := r.CreateOrUpdateSecret(ltpaSecret, nil, func() error { return nil })
+		defer objCleanup()
+		if err != nil {
 			return "", "", "", err
 		}
 		return ltpaSecret.Name, lastRotation, leaderName, nil
@@ -328,7 +344,8 @@ func (r *ReconcileWebSphereLiberty) generateLTPAKeys(instance *wlv1.WebSphereLib
 	if err != nil {
 		return "", "", leaderName, err
 	}
-	lastRotation := string(ltpaSecret.Data["lastRotation"])
+	lastRotationBytes, _ := ltpaSecret.LockedData.Get("lastRotation")
+	lastRotation := string(lastRotationBytes)
 	return ltpaSecret.Name, lastRotation, leaderName, nil
 }
 
@@ -346,12 +363,11 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	ltpaXMLMountSecret.Namespace = instance.GetNamespace()
 	ltpaXMLMountSecret.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLSecret.Name)
 
-	ltpaSecret := &corev1.Secret{}
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
-	ltpaSecret.Name = ltpaSecretRootName + ltpaKeysMetadata.Name
-	ltpaSecret.Namespace = instance.GetNamespace()
+	ltpaSecretName := ltpaSecretRootName + ltpaKeysMetadata.Name
+	ltpaSecret, err := common.GetSecret(r.GetClient(), ltpaSecretName, instance.GetNamespace())
+	defer ltpaSecret.Destroy()
 	ltpaSecret.Labels = lutils.GetRequiredLabels(ltpaSecretRootName, ltpaSecret.Name)
-	err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaSecret.Name, Namespace: ltpaSecret.Namespace}, ltpaSecret)
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
 			return ltpaXMLSecret.Name, err
@@ -397,20 +413,21 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 	}
 
-	ltpaConfigSecret := &corev1.Secret{}
 	ltpaConfigSecretRootName := OperatorShortName + "-managed-ltpa"
+	ltpaConfigSecretName := ""
 	isPasswordEncryptionKeySharing := r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata)
 	if isPasswordEncryptionKeySharing {
 		ltpaConfigSecretRootName += "-keyed-password"
-		ltpaConfigSecret.Name = ltpaConfigSecretRootName + ltpaConfigMetadata.Name
+		ltpaConfigSecretName = ltpaConfigSecretRootName + ltpaConfigMetadata.Name
 	} else {
 		ltpaConfigSecretRootName += "-password"
-		ltpaConfigSecret.Name = ltpaConfigSecretRootName + ltpaConfigMetadata.Name
+		ltpaConfigSecretName = ltpaConfigSecretRootName + ltpaConfigMetadata.Name
 	}
-	ltpaConfigSecret.Namespace = instance.GetNamespace()
-	ltpaConfigSecret.Labels = lutils.GetRequiredLabels(ltpaConfigSecretRootName, ltpaConfigSecret.Name)
+
 	// If the LTPA password Secret does not exist, run the Kubernetes Job to generate the LTPA password Secret
-	err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: ltpaConfigSecret.Name, Namespace: ltpaConfigSecret.Namespace}, ltpaConfigSecret)
+	ltpaConfigSecret, err := common.GetSecret(r.GetClient(), ltpaConfigSecretName, instance.GetNamespace())
+	defer ltpaConfigSecret.Destroy()
+	ltpaConfigSecret.Labels = lutils.GetRequiredLabels(ltpaConfigSecretRootName, ltpaConfigSecret.Name)
 	if err != nil && kerrors.IsNotFound(err) {
 		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
@@ -422,52 +439,66 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		}
 
 		// 1,3,3 patch - if rawPassword field is not present, create the Secret directly or delete LTPA Secret when user attempts to use password encryption
-		if _, foundRawPassword := ltpaSecret.Data["rawPassword"]; !foundRawPassword {
+		_, foundRawPassword := ltpaSecret.LockedData.Get("rawPassword")
+		if !foundRawPassword {
 			if r.isPasswordEncryptionKeySharingEnabled(instance) {
 				// Because there is no rawPassword field, there is no way to generate an encrypted password from the LTPA Secret
 				// Historically, 1,3,3 operator created LTPA Secrets with an already encrypted password under field .data.password
 				// Whereas 1,4,0 and greater the LTPA Secrets are unencrypted in field .data.rawPassword
 				// generateLTPAKeys() MUST continue to set the rawPassword field, otherwise a create/delete loop will occur here when password encryption is enabled
-				if err := r.DeleteResource(ltpaSecret); err != nil {
+				if err := r.DeleteSecretResource(ltpaSecret); err != nil {
 					return ltpaXMLSecret.Name, err
 				}
 			} else {
-				defaultLTPASecretPassword, foundPassword := ltpaSecret.Data["password"]
-				defaultLTPASecretLastRotation, foundLastRotation := ltpaSecret.Data["lastRotation"]
+				defaultLTPASecretPassword, foundPassword := ltpaSecret.LockedData.Get("password")
+				defaultLTPASecretLastRotation, foundLastRotation := ltpaSecret.LockedData.Get("lastRotation")
 				if foundPassword && foundLastRotation {
-					ltpaConfigSecret.Data = make(map[string][]byte)
-					ltpaConfigSecret.Data["password"] = []byte(defaultLTPASecretPassword)
-					ltpaConfigSecret.Data["lastRotation"] = []byte(defaultLTPASecretLastRotation)
+					if ltpaConfigSecret.LockedData == nil {
+						ltpaConfigSecret.LockedData = make(common.SecretMap)
+					}
+					ltpaConfigSecret.LockedData.SetCopy("password", defaultLTPASecretPassword)
+					ltpaConfigSecret.LockedData.SetCopy("lastRotation", defaultLTPASecretLastRotation)
 					ltpaConfigSecret.Labels = lutils.GetRequiredLabels(ltpaConfigSecretRootName, ltpaConfigSecret.Name)
 					ltpaConfigSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaConfigMetadata.PathIndex
-					if err := r.CreateOrUpdate(ltpaConfigSecret, nil, func() error { return nil }); err != nil {
+					objCleanup, err := r.CreateOrUpdateSecret(ltpaConfigSecret, nil, func() error { return nil })
+					defer objCleanup()
+					if err != nil {
 						return ltpaXMLSecret.Name, err
 					}
 				}
 			}
 
 		} else { // otherwise, create the LTPA Config
-			password := string(ltpaSecret.Data["rawPassword"])
+			password, _ := ltpaSecret.LockedData.Get("rawPassword")
 
 			// Check the aes/password encryption key
-			encryptionKey, encryptionKeyLastRotation, encryptionKeySharingEnabled, usingAES, err := r.getInternalEncryptionKeyState(instance, passwordEncryptionMetadata)
+			encryptionSecret, encryptionKeySharingEnabled, usingAES, err := r.getInternalEncryptionKeyState(instance, passwordEncryptionMetadata)
+			defer func() {
+				if encryptionSecret != nil {
+					encryptionSecret.Destroy()
+				}
+			}()
 			if encryptionKeySharingEnabled && err != nil {
 				return "", err
 			}
 
-			// password := lutils.GetRandomAlphanumeric(15)
-			keyExists := encryptionKey != ""
-			var currentPasswordEncryptionKey *string
-			if keyExists && !usingAES {
-				currentPasswordEncryptionKey = &encryptionKey
-			} else {
-				currentPasswordEncryptionKey = nil
-			}
-			var currentAESEncryptionKey *string
-			if keyExists && usingAES {
-				currentAESEncryptionKey = &encryptionKey
-			} else {
-				currentAESEncryptionKey = nil
+			var currentPasswordEncryptionKey *[]byte = nil
+			var currentAESEncryptionKey *[]byte = nil
+
+			if encryptionSecret != nil {
+				matchedKey := PasswordEncryptionKey
+				if usingAES {
+					matchedKey = AESEncryptionKey
+				}
+
+				encryptionKey, _ := encryptionSecret.LockedData.Get(matchedKey)
+				if subtle.ConstantTimeCompare(encryptionKey, []byte{}) != 1 {
+					if usingAES {
+						currentAESEncryptionKey = &encryptionKey
+					} else {
+						currentPasswordEncryptionKey = &encryptionKey
+					}
+				}
 			}
 
 			encodedPassword, err := encode(password, currentPasswordEncryptionKey, currentAESEncryptionKey, common.LoadFromConfig(common.Config, lutils.OpConfigPasswordEncodingType))
@@ -482,17 +513,21 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			}
 
 			ltpaConfigSecret.Labels[lutils.ResourcePathIndexLabel] = ltpaConfigMetadata.PathIndex
-			ltpaConfigSecret.Data = make(map[string][]byte)
-			if keyExists && encryptionKeyLastRotation != "" {
-				ltpaConfigSecret.Data["encryptionKeyLastRotation"] = []byte(encryptionKeyLastRotation)
+			if ltpaConfigSecret.LockedData == nil {
+				ltpaConfigSecret.LockedData = make(common.SecretMap)
 			}
+			if encryptionSecret != nil {
+				if encryptionKeyLastRotation, found := encryptionSecret.LockedData.Get("lastRotation"); found && subtle.ConstantTimeCompare(encryptionKeyLastRotation, []byte{}) != 1 {
+					ltpaConfigSecret.LockedData.SetCopy("encryptionKeyLastRotation", encryptionKeyLastRotation)
+				}
+			}
+			lastRotation, _ := ltpaSecret.LockedData.Get("lastRotation")
+			ltpaConfigSecret.LockedData.SetCopy("lastRotation", lastRotation)
+			ltpaConfigSecret.LockedData.Set("password", encodedPassword)
 
-			ltpaConfigSecret.Data["lastRotation"] = []byte(ltpaSecret.Data["lastRotation"])
-			ltpaConfigSecret.Data["password"] = encodedPassword
-
-			if err := r.CreateOrUpdate(ltpaConfigSecret, nil, func() error {
-				return nil
-			}); err != nil {
+			objCleanup, err := r.CreateOrUpdateSecret(ltpaConfigSecret, nil, func() error { return nil })
+			defer objCleanup()
+			if err != nil {
 				return "", err
 			}
 		}
@@ -501,10 +536,10 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	}
 
 	// if the LTPA password is outdated from the LTPA Secret, delete the LTPA password
-	lastRotation, found := ltpaConfigSecret.Data["lastRotation"]
+	lastRotation, found := ltpaConfigSecret.LockedData.Get("lastRotation")
 	if !found || string(lastRotation) != string(ltpaKeysLastRotation) {
 		// lastRotation field is not present so the Secret was not initialized correctly
-		err := r.DeleteResource(ltpaConfigSecret)
+		err := r.DeleteSecretResource(ltpaConfigSecret)
 		if err != nil {
 			return ltpaXMLSecret.Name, err
 		}
@@ -517,23 +552,28 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	// if using encryption key, check if the key has been rotated and requires a regeneration of the LTPA keyed password
 	if isPasswordEncryptionKeySharing {
 		internalEncryptionSecret, _, _, err := r.getValidInternalEncryptionKey(instance, passwordEncryptionMetadata)
+		defer func() {
+			if internalEncryptionSecret != nil {
+				internalEncryptionSecret.Destroy()
+			}
+		}()
 		if err != nil {
 			return "", err
 		}
 
-		lastRotation, found := internalEncryptionSecret.Data["lastRotation"]
+		lastRotation, found := internalEncryptionSecret.LockedData.Get("lastRotation")
 		if !found {
 			// lastRotation field is not present so the Secret was not initialized correctly
-			err := r.DeleteResource(internalEncryptionSecret)
+			err := r.DeleteSecretResource(internalEncryptionSecret)
 			if err != nil {
 				return ltpaXMLSecret.Name, err
 			}
 			return ltpaXMLSecret.Name, fmt.Errorf("the internal encryption key secret does not contain field 'lastRotation'")
 		}
 
-		if encryptionKeyLastRotation, found := ltpaConfigSecret.Data["encryptionKeyLastRotation"]; found {
+		if encryptionKeyLastRotation, found := ltpaConfigSecret.LockedData.Get("encryptionKeyLastRotation"); found {
 			if string(encryptionKeyLastRotation) != string(lastRotation) {
-				err := r.DeleteResource(ltpaConfigSecret)
+				err := r.DeleteSecretResource(ltpaConfigSecret)
 				if err != nil {
 					return ltpaXMLSecret.Name, err
 				}
@@ -579,7 +619,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		return ltpaXMLSecretName, fmt.Errorf("failed to convert last rotation time from string to integer")
 	}
 	latestRotationTime = lastRotationTime
-	if encryptionKeyLastRotation, found := ltpaConfigSecret.Data["encryptionKeyLastRotation"]; found {
+	if encryptionKeyLastRotation, found := ltpaConfigSecret.LockedData.Get("encryptionKeyLastRotation"); found {
 		encryptionKeyLastRotationTime, err := strconv.Atoi(string(encryptionKeyLastRotation))
 		if err != nil {
 			return ltpaXMLSecretName, fmt.Errorf("failed to convert encryption key last rotation time from string to integer")
@@ -590,7 +630,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	}
 	ltpaXMLSecretLocked.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
 
-	password := ltpaConfigSecret.Data["password"]
+	password, _ := ltpaConfigSecret.LockedData.Get("password")
 	err = lutils.CustomizeLTPAServerXML(ltpaXMLSecretLocked, password)
 	if err != nil {
 		return ltpaXMLSecretName, err
