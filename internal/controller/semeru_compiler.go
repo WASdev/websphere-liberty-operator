@@ -152,8 +152,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCompiler(wlva *wlv1.WebSphere
 		}
 
 		//TLS Secret
-		semeruTLSSecret := &corev1.Secret{}
-		err = r.GetClient().Get(context.TODO(), types.NamespacedName{Name: wlva.Status.SemeruCompiler.TLSSecretName, Namespace: wlva.Namespace}, semeruTLSSecret)
+		err = common.CheckSecret(r.GetClient(), wlva.Status.SemeruCompiler.TLSSecretName, wlva.GetNamespace())
 		if err != nil {
 			return err, "Failed to reconcile Semeru Compiler TLS Secret", false
 		}
