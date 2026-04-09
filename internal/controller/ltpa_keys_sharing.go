@@ -340,9 +340,6 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	ltpaXMLSecretRootName := OperatorShortName + lutils.LTPAServerXMLSuffix
 	ltpaXMLSecretName := ltpaXMLSecretRootName + ltpaConfigMetadata.Name
 
-	ltpaXMLMountSecretRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
-	ltpaXMLMountSecretName := ltpaXMLMountSecretRootName + ltpaConfigMetadata.Name
-
 	ltpaSecretRootName := OperatorShortName + "-managed-ltpa"
 	ltpaSecretFullName := ltpaSecretRootName + ltpaKeysMetadata.Name
 	ltpaSecret, err := common.GetSecret(r.GetClient(), ltpaSecretFullName, instance.GetNamespace())
@@ -368,30 +365,32 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	if err != nil {
 		return ltpaXMLSecretName, err
 	}
+
 	if !thisInstanceIsLeader {
 		ltpaXMLSecret, err := common.GetSecret(r.GetClient(), ltpaXMLSecretName, instance.GetNamespace())
 		defer ltpaXMLSecret.Destroy()
+		ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
 		if err != nil {
 			if kerrors.IsNotFound(err) {
-				return ltpaXMLSecretName, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
+				return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to generate the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 			}
-			return ltpaXMLSecretName, err
+			return ltpaXMLSecret.Name, err
 		}
 		// check that the last rotation label has been set
 		lastRotationLabel, found := ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)]
 		if !found {
 			// the label was not found, but the LTPA config leader is responsible for updating this label
-			return ltpaXMLSecretName, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
+			return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 		}
 		// non-leaders should only stop yielding (blocking) to the leader if the Liberty XML Secret has been updated to a later time than lastKeyRelatedRotation
 		lastRotationUpdated, err := lutils.CompareStringTimeGreaterThanOrEqual(lastRotationLabel, lastKeyRelatedRotation)
 		if err != nil {
-			return ltpaXMLSecretName, err
+			return ltpaXMLSecret.Name, err
 		}
 		if lastRotationUpdated {
-			return ltpaXMLSecretName, nil
+			return ltpaXMLSecret.Name, nil
 		}
-		return ltpaXMLSecretName, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
+		return ltpaXMLSecret.Name, fmt.Errorf("Waiting for WebSphereLibertyApplication instance '%s' to update the shared LTPA config for the namespace '%s'.", leaderName, instance.Namespace)
 	}
 
 	ltpaConfigSecretRootName := OperatorShortName + "-managed-ltpa"
@@ -410,7 +409,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	defer ltpaConfigSecret.Destroy()
 	ltpaConfigSecret.Labels = lutils.GetRequiredLabels(ltpaConfigSecretRootName, ltpaConfigSecret.Name)
 	if err != nil && kerrors.IsNotFound(err) {
-		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME, true)
+		leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 		if err != nil {
 			return ltpaXMLSecretName, err
 		}
@@ -518,7 +517,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 
 	// if the LTPA password is outdated from the LTPA Secret, delete the LTPA password
 	lastRotation, found := ltpaConfigSecret.LockedData.Get("lastRotation")
-	if !found || string(lastRotation) != string(ltpaKeysLastRotation) {
+	if !found || subtle.ConstantTimeCompare(lastRotation, []byte(ltpaKeysLastRotation)) != 1 {
 		// lastRotation field is not present so the Secret was not initialized correctly
 		err := r.DeleteSecretResource(ltpaConfigSecret)
 		if err != nil {
@@ -533,15 +532,9 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	// if using encryption key, check if the key has been rotated and requires a regeneration of the LTPA keyed password
 	if isPasswordEncryptionKeySharing {
 		internalEncryptionSecret, _, _, err := r.getValidInternalEncryptionKey(instance, passwordEncryptionMetadata)
-		defer func() {
-			if internalEncryptionSecret != nil {
-				internalEncryptionSecret.Destroy()
-			}
-		}()
 		if err != nil {
 			return "", err
 		}
-
 		lastRotation, found := internalEncryptionSecret.LockedData.Get("lastRotation")
 		if !found {
 			// lastRotation field is not present so the Secret was not initialized correctly
@@ -551,9 +544,8 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			}
 			return ltpaXMLSecretName, fmt.Errorf("the internal encryption key secret does not contain field 'lastRotation'")
 		}
-
 		if encryptionKeyLastRotation, found := ltpaConfigSecret.LockedData.Get("encryptionKeyLastRotation"); found {
-			if string(encryptionKeyLastRotation) != string(lastRotation) {
+			if subtle.ConstantTimeCompare(encryptionKeyLastRotation, lastRotation) != 1 {
 				err := r.DeleteSecretResource(ltpaConfigSecret)
 				if err != nil {
 					return ltpaXMLSecretName, err
@@ -565,31 +557,41 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 
 	// Create/update the Secret to hold the server.xml that will import the LTPA keys into the Liberty server
 	// This server.xml will be mounted in /config/configDropins/overrides/ltpaKeysMount.xml
-	ltpaXMLMountSecretLocked, err := common.GetSecret(r.GetClient(), ltpaXMLMountSecretName, instance.GetNamespace())
-	defer ltpaXMLMountSecretLocked.Destroy()
+	ltpaXMLMountSecretRootName := OperatorShortName + lutils.LTPAServerXMLMountSuffix
+	ltpaXMLMountSecretName := ltpaXMLMountSecretRootName + ltpaConfigMetadata.Name
+
+	ltpaXMLMountSecret, err := common.GetSecret(r.GetClient(), ltpaXMLMountSecretName, instance.GetNamespace())
+	defer ltpaXMLMountSecret.Destroy()
 	if err != nil && !kerrors.IsNotFound(err) {
 		return ltpaXMLSecretName, err
 	}
-	ltpaXMLMountSecretLocked.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLMountSecretName)
+	ltpaXMLMountSecret.Labels = lutils.GetRequiredLabels(ltpaXMLMountSecretRootName, ltpaXMLMountSecret.Name)
 
 	mountDir := strings.Replace(lutils.SecureMountPath+"/"+lutils.LTPAKeysXMLFileName, "/output", "${server.output.dir}", 1)
-	err = lutils.CustomizeLibertyFileMountXML(ltpaXMLMountSecretLocked, lutils.LTPAKeysMountXMLFileName, mountDir)
+	err = lutils.CustomizeLibertyFileMountXML(ltpaXMLMountSecret, lutils.LTPAKeysMountXMLFileName, mountDir)
 	if err != nil {
 		return ltpaXMLSecretName, err
 	}
-	objCleanup, err := r.CreateOrUpdateSecret(ltpaXMLMountSecretLocked, nil, func() error { return nil })
+	objCleanup, err := r.CreateOrUpdateSecret(ltpaXMLMountSecret, nil, func() error { return nil })
 	defer objCleanup()
 	if err != nil {
 		return ltpaXMLSecretName, err
 	}
 
 	// Create/update the Liberty Server XML Secret
-	ltpaXMLSecretLocked, err := common.GetSecret(r.GetClient(), ltpaXMLSecretName, instance.GetNamespace())
-	defer ltpaXMLSecretLocked.Destroy()
+	err = common.CheckSecret(r.GetClient(), ltpaXMLMountSecretName, instance.GetNamespace())
 	if err != nil && !kerrors.IsNotFound(err) {
 		return ltpaXMLSecretName, err
 	}
-	ltpaXMLSecretLocked.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecretName)
+
+	// =====================
+	// NOTE: Update is important here for compatibility with an operator upgrade from version 1,3,3 that did not use ltpaXMLMountSecret
+	// =====================
+	ltpaXMLSecret, err := common.GetSecret(r.GetClient(), ltpaXMLSecretName, instance.GetNamespace())
+	defer ltpaXMLSecret.Destroy()
+	if err != nil && kerrors.IsNotFound(err) {
+		ltpaXMLSecret.Labels = lutils.GetRequiredLabels(ltpaXMLSecretRootName, ltpaXMLSecret.Name)
+	}
 
 	// get the latest config rotation time, if it exists
 	var latestRotationTime int
@@ -598,6 +600,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 		return ltpaXMLSecretName, fmt.Errorf("failed to convert last rotation time from string to integer")
 	}
 	latestRotationTime = lastRotationTime
+
 	if encryptionKeyLastRotation, found := ltpaConfigSecret.LockedData.Get("encryptionKeyLastRotation"); found {
 		encryptionKeyLastRotationTime, err := strconv.Atoi(string(encryptionKeyLastRotation))
 		if err != nil {
@@ -607,19 +610,22 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 			latestRotationTime = encryptionKeyLastRotationTime
 		}
 	}
-	ltpaXMLSecretLocked.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
 
-	password, _ := ltpaConfigSecret.LockedData.Get("password")
-	err = lutils.CustomizeLTPAServerXML(ltpaXMLSecretLocked, password)
+	ltpaXMLSecret.Labels[lutils.GetLastRotationLabelKey(LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME)] = strconv.Itoa(latestRotationTime)
+
+	encryptedPassword, _ := ltpaConfigSecret.LockedData.Get("password")
+	err = lutils.CustomizeLTPAServerXML(ltpaXMLSecret, encryptedPassword)
 	if err != nil {
 		return ltpaXMLSecretName, err
 	}
-	objCleanup2, err := r.CreateOrUpdateSecret(ltpaXMLSecretLocked, nil, func() error { return nil })
-	defer objCleanup2()
+	objCleanup, err = r.CreateOrUpdateSecret(ltpaXMLSecret, nil, func() error { return nil })
+	defer objCleanup()
 	if err != nil {
-		return ltpaXMLSecretName, err
+		return ltpaXMLSecret.Name, err
 	}
-	return ltpaXMLSecretName, nil
+	// ===================== End of 1,3,3 patch update
+
+	return ltpaXMLSecret.Name, nil
 }
 
 func (r *ReconcileWebSphereLiberty) isLTPAKeySharingEnabled(instance *wlv1.WebSphereLibertyApplication) bool {
