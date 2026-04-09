@@ -208,6 +208,9 @@ func (r *ReconcileWebSphereLiberty) reconcileLeaderTracker(instance *wlv1.WebSph
 	leaderTracker, _, err := lutils.GetLeaderTracker(instance, OperatorShortName, leaderTrackerType, r.GetClient())
 	// If the Leader Tracker is missing, create from scratch
 	if err != nil && kerrors.IsNotFound(err) {
+		if leaderTracker.Labels == nil {
+			leaderTracker.Labels = make(map[string]string)
+		}
 		leaderTracker.Labels[lutils.LeaderVersionLabel] = latestOperandVersion
 		leaderTracker.ResourceVersion = ""
 		leaderTrackers, err := r.createNewLeaderTrackerList(instance, treeMap, replaceMap, latestOperandVersion, leaderTrackerType, assetsFolder)
