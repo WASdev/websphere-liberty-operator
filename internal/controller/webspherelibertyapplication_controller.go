@@ -1172,14 +1172,16 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 		pullSecretNames := oputils.DecodeStringToList(*wlapp.GetPullSecret())
 		for _, pullSecretName := range pullSecretNames {
 			pullSecret = &corev1.Secret{}
-			if err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecretName, Namespace: wlapp.GetNamespace()}, pullSecret); err != nil {
-				if kerrors.IsNotFound(err) {
-					reqLogger.Info(fmt.Sprintf("The instance pull secret %s does not exist", pullSecretName))
-					pullSecret = nil
-				} else {
+			pullSecret.Name = pullSecretName
+			pullSecret.Namespace = wlapp.GetNamespace()
+			err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: pullSecretName, Namespace: wlapp.GetNamespace()}, pullSecret)
+			if err != nil {
+				if !kerrors.IsNotFound(err) {
 					reqLogger.Error(err, fmt.Sprintf("Failed to get the instance pull secret %s", pullSecretName))
 					return "", nil, fmt.Errorf("Failed to get the instance pull secret %s: %v", pullSecretName, err)
 				}
+				reqLogger.Info(fmt.Sprintf("The instance pull secret %s does not exist", pullSecretName))
+				break
 			}
 			if pullSecret != nil {
 				wlappSecrets = append(wlappSecrets, *pullSecret)
