@@ -190,6 +190,10 @@ type WebSphereLibertyApplicationSpec struct {
 	// The list of hostnames and IPs that will be injected into the application pod's hosts file
 	// +operator-sdk:csv:customresourcedefinitions:order=37,type=spec,displayName="Host Aliases"
 	HostAliases []corev1.HostAlias `json:"hostAliases,omitempty"`
+
+	// Name of the PriorityClass for the pod.
+	// +operator-sdk:csv:customresourcedefinitions:order=38,type=spec,displayName="Priority Class Name"
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 // Defines the DNS
@@ -1477,6 +1481,10 @@ func (d *WebSphereLibertyApplicationDNS) GetConfig() *corev1.PodDNSConfig {
 
 func (cr *WebSphereLibertyApplication) GetHostAliases() []corev1.HostAlias {
 	return cr.Spec.HostAliases
+}
+
+func (cr *WebSphereLibertyApplication) GetPriorityClassName() *string {
+	return cr.Spec.PriorityClassName
 }
 
 // Initialize sets default values
