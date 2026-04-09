@@ -223,6 +223,26 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 		return reconcile.Result{}, nil
 	}
 
+	// Reconciles the shared password encryption key state for the instance namespace only if the shared key already exists
+	var passwordEncryptionMetadataList *lutils.PasswordEncryptionMetadataList
+	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{}
+	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
+		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
+		if err != nil {
+			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+		}
+		passwordEncryptionMetadataList = leaderMetadataList.(*lutils.PasswordEncryptionMetadataList)
+		if passwordEncryptionMetadataList != nil && len(passwordEncryptionMetadataList.Items) == 1 {
+			passwordEncryptionMetadata = passwordEncryptionMetadataList.Items[0].(*lutils.PasswordEncryptionMetadata)
+		}
+	} else if r.isPasswordEncryptionKeySharingEnabled(instance) {
+		// error if the password encryption key sharing is enabled but the Secret is not found
+		secretNameRef := ba.GetStatus().GetReferences()[lutils.GetTrackedResourceName(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)]
+		passwordEncryptionSecretName, dataFieldName := r.getEncryptionKeyNameFromRef(secretNameRef, passwordEncryptionMetadata.Name)
+		err := errors.Wrapf(fmt.Errorf("Secret %q not found", passwordEncryptionSecretName), "Secret for Password Encryption was not found. Create a secret named %q in namespace %q with the encryption key specified in data field %q", passwordEncryptionSecretName, instance.GetNamespace(), dataFieldName)
+		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
+	}
+
 	if r.IsOpenShift() {
 		// The order of items passed to the MergeMaps matters here! Annotations from GetOpenShiftAnnotations have higher importance. Otherwise,
 		// it is not possible to override converted annotations.
@@ -401,25 +421,6 @@ func (r *ReconcileWebSphereLiberty) Reconcile(ctx context.Context, request ctrl.
 			ltpaKeysMetadata = ltpaMetadataList.Items[0].(*lutils.LTPAMetadata)
 			ltpaConfigMetadata = ltpaMetadataList.Items[1].(*lutils.LTPAMetadata)
 		}
-	}
-	// Reconciles the shared password encryption key state for the instance namespace only if the shared key already exists
-	var passwordEncryptionMetadataList *lutils.PasswordEncryptionMetadataList
-	passwordEncryptionMetadata := &lutils.PasswordEncryptionMetadata{}
-	if r.isUsingPasswordEncryptionKeySharing(instance, passwordEncryptionMetadata) {
-		leaderMetadataList, err := r.reconcileResourceTrackingState(instance, PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)
-		if err != nil {
-			return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
-		}
-		passwordEncryptionMetadataList = leaderMetadataList.(*lutils.PasswordEncryptionMetadataList)
-		if passwordEncryptionMetadataList != nil && len(passwordEncryptionMetadataList.Items) == 1 {
-			passwordEncryptionMetadata = passwordEncryptionMetadataList.Items[0].(*lutils.PasswordEncryptionMetadata)
-		}
-	} else if r.isPasswordEncryptionKeySharingEnabled(instance) {
-		// error if the password encryption key sharing is enabled but the Secret is not found
-		secretNameRef := ba.GetStatus().GetReferences()[lutils.GetTrackedResourceName(PASSWORD_ENCRYPTION_RESOURCE_SHARING_FILE_NAME)]
-		passwordEncryptionSecretName, dataFieldName := r.getEncryptionKeyNameFromRef(secretNameRef, passwordEncryptionMetadata.Name)
-		err := errors.Wrapf(fmt.Errorf("Secret %q not found", passwordEncryptionSecretName), "Secret for Password Encryption was not found. Create a secret named %q in namespace %q with the encryption key specified in data field %q", passwordEncryptionSecretName, instance.GetNamespace(), dataFieldName)
-		return r.ManageError(err, common.StatusConditionTypeReconciled, instance)
 	}
 
 	// we should throw a warning if both the aes and password encryption key are defined
