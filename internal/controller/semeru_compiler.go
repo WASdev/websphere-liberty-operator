@@ -550,7 +550,7 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruCMCertificate(wlva *wlv1.WebS
 		svcCert.Labels = wlva.GetLabels()
 		svcCert.Labels[getSemeruGenerationLabelName(wlva)] = getGeneration(wlva)
 		svcCert.Spec.IssuerRef = certmanagermetav1.ObjectReference{
-			Name: "wlo-ca-issuer",
+			Name: OperatorShortName + "-ca-issuer",
 		}
 		if customIssuerFound {
 			svcCert.Spec.IssuerRef.Name = customIssuer.Name
