@@ -59,14 +59,13 @@ func (r *ReconcileWebSphereLiberty) reconcileEncryptionKey(instance *wlv1.WebSph
 				}
 				// Here the aes encryption key was found and we can passthrough to reconciling the keys
 				return r.reconcileAESEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
-			} else {
-				// Here the password encryption key was found, but we still want to mirror the aes encryption key (allowing failures)
-				// before reconciling the password encryption key
-				if err := r.mirrorEncryptionKeySecretState(instance, passwordEncryptionMetadata, r.hasUserAESEncryptionKeySecret, r.hasInternalAESEncryptionKeySecret, AESEncryptionKey); err == nil {
-					return r.reconcileAESEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
-				}
-				return r.reconcilePasswordEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
 			}
+			// Here the password encryption key was found, but we still want to mirror the aes encryption key (allowing failures)
+			// before reconciling the password encryption key
+			if err := r.mirrorEncryptionKeySecretState(instance, passwordEncryptionMetadata, r.hasUserAESEncryptionKeySecret, r.hasInternalAESEncryptionKeySecret, AESEncryptionKey); err == nil {
+				return r.reconcileAESEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
+			}
+			return r.reconcilePasswordEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
 		}
 		// Give internal AES key the higher precedence (allowing failures)
 		aesEncryptionErrMessage, aesEncryptionSecretName, aesEncryptionLastRotation, err := r.reconcileAESEncryptionKey(instance, passwordEncryptionMetadata, thisInstanceIsLeader, leaderName)
