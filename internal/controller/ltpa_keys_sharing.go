@@ -361,7 +361,7 @@ func (r *ReconcileWebSphereLiberty) generateLTPAConfig(instance *wlv1.WebSphereL
 	}
 
 	// LTPA config leader starts here
-	leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_CONFIG_RESOURCE_SHARING_FILE_NAME, true)
+	leaderName, thisInstanceIsLeader, _, err := r.reconcileLeader(instance, ltpaConfigMetadata, LTPA_RESOURCE_SHARING_FILE_NAME, true)
 	if err != nil {
 		return ltpaXMLSecretName, err
 	}
