@@ -3,8 +3,8 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.26
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260318201118-3f77d7f796bd
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260318200009-fac1f4fd75a7
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260414181438-9f48f8686e0a
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260414175428-cc6835fc170f
 	github.com/cert-manager/cert-manager v1.19.4
 	github.com/go-logr/logr v1.4.3
 	github.com/openshift/api v0.0.0-20260304172252-b0658d22beea
@@ -27,25 +27,17 @@ require (
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
-	github.com/containerd/errdefs v1.0.0 // indirect
-	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/distribution/v3 v3.0.0 // indirect
-	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v27.5.0+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.22.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.2 // indirect
@@ -90,10 +82,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
