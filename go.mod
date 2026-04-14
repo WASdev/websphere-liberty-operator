@@ -125,6 +125,5 @@ require (
 
 replace (
 	github.com/distribution/distribution/v3 => github.com/openshift/docker-distribution/v3 v3.0.0-20240215131201-6b2f5d2f1f43
-	github.com/docker/docker => github.com/moby/moby v28.5.2+incompatible
 	k8s.io/controller-manager => k8s.io/controller-manager v0.33.3
 )
