@@ -1,5 +1,5 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.6.0
+Begin NOTICES AND INFORMATION FOR WebSphere Liberty Operator Version 1.6.1
 Copyright 2023 - 2026 IBM Corporation and others
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 TABLE OF CONTENTS
@@ -32,11 +32,6 @@ contrib.go.opencensus.io/exporter/prometheus
 github.com/application-stacks/runtime-component-operator
 github.com/census-instrumentation/opencensus-proto
 github.com/cert-manager/cert-manager
-github.com/containerd/errdefs
-github.com/containerd/log
-github.com/distribution/reference
-github.com/docker/distribution
-github.com/docker/go-connections
 github.com/docker/go-metrics
 github.com/docker/libtrust
 github.com/cncf/udpa/go
@@ -47,7 +42,6 @@ github.com/golang/glog
 github.com/golang/groupcache
 github.com/golang/mock
 github.com/go-logr/logr
-github.com/go-logr/stdr
 github.com/go-logr/zapr
 github.com/google/btree
 github.com/google/gnostic
@@ -85,13 +79,8 @@ github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
 github.com/spf13/cobra
 github.com/xeipuuv/gojsonpointer
 github.com/xeipuuv/gojsonreference
-github.com/xeipuuv/gojsonschema
-go.opentelemetry.io/auto/sdk
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
-go.opentelemetry.io/otel
-go.opentelemetry.io/otel/metric
-go.opentelemetry.io/otel/sdk
-go.opentelemetry.io/otel/sdk/metric
+github.com/xeipuuv/gojsonschema 
+go.opentelemetry.io/otel 
 go.opentelemetry.io/otel/trace
 go.yaml.in/yaml/v2
 go.yaml.in/yaml/v3
@@ -108,7 +97,6 @@ googleapis/api
 googleapis/rpc
 gopkg.in/yaml.v2
 gopkg.in/yaml.v3
-gotest.tools/v3
 k8s.io/api
 k8s.io/apiextensions-apiserver
 k8s.io/apimachinery
@@ -419,7 +407,6 @@ gopkg.in/evanphx/json-patch.v4 | Copyright (c) 2014, Evan Phoenix. All rights re
 gopkg.in/errgo.v2 | Copyright © 2013 And Roger Peppe
 gopkg.in/inf.v0 | Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go
 gopkg.in/tomb.v1 | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>
-gotest.tools/v3 | Copyright (c) Copyright 2018 gotest.tools authors
 rsc.io/binaryregexp | Copyright (c) 2009 The Go Authors. All rights reserved.
 rsc.io/quote/v3 | Copyright (c) 2009 The Go Authors. All rights reserved.
 rsc.io/sampler | Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -536,8 +523,7 @@ github.com/client9/misspell | Copyright (c) 2015-2017 Nick Galbreath
 github.com/docopt/docopt-go | Copyright (c) 2013 Keith Batten Copyright (c) 2016 David Irvine
 github.com/emicklei/go-restful/v3 | Copyright (c) 2012,2013 Ernest Micklei
 github.com/exponent-io/jsonpath | Copyright (c) 2015 Exponent Labs LLC
-github.com/fatih/camelCase | Copyright (c) 2015 Fatih Arslan
-github.com/felixge/httpsnoop|  Copyright (c) 2016 Felix Geisendörfer (felix@debuggable.com)
+github.com/fatih/camelCase | Copyright (c) 2015 Fatih Arslan 
 github.com/flowstack/go-jsonschema | Copyright (c) 2018 Alexander Staubo
 github.com/fvbommel/sortorder | Copyright (c) 2015 Frits van Bommel
 github.com/fxamacker/cbor/v2 | Copyright (c) 2019-present Faye Amacker
@@ -615,7 +601,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 END OF MIT LICENSE NOTICES AND INFORMATION
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.6.0 NOTICES FILE CONSISTS OF THE FOLLOWING 
+THE REMAINDER OF THIS WEBSPHERE LIBERTY OPERATOR Version 1.6.1 NOTICES FILE CONSISTS OF THE FOLLOWING 
 
 SECTIONS:
 
