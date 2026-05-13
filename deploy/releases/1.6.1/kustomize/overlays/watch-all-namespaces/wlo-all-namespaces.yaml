@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websphere-liberty-controller-manager
+  namespace: websphere-liberty
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          env:
+            - name: WATCH_NAMESPACE
+              value: ""
+              valueFrom:

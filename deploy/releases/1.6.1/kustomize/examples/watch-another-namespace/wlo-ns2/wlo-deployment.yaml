@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websphere-liberty-controller-manager
+  namespace: wlo-ns
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          env:
+            - name: WATCH_NAMESPACE
+              value: wlo-watched-ns2
