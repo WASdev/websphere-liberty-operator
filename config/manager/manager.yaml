@@ -104,11 +104,21 @@ spec:
             subPath: operator.sock
       volumes:
         - name: scratch
-          emptyDir:
-            sizeLimit: 20Mi
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ "ReadWriteOnce" ]
+                resources:
+                  requests:
+                    storage: 20Mi
         - name: socket
-          emptyDir:
-            sizeLimit: 20Mi
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ "ReadWriteOnce" ]
+                resources:
+                  requests:
+                    storage: 20Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       affinity:

@@ -115,9 +115,21 @@ spec:
       serviceAccountName: websphere-liberty-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
-      - emptyDir:
-          sizeLimit: 20Mi
+      - ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Mi
         name: scratch
-      - emptyDir:
-          sizeLimit: 20Mi
+      - ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Mi
         name: socket
