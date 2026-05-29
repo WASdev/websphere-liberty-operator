@@ -483,6 +483,11 @@ func (r *ReconcileWebSphereLiberty) reconcileSemeruDeployment(wlva *wlv1.WebSphe
 	deploy.Spec.Template.Spec.Containers[0].SecurityContext = utils.GetSecurityContext(wlva)
 
 	wlutils.AddSecretHashAsAnnotation(&deploy.Spec.Template, wlva, r.GetClient(), wlva.Status.SemeruCompiler.TLSSecretName)
+
+	// Copy PriorityClassName from the WebSphereLibertyApplication CR
+	if wlva.GetPriorityClassName() != nil {
+		deploy.Spec.Template.Spec.PriorityClassName = *wlva.GetPriorityClassName()
+	}
 }
 
 func reconcileSemeruService(svc *corev1.Service, wlva *wlv1.WebSphereLibertyApplication) {
