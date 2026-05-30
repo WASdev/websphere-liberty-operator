@@ -4,8 +4,8 @@ github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260420204615-a4c2fabe98fc h1:LWj4GnVQJeW0JqT6rOcSVIWKMH3hve2v8lytfL8U1pw=
-github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260420204615-a4c2fabe98fc/go.mod h1:nyhs16Qj+z3BStQK6VfjVFNP7vxaF38cQAS/UVkPNFE=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260530015205-0ad1b6b5f224 h1:X+1vX12/jh8oC6LHNrsVq2tXdR+RwJoezuhcx9+oNzA=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260530015205-0ad1b6b5f224/go.mod h1:Grgihm7OhwDsShn/dA3ayrKjKeIhT/Zp3OMykyQhEmQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260529194610-b2aabc0187f7 h1:grd3gh46zJ1QDJ/uP0XnB5+th+trfUR/9/85XiME0kA=
