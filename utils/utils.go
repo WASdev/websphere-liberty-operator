@@ -60,7 +60,7 @@ const StatusReferenceLibertyVersionLastPull = "libertyVersionLastPull"
 // Constant Values
 const serviceabilityMountPath = "/serviceability"
 const ssoEnvVarPrefix = "SEC_SSO_"
-const OperandVersion = "1.6.1"
+const OperandVersion = "1.6.2"
 
 // LTPA constants
 const managedLTPAMountPath = "/config/managedLTPA"
