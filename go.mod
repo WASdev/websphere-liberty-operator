@@ -3,8 +3,8 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.26
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260530015205-0ad1b6b5f224
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260529194610-b2aabc0187f7
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260601221854-210b664e01c5
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260601211610-929a87bfb5e1
 	github.com/cert-manager/cert-manager v1.20.2
 	github.com/go-logr/logr v1.4.3
 	github.com/openshift/api v0.0.0-20260513085653-694421e64aee
