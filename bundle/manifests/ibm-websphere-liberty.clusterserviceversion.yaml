@@ -67,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2026-06-01T18:52:58Z"
+    createdAt: "2026-06-02T00:49:19Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.6.2'
@@ -506,17 +506,17 @@ spec:
           application pod's hosts file
         displayName: Host Aliases
         path: hostAliases
-      - description: Name of the PriorityClass for the application pods.
-        displayName: Priority Class Name
-        path: priorityClassName
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Controls the nodes the pod are scheduled to run on, based on
           labels on the pods that are already running on the node.
         displayName: Pod Affinity
         path: affinity.podAffinity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podAffinity
+      - description: Name of the PriorityClass for the application pods.
+        displayName: Priority Class Name
+        path: priorityClassName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Enables the ability to prevent running a pod on the same node
           as another pod.
         displayName: Pod Anti Affinity
