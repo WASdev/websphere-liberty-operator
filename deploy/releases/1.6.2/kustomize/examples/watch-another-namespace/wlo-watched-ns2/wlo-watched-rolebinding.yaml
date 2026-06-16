@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wlo-watched-rolebinding
+  namespace: wlo-watched-ns
+subjects:
+- kind: ServiceAccount
+  name: websphere-liberty-controller-manager
+  namespace: wlo-ns2
