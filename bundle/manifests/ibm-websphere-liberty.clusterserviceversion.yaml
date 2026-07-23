@@ -67,7 +67,7 @@ metadata:
     capabilities: Auto Pilot
     categories: Application Runtime
     containerImage: icr.io/cpopen/websphere-liberty-operator:daily
-    createdAt: "2026-06-15T17:10:53Z"
+    createdAt: "2026-07-23T16:09:22Z"
     description: Deploy and manage containerized Liberty applications
     features.operators.openshift.io/disconnected: "true"
     olm.skipRange: '>=1.0.0 <1.6.2'
@@ -1073,6 +1073,9 @@ spec:
                 - mountPath: /tmp
                   name: socket
                   subPath: operator.sock
+                - mountPath: /etc/pki/ca-trust/extracted/pem
+                  name: trusted-ca
+                  readOnly: true
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
@@ -1086,6 +1089,13 @@ spec:
               - emptyDir:
                   sizeLimit: 20Mi
                 name: socket
+              - configMap:
+                  items:
+                  - key: ca-bundle.crt
+                    path: tls-ca-bundle.pem
+                  name: wlo-trusted-ca
+                  optional: true
+                name: trusted-ca
       permissions:
       - rules:
         - apiGroups:
