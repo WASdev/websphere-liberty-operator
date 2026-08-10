@@ -68,6 +68,7 @@ type ReconcileWebSphereLiberty struct {
 	oputils.ReconcilerBase
 	Log             logr.Logger
 	watchNamespaces []string
+	isClusterWide   bool
 }
 
 const applicationFinalizer = "finalizer.webspherelibertyapps.liberty.websphere.ibm.com"
@@ -1011,33 +1012,33 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 	for _, ns := range watchNamespaces {
 		watchNamespacesMap[ns] = true
 	}
-	isClusterWide := oputils.IsClusterWide(watchNamespaces)
+	r.isClusterWide = oputils.IsClusterWide(watchNamespaces)
 
 	pred := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			// Ignore updates to CR status in which case metadata.Generation does not change
-			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration() && (isClusterWide || watchNamespacesMap[e.ObjectNew.GetNamespace()])
+			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration() && (r.isClusterWide || watchNamespacesMap[e.ObjectNew.GetNamespace()])
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
-			return isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
+			return r.isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
+			return r.isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
-			return isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
+			return r.isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
 		},
 	}
 
 	predSubResource := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			return (isClusterWide || watchNamespacesMap[e.ObjectOld.GetNamespace()])
+			return (r.isClusterWide || watchNamespacesMap[e.ObjectOld.GetNamespace()])
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
 			return false
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
+			return r.isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
 			return false
@@ -1047,13 +1048,13 @@ func (r *ReconcileWebSphereLiberty) SetupWithManager(mgr ctrl.Manager) error {
 	predSubResWithGenCheck := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			// Ignore updates to CR status in which case metadata.Generation does not change
-			return (isClusterWide || watchNamespacesMap[e.ObjectOld.GetNamespace()]) && e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
+			return (r.isClusterWide || watchNamespacesMap[e.ObjectOld.GetNamespace()]) && e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
 		},
 		CreateFunc: func(e event.CreateEvent) bool {
 			return false
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			return isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
+			return r.isClusterWide || watchNamespacesMap[e.Object.GetNamespace()]
 		},
 		GenericFunc: func(e event.GenericEvent) bool {
 			return false
@@ -1158,6 +1159,8 @@ func (r *ReconcileWebSphereLiberty) deletePVC(reqLogger logr.Logger, pvcName str
 
 func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Logger, wlapp *webspherelibertyv1.WebSphereLibertyApplication, imageRef imagev1.DockerImageReference) (string, *runtime.RawExtension, error) {
 	wlappSecrets := []corev1.Secret{}
+
+	// check the CR-configured pull secrets
 	var pullSecret *corev1.Secret
 	if wlapp.GetPullSecret() != nil {
 		pullSecretNames := oputils.DecodeStringToList(*wlapp.GetPullSecret())
@@ -1175,6 +1178,21 @@ func (r *ReconcileWebSphereLiberty) getContainerImageMetadata(reqLogger logr.Log
 			if pullSecret != nil {
 				wlappSecrets = append(wlappSecrets, *pullSecret)
 			}
+		}
+	}
+
+	// check the OpenShift global pull secret for inclusion
+	if r.isClusterWide && r.IsOpenShift() {
+		globalPullSecretName := "pull-secret"
+		globalPullSecretNamespace := "openshift-config"
+		globalPullSecret := &corev1.Secret{}
+		globalPullSecret.Name = globalPullSecretName
+		globalPullSecret.Namespace = globalPullSecretNamespace
+		err := r.GetClient().Get(context.TODO(), types.NamespacedName{Name: globalPullSecretName, Namespace: globalPullSecretNamespace}, globalPullSecret)
+		if err == nil {
+			wlappSecrets = append(wlappSecrets, *globalPullSecret)
+		} else if !kerrors.IsNotFound(err) {
+			return "", nil, fmt.Errorf("Failed to get the OpenShift global pull secret: %v", err)
 		}
 	}
 	return libertyimage.NewNamespaceCredentialsContext(reqLogger, wlappSecrets, wlapp.GetNamespace()).GetContainerImageMetadata(context.TODO(), imageRef, pullSecret, false)
