@@ -27,14 +27,13 @@ RUN if [ -z "${GO_VERSION_ARG}" ]; then \
       if [ $? -ne 0 ]; then \
         echo "Failed to download liberty.zip from both sources. Build FAILED"; \
         exit 1; \
-        fi; \
+      fi; \
     fi; \
     unzip liberty.zip -d liberty; \
     mv -f liberty/wlp/* liberty; \
     rmdir liberty/wlp; \
     rm -f liberty.zip; \
     mkdir -p liberty/output;
-
 
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
