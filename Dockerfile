@@ -24,9 +24,9 @@ RUN if [ -z "${GO_VERSION_ARG}" ]; then \
     mkdir -p liberty; \
     curl -fsSL --retry 3 -o liberty.zip "https://repo1.maven.org/maven2/io/openliberty/openliberty-kernel/${LIBERTY_VERSION}/openliberty-kernel-${LIBERTY_VERSION}.zip"; \
     if [ $? -ne 0 ]; then \
-      echo "Failed to download liberty.zip trying an internal source"; \
+      echo "Failed to download liberty.zip from Maven. Trying from https://public.dhe.ibm.com"; \
       curl -fsSLk --retry 3 -o liberty.zip -u "${W3_USERNAME_ARG}:${W3_PASSWORD_ARG}" \
-      "https://libr-proxy1.fyre.ibm.com/liberty/dev/Xo/release/cl260220260207-1901-_1JKyoAROEfGt7MM-Pq8EKQ/fe/cl260220260207-1901.28.linux/linux/zipper/externals/installables/openliberty-kernel-26.0.0.2-cl260220260207-1901.zip"; \
+      "https://public.dhe.ibm.com/ibmdl/export/pub/software/openliberty/runtime/release/${LIBERTY_VERSION}/openliberty-kernel-${LIBERTY_VERSION}.zip"; \
       if [ $? -ne 0 ]; then \
         echo "Failed to download liberty.zip from both sources. Build FAILED"; \
         exit 1; \
