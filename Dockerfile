@@ -4,8 +4,6 @@ FROM registry.access.redhat.com/ubi9-minimal:latest as builder
 ARG GO_PLATFORM=amd64
 ARG GO_VERSION_ARG
 ARG LIBERTY_VERSION=26.0.0.2
-ARG W3_USERNAME_ARG
-ARG W3_PASSWORD_ARG
 ENV PATH=$PATH:/usr/local/go/bin
 RUN microdnf -y install tar gzip unzip
 
