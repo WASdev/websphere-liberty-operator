@@ -3,8 +3,8 @@ module github.com/WASdev/websphere-liberty-operator
 go 1.27
 
 require (
-	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20260928170936-8222cef75b68
-	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20260925190423-ce41e9ef79f8
+	github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20261001154923-e3b99a61fb6f
+	github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20261001152724-8c1bbb760a8d
 	github.com/cert-manager/cert-manager v1.20.4
 	github.com/go-logr/logr v1.4.4
 	github.com/openshift/api v0.0.0-20260916094138-1a69e30ec990
@@ -12,9 +12,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.91.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.35.8
-	k8s.io/apimachinery v0.35.8
-	k8s.io/client-go v0.35.8
+	k8s.io/api v0.35.9
+	k8s.io/apimachinery v0.35.9
+	k8s.io/client-go v0.35.9
 	knative.dev/serving v0.50.0
 	sigs.k8s.io/controller-runtime v0.23.3
 )
@@ -99,16 +99,16 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.35.8 // indirect
-	k8s.io/apiserver v0.35.8 // indirect
-	k8s.io/cli-runtime v0.35.8 // indirect
-	k8s.io/component-base v0.35.8 // indirect
-	k8s.io/component-helpers v0.35.8 // indirect
+	k8s.io/apiextensions-apiserver v0.35.9 // indirect
+	k8s.io/apiserver v0.35.9 // indirect
+	k8s.io/cli-runtime v0.35.9 // indirect
+	k8s.io/component-base v0.35.9 // indirect
+	k8s.io/component-helpers v0.35.9 // indirect
 	k8s.io/controller-manager v0.0.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
-	k8s.io/kubectl v0.35.8 // indirect
-	k8s.io/kubernetes v1.35.8 // indirect
+	k8s.io/kubectl v0.35.9 // indirect
+	k8s.io/kubernetes v1.35.9 // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	knative.dev/networking v0.0.0-20260727162500-c7a7b772cac9 // indirect
 	knative.dev/pkg v0.0.0-20260727151759-521cb33b33dd // indirect
@@ -125,5 +125,5 @@ require (
 replace (
 	github.com/distribution/distribution/v3 => github.com/openshift/docker-distribution/v3 v3.0.0-20240215131201-6b2f5d2f1f43
 	golang.org/x/net => golang.org/x/net v0.58.0
-	k8s.io/controller-manager => k8s.io/controller-manager v0.35.8
+	k8s.io/controller-manager => k8s.io/controller-manager v0.35.9
 )
