@@ -1536,7 +1536,9 @@ func (cr *WebSphereLibertyApplication) Initialize() {
 	}
 
 	if cr.Labels != nil {
-		cr.Labels["app.kubernetes.io/part-of"] = cr.Spec.ApplicationName
+		if _, found := cr.Labels["app.kubernetes.io/part-of"]; !found {
+			cr.Labels["app.kubernetes.io/part-of"] = cr.Spec.ApplicationName
+		}
 	}
 
 	// This is to handle when there is no service in the CR
