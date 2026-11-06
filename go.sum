@@ -6,6 +6,8 @@ github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20261005210515-e0d5ca647159 h1:LlTT6jMqweRWlWk6LyccXGGSLMnQH2MRPHixxldyVMc=
 github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20261005210515-e0d5ca647159/go.mod h1:nGiciJbuAb9ytQVm9x4H4vb8g8QlU/51cBN+goMkFGY=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20261104214341-724fa4faf979 h1:MvfRBhe3d1FFCKIj9ZTNBW5ZEf1wT12B4nYLJyExtEI=
+github.com/OpenLiberty/open-liberty-operator v0.8.1-0.20261104214341-724fa4faf979/go.mod h1:nGiciJbuAb9ytQVm9x4H4vb8g8QlU/51cBN+goMkFGY=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/application-stacks/runtime-component-operator v1.0.0-20220602-0850.0.20261005205425-6a6dd03caec9 h1:gRuyahYJyKPGZetZ08TNPpDOHfwjzkfODJINopm1Aao=

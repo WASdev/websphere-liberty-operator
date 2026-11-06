@@ -84,6 +84,7 @@ const PasswordEncryptionKeyRootName = "wlp-password-encryption-key"
 const LocalPasswordEncryptionKeyRootName = "wlo-wlp-password-encryption-key"
 const AESEncryptionKeyRootName = "wlp-aes-encryption-key"
 const LocalAESEncryptionKeyRootName = "wlo-wlp-aes-encryption-key"
+const GeneratedAESEncryptionKeyRootName = "wlo-wlp-generated-aes-encryption-key"
 
 const (
 	productChargedContainersKey string = "productChargedContainers"
